@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.14.3",
+    "@cloudflare/vitest-pool-workers": "^0.18.2",
     "@tailwindcss/vite": "^4.2.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -51,7 +51,7 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.8",
     "vitest": "^4.1.4",
-    "wrangler": "^4.81.1"
+    "wrangler": "^4.108.0"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
