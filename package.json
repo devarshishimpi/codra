@@ -61,7 +61,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "hono": "^4.12.12",
+    "hono": "^4.12.25",
     "jsonrepair": "^3.13.3",
     "lucide-react": "^1.8.0",
     "picomatch": "^4.0.4",
