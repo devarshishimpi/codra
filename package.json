@@ -51,7 +51,7 @@
     "typescript": "^6.0.2",
     "vite": "^8.0.8",
     "vitest": "^4.1.9",
-    "wrangler": "^4.81.1"
+    "wrangler": "^4.110.0"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
