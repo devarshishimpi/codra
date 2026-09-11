@@ -3,11 +3,12 @@
 
   <p>
     Self-hosted AI code review for GitHub pull requests.<br/>
-    Cloudflare-native, queue-backed, repository-aware, and built for teams that want to own their review engine.
+    Cloudflare-native (including free plan), queue-backed, repository-aware, and built for teams that want to own their review engine.
   </p>
 
   <p>
     <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg"></a>
+    <a href="https://github.com/sponsors/devarshishimpi"><img alt="Sponsor" src="https://img.shields.io/badge/Sponsor-devarshishimpi-EA4AAA?logo=githubsponsors"></a>
     <a href="https://workers.cloudflare.com/"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/runtime-Cloudflare%20Workers-f38020?logo=cloudflare"></a>
     <a href="https://react.dev/"><img alt="Built with React" src="https://img.shields.io/badge/dashboard-React-61dafb?logo=react&logoColor=111"></a>
     <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/language-TypeScript-3178c6?logo=typescript&logoColor=fff"></a>
