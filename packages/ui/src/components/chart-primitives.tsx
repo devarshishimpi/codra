@@ -174,11 +174,15 @@ export function TickMeter({
       <span className="w-28 shrink-0 truncate text-[13px] font-medium text-ui-default" title={label}>
         {label}
       </span>
-      <div className="flex h-4 flex-1 items-stretch gap-[2.5px]" aria-hidden>
+      <div
+        className="grid h-4 flex-1 gap-[2.5px]"
+        style={{ gridTemplateColumns: `repeat(${SEGMENTS}, minmax(0, 1fr))` }}
+        aria-hidden
+      >
         {Array.from({ length: SEGMENTS }).map((_, i) => (
           <span
             key={i}
-            className="min-w-[2px] flex-1 rounded-[1px]"
+            className="rounded-[1px]"
             style={{ backgroundColor: i < filled ? color : 'var(--ui-fill)' }}
           />
         ))}

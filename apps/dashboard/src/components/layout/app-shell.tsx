@@ -12,6 +12,7 @@ import { navItems as defaultNavItems } from '@client/nav';
 import type { NavItem } from '@client/nav';
 import { SessionProvider, useSession } from '@client/hooks/use-session';
 import { useCan } from '@client/hooks/use-can';
+import { SidebarOnboarding } from '@client/components/features/dashboard/sidebar-onboarding';
 
 export function AppShell({ navItems = defaultNavItems }: { navItems?: NavItem[] } = {}) {
   return (
@@ -55,6 +56,7 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
   const { theme, toggleTheme } = useTheme();
   const { user: sessionUser } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isOnboardingVisible, setIsOnboardingVisible] = useState(true);
 
   useEffect(() => {
     const timers = new WeakMap<Element, number>();
@@ -74,7 +76,6 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
 
   return (
     <div className="flex h-svh overflow-hidden bg-background">
-
       {mobileMenuOpen && (
         <button
           type="button"
@@ -151,28 +152,61 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
 
         <div className="mx-4 h-px shrink-0 bg-ui-line" />
 
-        <div className="shrink-0 space-y-0.5 p-2 pt-2">
+        {isOnboardingVisible && (
+          <div className="shrink-0 px-2 pb-2 pt-2">
+            <a
+              href="https://github.com/devarshishimpi/codra"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                'dashboard-sidebar-action',
+                'group relative flex h-9 w-full items-center gap-3 rounded-md pl-4 pr-3.5',
+                'text-[13px] text-ui-subtle hover:text-ui-strong',
+                'dark:text-ui-subtle/65 dark:hover:text-ui-default',
+                'transition-colors duration-200 ease-[var(--ease-out-quart)]',
+                'hover:bg-ui-fill/50',
+              )}
+            >
+              <Star size={15} strokeWidth={2} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate">Star on GitHub</span>
+              <ArrowUpRight
+                size={13}
+                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              />
+            </a>
+          </div>
+        )}
 
-          <a
-            href="https://github.com/devarshishimpi/codra"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={cn(
-              'dashboard-sidebar-action',
-              'group relative flex h-9 w-full items-center gap-3 rounded-md pl-4 pr-3.5',
-              'text-[13px] text-ui-subtle hover:text-ui-strong',
-              'dark:text-ui-subtle/65 dark:hover:text-ui-default',
-              'transition-colors duration-200 ease-[var(--ease-out-quart)]',
-              'hover:bg-ui-fill/50',
-            )}
-          >
-            <Star size={15} strokeWidth={2} className="shrink-0" />
-            <span className="min-w-0 flex-1 truncate">Star on GitHub</span>
-            <ArrowUpRight
-              size={13}
-              className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-            />
-          </a>
+        {sessionUser && (
+          <SidebarOnboarding
+            user={sessionUser}
+            onVisibleChange={setIsOnboardingVisible}
+          />
+        )}
+
+        <div className="shrink-0 space-y-0.5 p-2 pt-2">
+          {!isOnboardingVisible && (
+            <a
+              href="https://github.com/devarshishimpi/codra"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                'dashboard-sidebar-action',
+                'group relative flex h-9 w-full items-center gap-3 rounded-md pl-4 pr-3.5',
+                'text-[13px] text-ui-subtle hover:text-ui-strong',
+                'dark:text-ui-subtle/65 dark:hover:text-ui-default',
+                'transition-colors duration-200 ease-[var(--ease-out-quart)]',
+                'hover:bg-ui-fill/50',
+              )}
+            >
+              <Star size={15} strokeWidth={2} className="shrink-0" />
+              <span className="min-w-0 flex-1 truncate">Star on GitHub</span>
+              <ArrowUpRight
+                size={13}
+                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
+              />
+            </a>
+          )}
 
           {sessionUser && <AccountMenu user={sessionUser} />}
         </div>
