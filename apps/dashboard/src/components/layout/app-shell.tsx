@@ -152,31 +152,6 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
 
         <div className="mx-4 h-px shrink-0 bg-ui-line" />
 
-        {isOnboardingVisible && (
-          <div className="shrink-0 px-2 pb-2 pt-2">
-            <a
-              href="https://github.com/devarshishimpi/codra"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={cn(
-                'dashboard-sidebar-action',
-                'group relative flex h-9 w-full items-center gap-3 rounded-md pl-4 pr-3.5',
-                'text-[13px] text-ui-subtle hover:text-ui-strong',
-                'dark:text-ui-subtle/65 dark:hover:text-ui-default',
-                'transition-colors duration-200 ease-[var(--ease-out-quart)]',
-                'hover:bg-ui-fill/50',
-              )}
-            >
-              <Star size={15} strokeWidth={2} className="shrink-0" />
-              <span className="min-w-0 flex-1 truncate">Star on GitHub</span>
-              <ArrowUpRight
-                size={13}
-                className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100"
-              />
-            </a>
-          </div>
-        )}
-
         {sessionUser && (
           <SidebarOnboarding
             user={sessionUser}

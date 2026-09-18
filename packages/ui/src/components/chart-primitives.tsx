@@ -182,7 +182,7 @@ export function TickMeter({
         {Array.from({ length: SEGMENTS }).map((_, i) => (
           <span
             key={i}
-            className="rounded-[1px]"
+            className="min-w-[2px] rounded-[1px]"
             style={{ backgroundColor: i < filled ? color : 'var(--ui-fill)' }}
           />
         ))}

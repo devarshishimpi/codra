@@ -31,10 +31,11 @@ export function OnboardingCard({
   const doneCount = steps.filter((s) => s.done).length;
   const totalSteps = steps.length;
   const allDone = doneCount === totalSteps && totalSteps > 0;
-  
+  const safeSegments = Math.max(1, segments);
+
   const filledCount =
     doneCount > 0
-      ? Math.max(1, Math.round((doneCount / totalSteps) * segments))
+      ? Math.max(1, Math.round((doneCount / totalSteps) * safeSegments))
       : 0;
 
   return (
@@ -65,11 +66,11 @@ export function OnboardingCard({
         {/* Segmented bar */}
         <div
           className="mb-3.5 grid h-[22px] gap-[4px]"
-          style={{ gridTemplateColumns: `repeat(${segments}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${safeSegments}, minmax(0, 1fr))` }}
           aria-label={`${doneCount} of ${totalSteps} steps complete`}
           aria-hidden
         >
-          {Array.from({ length: segments }).map((_, i) => (
+          {Array.from({ length: safeSegments }).map((_, i) => (
             <span
               key={i}
               className={cn(

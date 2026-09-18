@@ -11,7 +11,11 @@ import { buildRouter, publicRoutes, shellRoutes } from '@client/routes';
 import { navItems } from '@client/nav';
 
 vi.mock('@client/lib/api', () => ({
-  api: { getSession: vi.fn() },
+  api: {
+    getSession: vi.fn(),
+    getRepos: vi.fn(),
+    getModelConfigs: vi.fn(),
+  },
 }));
 
 // createBrowserRouter captures the URL when it is created, so window.history must be set before buildRouter runs.
@@ -38,6 +42,8 @@ describe('Dashboard route and nav registries (JSDOM)', () => {
         signedInAt: new Date().toISOString(),
       },
     });
+    vi.mocked(api.getRepos).mockResolvedValue({ repos: [] });
+    vi.mocked(api.getModelConfigs).mockResolvedValue({ providers: [], configs: [] });
   });
 
   it('exposes the built-in routes as composable arrays', () => {
