@@ -41,7 +41,7 @@ describe('Dashboard route and nav registries (JSDOM)', () => {
   });
 
   it('exposes the built-in routes as composable arrays', () => {
-    expect(publicRoutes.map((r) => r.path)).toEqual(['/', '/login']);
+    expect(publicRoutes.map((r) => r.path)).toEqual(['/']);
     expect(shellRoutes.map((r) => r.path)).toContain('dashboard');
     expect([...publicRoutes, ...shellRoutes].map((r) => r.path)).not.toContain('*');
   });
