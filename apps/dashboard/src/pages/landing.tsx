@@ -43,12 +43,12 @@ export function LandingPage() {
       <main className="relative z-10 w-full max-w-[26rem]">
         <div className="rounded-2xl border border-ui-line bg-ui-base px-6 py-10 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.55)] sm:px-10 sm:py-10">
           <div className="flex flex-col items-center text-center">
-            <div
-              role="img"
-              aria-label="Codra"
-              className="flex h-14 w-14 items-center justify-center rounded-full border border-ui-line bg-ui-canvas font-display text-2xl font-semibold text-ui-strong"
-            >
-              C
+            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-ui-line bg-ui-canvas">
+            <img
+              src={theme === 'dark' ? '/icons/codra-icon-dark.svg' : '/icons/codra-icon-light.svg'}
+              alt="Codra"
+              className="h-14 w-14"
+            />
             </div>
 
             <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight text-ui-strong sm:text-[1.75rem]">
