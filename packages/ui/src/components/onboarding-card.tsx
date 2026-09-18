@@ -67,7 +67,6 @@ export function OnboardingCard({
         <div
           className="mb-3.5 grid h-[22px] gap-[4px]"
           style={{ gridTemplateColumns: `repeat(${safeSegments}, minmax(0, 1fr))` }}
-          aria-label={`${doneCount} of ${totalSteps} steps complete`}
           aria-hidden
         >
           {Array.from({ length: safeSegments }).map((_, i) => (
