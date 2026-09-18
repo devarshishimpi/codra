@@ -55,8 +55,8 @@ async function request<T>(input: string, init?: RequestInit) {
   });
 
   if (response.status === 401) {
-    if (location.pathname !== '/login') {
-      location.href = '/login';
+    if (location.pathname !== '/') {
+      location.href = '/';
     }
     throw new Error('Unauthorized');
   }
@@ -92,8 +92,8 @@ async function requestWithMeta<T>(input: string, init?: RequestInit) {
   });
 
   if (response.status === 401) {
-    if (location.pathname !== '/login') {
-      location.href = '/login';
+    if (location.pathname !== '/') {
+      location.href = '/';
     }
     throw new Error('Unauthorized');
   }
