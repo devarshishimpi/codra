@@ -3,7 +3,7 @@
  */
 import { expect, it, describe, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { LoginPage } from '@client/pages/login';
+import { LandingPage } from '@client/pages/landing';
 import { DashboardPage } from '@client/pages/dashboard';
 import { MemoryRouter } from 'react-router-dom';
 import { api } from '@client/lib/api';
@@ -34,12 +34,12 @@ describe('Frontend UI Flows (JSDOM)', () => {
     render(
       <ThemeProvider>
         <MemoryRouter>
-          <LoginPage />
+          <LandingPage />
         </MemoryRouter>
       </ThemeProvider>
     );
 
-    const signInLink = screen.getByRole('link', { name: 'Sign in with GitHub' });
+    const signInLink = screen.getByRole('link', { name: /continue with github/i });
     expect(signInLink.getAttribute('href')).toBe('/auth/github');
   });
 
