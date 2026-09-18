@@ -8,7 +8,6 @@ import type { NavItem } from '@client/nav';
 
 const LandingPage = React.lazy(() => import('./pages/landing').then(m => ({ default: m.LandingPage })));
 const DashboardPage = React.lazy(() => import('./pages/dashboard').then(m => ({ default: m.DashboardPage })));
-const LoginPage = React.lazy(() => import('./pages/login').then(m => ({ default: m.LoginPage })));
 const JobsPage = React.lazy(() => import('./pages/jobs').then(m => ({ default: m.JobsPage })));
 const JobDetailPage = React.lazy(() => import('./pages/job-detail').then(m => ({ default: m.JobDetailPage })));
 const JobLogsPage = React.lazy(() => import('./pages/job-logs').then(m => ({ default: m.JobLogsPage })));
@@ -29,11 +28,6 @@ export const publicRoutes: RouteObject[] = [
   {
     path: '/',
     element: withSuspense(LandingPage, true),
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: '/login',
-    element: withSuspense(LoginPage, true),
     errorElement: <RouteErrorBoundary />,
   },
 ];

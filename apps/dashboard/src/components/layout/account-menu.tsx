@@ -162,7 +162,7 @@ export function AccountMenu({ user }: { user: AuthSessionUser }) {
           onClick={async () => {
             setOpen(false);
             await api.logout();
-            location.href = '/login';
+            location.href = '/';
           }}
         >
           <LogOut
