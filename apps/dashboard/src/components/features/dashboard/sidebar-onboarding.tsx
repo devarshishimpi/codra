@@ -16,6 +16,7 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
   const [visible, setVisible] = useState(true);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,8 +30,8 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
     }
 
     Promise.all([
-      api.getRepos().catch(() => null),
-      api.getModelConfigs().catch(() => null),
+      api.getRepos(),
+      api.getModelConfigs(),
     ]).then(([reposRes, modelsRes]) => {
       const hasRepos = Array.isArray(reposRes?.repos) && reposRes.repos.length > 0;
       const enabledRepos = reposRes?.repos?.filter((r) => r.enabled) ?? [];
@@ -62,6 +63,9 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
 
       setSteps(loadedSteps);
       onVisibleChange?.(true);
+    }).catch(() => {
+      setError(true);
+      onVisibleChange?.(false);
     }).finally(() => {
       setLoading(false);
     });
@@ -73,7 +77,7 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
     onVisibleChange?.(false);
   };
 
-  if (!mounted || !visible) return null;
+  if (!mounted || !visible || error) return null;
 
   if (loading) {
     return (
