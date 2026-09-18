@@ -104,6 +104,6 @@
   "allowScripts": {
     "esbuild": true,
     "unrs-resolver@1.12.2": true,
-    "workerd@1.20260801.1": true
+    "workerd@1.20260918.1": true
   }
 }
