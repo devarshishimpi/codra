@@ -16,6 +16,8 @@ vi.mock('@client/lib/api', () => ({
     subscribeUpdates: vi.fn(),
     getStats: vi.fn(),
     getJobs: vi.fn(),
+    getRepos: vi.fn(),
+    getModelConfigs: vi.fn(),
   }
 }));
 
@@ -28,6 +30,8 @@ describe('Frontend UI Flows (JSDOM)', () => {
       email: 'user@example.com',
       updatedAt: new Date().toISOString(),
     });
+    vi.mocked(api.getRepos).mockResolvedValue({ repos: [] });
+    vi.mocked(api.getModelConfigs).mockResolvedValue({ providers: [], configs: [] });
   });
 
   it('renders the GitHub sign-in flow', async () => {
