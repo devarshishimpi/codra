@@ -70,7 +70,7 @@ export function LandingPage() {
           </LinkButton>
 
           <p className="mt-8 text-center text-xs leading-relaxed text-ui-subtle">
-            By continuing, you agree to GitHub&apos;s{' '}
+            By continuing, you agree to Codra&apos;s{' '}
             <a href={TERMS_URL} className={legalLink}>
               Terms of Service
             </a>{' '}
