@@ -1,5 +1,5 @@
 import { Outlet, Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { SharedLayoutBg } from '@codraoss/ui/motion';
 import { AlignLeft, Sun, Moon, Star, X, ArrowUpRight } from 'lucide-react';
 import { cn } from '@codraoss/ui/utils';
@@ -12,7 +12,8 @@ import { navItems as defaultNavItems } from '@client/nav';
 import type { NavItem } from '@client/nav';
 import { SessionProvider, useSession } from '@client/hooks/use-session';
 import { useCan } from '@client/hooks/use-can';
-import { SidebarOnboarding } from '@client/components/features/dashboard/sidebar-onboarding';
+import { Toaster } from 'sonner';
+const SidebarOnboarding = React.lazy(() => import('@client/components/features/dashboard/sidebar-onboarding').then(m => ({ default: m.SidebarOnboarding })));
 
 export function AppShell({ navItems = defaultNavItems }: { navItems?: NavItem[] } = {}) {
   return (
@@ -58,21 +59,7 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isOnboardingVisible, setIsOnboardingVisible] = useState(true);
 
-  useEffect(() => {
-    const timers = new WeakMap<Element, number>();
-    const onScroll = (e: Event) => {
-      let el = e.target as Element | Document | null;
-      if (el === document) el = document.scrollingElement;
-      if (!(el instanceof Element)) return;
-      const node = el;
-      node.setAttribute('data-scrolling', 'true');
-      const prev = timers.get(node);
-      if (prev !== undefined) window.clearTimeout(prev);
-      timers.set(node, window.setTimeout(() => node.removeAttribute('data-scrolling'), 700));
-    };
-    document.addEventListener('scroll', onScroll, true);
-    return () => document.removeEventListener('scroll', onScroll, true);
-  }, []);
+
 
   return (
     <div className="flex h-svh overflow-hidden bg-background">
@@ -153,10 +140,12 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
         <div className="mx-4 h-px shrink-0 bg-ui-line" />
 
         {sessionUser && (
-          <SidebarOnboarding
-            user={sessionUser}
-            onVisibleChange={setIsOnboardingVisible}
-          />
+          <Suspense fallback={null}>
+            <SidebarOnboarding
+              user={sessionUser}
+              onVisibleChange={setIsOnboardingVisible}
+            />
+          </Suspense>
         )}
 
         <div className="shrink-0 space-y-0.5 p-2 pt-2">
@@ -223,6 +212,30 @@ function AppShellInner({ navItems }: { navItems: NavItem[] }) {
           </div>
         </div>
       </main>
+      <Toaster 
+        position="bottom-right" 
+        theme={theme as any} 
+        closeButton
+        gap={8}
+        toastOptions={{
+          duration: 4000,
+          classNames: {
+            toast: 'codra-toast',
+            title: 'codra-toast-title',
+            description: 'codra-toast-description',
+            actionButton: 'codra-toast-action',
+            cancelButton: 'codra-toast-cancel',
+            closeButton: 'codra-toast-close',
+            icon: 'codra-toast-icon',
+            loader: 'codra-toast-loader',
+            success: 'codra-toast-success',
+            error: 'codra-toast-error',
+            warning: 'codra-toast-warning',
+            info: 'codra-toast-info',
+            loading: 'codra-toast-loading',
+          },
+        }}
+      />
     </div>
   );
 }

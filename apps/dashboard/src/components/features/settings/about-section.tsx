@@ -1,5 +1,4 @@
 import { Badge, LayerCard, SectionCard, Text } from '@codraoss/ui';
-import pkg from '../../../../../../package.json';
 import { ExternalLink } from 'lucide-react';
 
 // No props and no state, which is why this is a component rather than inlined JSX: it keeps 50 lines of markup out of SettingsPage.
@@ -18,21 +17,21 @@ export function AboutSection() {
             variant="outline"
             className="border-ui-brand/30 bg-ui-brand/10 font-mono text-ui-brand"
           >
-            v{pkg.version}
+            v{__APP_VERSION__}
           </Badge>
         </div>
         <div className="flex items-center justify-between gap-4 px-4 py-3.5">
           <Text variant="body" size="sm" bold as="span">License</Text>
-          <Badge variant="outline">{pkg.license}</Badge>
+          <Badge variant="outline">AGPL-3.0-only</Badge>
         </div>
       </LayerCard>
 
       <LayerCard className="rounded-lg">
         <div className="grid grid-cols-1 divide-y divide-ui-line sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           {[
-            { href: `${pkg.repository.url.replace(/\.git$/, '')}/releases/`, label: 'Releases', sub: 'Version history & notes' },
-            { href: pkg.homepage, label: 'Homepage', sub: 'codra.run' },
-            { href: pkg.bugs.url, label: 'Report an issue', sub: 'GitHub issue tracker' },
+            { href: 'https://github.com/devarshishimpi/codra/releases/', label: 'Releases', sub: 'Version history & notes' },
+            { href: 'https://codra.run', label: 'Homepage', sub: 'codra.run' },
+            { href: 'https://github.com/devarshishimpi/codra/issues', label: 'Report an issue', sub: 'GitHub issue tracker' },
           ].map(({ href, label, sub }) => (
             <a
               key={label}

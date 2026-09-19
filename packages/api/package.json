@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/api",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Codra's HTTP surface as a mountable Hono router, wired through ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",

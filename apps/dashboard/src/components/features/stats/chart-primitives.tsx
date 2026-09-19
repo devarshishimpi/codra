@@ -47,8 +47,31 @@ export function ChartTooltip({ active, payload, label, markers }: any) {
 function GraphCardSkeleton({ title, icon, className = '' }: { title: string; icon?: ReactNode; className?: string }) {
   return (
     <GraphShell title={title} icon={icon} className={className}>
-      <div className="h-64 px-3.5 py-4 sm:h-80 sm:px-4 sm:py-4.5">
+      <div className="h-64 px-1.5 pb-3 pt-3 sm:h-80 sm:px-2 sm:pb-4">
         <Skeleton height="100%" width="100%" borderRadius={6} />
+      </div>
+    </GraphShell>
+  );
+}
+
+function JobHealthSkeleton({ title, icon, className = '' }: { title: string; icon?: ReactNode; className?: string }) {
+  return (
+    <GraphShell title={title} icon={icon} className={className}>
+      <div className="flex flex-1 items-center gap-5 px-3.5 py-4 sm:px-4 sm:py-4.5">
+        <div className="relative h-36 w-36 shrink-0">
+          <Skeleton height="100%" width="100%" borderRadius="50%" />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2.5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-2">
+                <Skeleton height={10} width={10} borderRadius={3} />
+                <Skeleton height={12} width={70} />
+              </div>
+              <Skeleton height={12} width={40} />
+            </div>
+          ))}
+        </div>
       </div>
     </GraphShell>
   );
@@ -57,14 +80,16 @@ function GraphCardSkeleton({ title, icon, className = '' }: { title: string; ico
 function GraphBarCardSkeleton({ title, icon, rows = 5, className = '' }: { title: string; icon?: ReactNode; rows?: number; className?: string }) {
   return (
     <GraphShell title={title} icon={icon} className={className}>
-      <div className="space-y-4 px-3.5 py-4 sm:px-4 sm:py-4.5">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <Skeleton height={12} width={90} />
-            <Skeleton height={14} width="100%" />
-            <Skeleton height={12} width={34} />
-          </div>
-        ))}
+      <div className="px-3.5 py-4 sm:px-4 sm:py-4.5">
+        <div className="space-y-3.5">
+          {Array.from({ length: rows }).map((_, i) => (
+            <div key={i} className="flex h-5 items-center gap-3">
+              <Skeleton height={12} width={112} />
+              <Skeleton height={16} width="100%" />
+              <Skeleton height={12} width={56} />
+            </div>
+          ))}
+        </div>
       </div>
     </GraphShell>
   );
@@ -79,7 +104,7 @@ export function MetricsGridSkeleton() {
         <GraphCardSkeleton title="Token Volume" icon={<Coins size={14} strokeWidth={2} />} />
       </div>
       <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        <GraphBarCardSkeleton title="Job Health" icon={<ShieldCheck size={14} strokeWidth={2} />} />
+        <JobHealthSkeleton title="Job Health" icon={<ShieldCheck size={14} strokeWidth={2} />} />
         <GraphBarCardSkeleton title="Top Repositories" icon={<FolderGit2 size={14} strokeWidth={2} />} rows={4} />
         <GraphBarCardSkeleton title="Model Calls" icon={<Boxes size={14} strokeWidth={2} />} rows={5} />
       </div>

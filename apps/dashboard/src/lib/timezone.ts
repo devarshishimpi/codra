@@ -43,13 +43,18 @@ export function browserTimeZone(): string {
   }
 }
 
+const offsetCache = new Map<string, string>();
+
 export function timeZoneOffsetLabel(zone: string): string {
+  if (offsetCache.has(zone)) return offsetCache.get(zone)!;
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
       timeZone: zone,
       timeZoneName: 'shortOffset',
     }).formatToParts(new Date());
-    return parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+    const label = parts.find((p) => p.type === 'timeZoneName')?.value ?? '';
+    offsetCache.set(zone, label);
+    return label;
   } catch {
     return '';
   }
@@ -113,3 +118,8 @@ export const COMMON_TIME_ZONES: string[] = [
   'Australia/Sydney',
   'Pacific/Auckland',
 ];
+
+// Precompute labels statically
+COMMON_TIME_ZONES.forEach((zone) => timeZoneOffsetLabel(zone));
+timeZoneOffsetLabel(DEFAULT_TIME_ZONE);
+

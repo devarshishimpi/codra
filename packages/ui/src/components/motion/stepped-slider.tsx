@@ -205,7 +205,7 @@ export function SteppedSlider({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           className={cn(
-            'relative flex h-10 w-full touch-none select-none items-center overflow-hidden rounded-lg bg-muted',
+            'relative flex h-10 w-full select-none items-center overflow-hidden rounded-lg bg-muted',
             disabled ? 'pointer-events-none opacity-50' : 'cursor-grab active:cursor-grabbing',
           )}
         >

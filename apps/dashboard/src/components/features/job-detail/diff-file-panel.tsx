@@ -119,26 +119,37 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
   };
 
   return (
-    <div className="ui-panel min-w-0 overflow-hidden scroll-mt-4">
-      <div className={cn('flex items-center gap-3 px-3 py-2.5 sm:px-4', open && 'border-b border-ui-line')}>
-        <button
-          type="button"
-          onClick={() => onOpenChange(!open)}
+    <details
+      className="ui-panel min-w-0 overflow-hidden scroll-mt-4"
+      open={open}
+      onToggle={(e) => {
+        if (e.currentTarget.open !== open) onOpenChange(e.currentTarget.open);
+      }}
+    >
+      <summary
+        className={cn(
+          'flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 sm:px-4 [&::-webkit-details-marker]:hidden',
+          open && 'border-b border-ui-line'
+        )}
+        onClick={(e) => {
+          e.preventDefault();
+          onOpenChange(!open);
+        }}
+      >
+        <div
           aria-expanded={open}
           aria-label={`${open ? 'Collapse' : 'Expand'} diff for ${file.filePath}`}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ui-subtle transition-colors hover:bg-ui-fill hover:text-ui-default"
         >
           <ChevronDown size={14} className={cn('transition-transform duration-200', !open && '-rotate-90')} />
-        </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={() => onOpenChange(!open)}
+        <div
           className="ui-font-mono min-w-0 flex-1 truncate text-left text-xs font-medium text-ui-default"
           title={file.filePath}
         >
           {file.filePath}
-        </button>
+        </div>
 
         <span className="ui-font-mono hidden shrink-0 text-[11px] tabular-nums sm:inline">
           <span className="diff-add-fg">+{adds}</span>{' '}
@@ -172,87 +183,85 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
           </span>
           <span className="hidden sm:inline">Viewed</span>
         </label>
-      </div>
+      </summary>
 
-      {open && (
-        <div className="min-w-0">
-          {rows.length === 0 ? (
-            <p className="px-4 py-8 text-center text-xs text-ui-subtle">
-              {diffsLoading ? 'Loading diff…' : 'Diff unavailable for this file.'}
-            </p>
-          ) : (
-            // Each segment scrolls independently, so comment cards stay at panel width instead of
-            // stretching to the widest code line in a shared scroller.
-            segments.map((segment) =>
-              segment.type === 'rows' ? (
-                <div key={segment.key} className="thin-scroll overflow-x-auto">
-                  <div className="min-w-fit py-1">
-                    {segment.rows.map((row) => (
-                      <DiffLine key={rowKey(row)} row={row} lang={lang} />
-                    ))}
-                  </div>
+      <div className="min-w-0">
+        {rows.length === 0 ? (
+          <p className="px-4 py-8 text-center text-xs text-ui-subtle">
+            {diffsLoading ? 'Loading diff…' : 'Diff unavailable for this file.'}
+          </p>
+        ) : (
+          // Each segment scrolls independently, so comment cards stay at panel width instead of
+          // stretching to the widest code line in a shared scroller.
+          segments.map((segment) =>
+            segment.type === 'rows' ? (
+              <div key={segment.key} className="thin-scroll overflow-x-auto">
+                <div className="min-w-fit py-1">
+                  {segment.rows.map((row) => (
+                    <DiffLine key={rowKey(row)} row={row} lang={lang} />
+                  ))}
                 </div>
-              ) : (
-                <div key={segment.key} className="space-y-3 border-y border-ui-line/60 px-3 py-3 sm:px-4">
-                  <div className="max-w-3xl space-y-3">
-                    {segment.comments.map((comment, i) => (
-                      <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
-                    ))}
-                  </div>
-                </div>
-              ),
-            )
-          )}
-
-          {hiddenLines > 0 && (
-            <div className="ui-well flex items-center justify-center gap-3 border-t border-ui-line px-4 py-2.5">
-              <p className="text-xs text-ui-subtle">
-                {hiddenLines.toLocaleString()} more {hiddenLines === 1 ? 'line' : 'lines'} not shown.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowFull(true)}
-                className="text-xs font-medium text-primary transition-opacity hover:opacity-80"
-              >
-                Show full diff
-              </button>
-            </div>
-          )}
-          {truncatable && showFull && (
-            <div className="ui-well flex items-center justify-center border-t border-ui-line px-4 py-2">
-              <button
-                type="button"
-                onClick={() => setShowFull(false)}
-                className="text-xs font-medium text-ui-subtle transition-colors hover:text-ui-default"
-              >
-                Collapse to preview
-              </button>
-            </div>
-          )}
-
-          {file.fileStatus === 'failed' && file.errorMessage && (
-            <div
-              className="mx-3 mb-3 rounded-md border p-3 sm:mx-4"
-              style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)' }}
-            >
-              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--danger)' }}>Review error</p>
-              <p className="ui-font-mono break-all text-xs" style={{ color: 'var(--danger)' }}>{file.errorMessage}</p>
-            </div>
-          )}
-          {unanchored.length > 0 && (
-            <div className="space-y-3 border-t border-ui-line/60 px-3 py-3 sm:px-4">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ui-subtle">
-                File-level comments
-              </p>
-              <div className="max-w-3xl space-y-3">
-                {unanchored.map((comment, i) => (
-                  <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
-                ))}
               </div>
+            ) : (
+              <div key={segment.key} className="space-y-3 border-y border-ui-line/60 px-3 py-3 sm:px-4">
+                <div className="max-w-3xl space-y-3">
+                  {segment.comments.map((comment, i) => (
+                    <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
+                  ))}
+                </div>
+              </div>
+            ),
+          )
+        )}
+
+        {hiddenLines > 0 && (
+          <div className="ui-well flex items-center justify-center gap-3 border-t border-ui-line px-4 py-2.5">
+            <p className="text-xs text-ui-subtle">
+              {hiddenLines.toLocaleString()} more {hiddenLines === 1 ? 'line' : 'lines'} not shown.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowFull(true)}
+              className="text-xs font-medium text-primary transition-opacity hover:opacity-80"
+            >
+              Show full diff
+            </button>
+          </div>
+        )}
+        {truncatable && showFull && (
+          <div className="ui-well flex items-center justify-center border-t border-ui-line px-4 py-2">
+            <button
+              type="button"
+              onClick={() => setShowFull(false)}
+              className="text-xs font-medium text-ui-subtle transition-colors hover:text-ui-default"
+            >
+              Collapse to preview
+            </button>
+          </div>
+        )}
+
+        {file.fileStatus === 'failed' && file.errorMessage && (
+          <div
+            className="mx-3 mb-3 rounded-md border p-3 sm:mx-4"
+            style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)' }}
+          >
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--danger)' }}>Review error</p>
+            <p className="ui-font-mono break-all text-xs" style={{ color: 'var(--danger)' }}>{file.errorMessage}</p>
+          </div>
+        )}
+        {unanchored.length > 0 && (
+          <div className="space-y-3 border-t border-ui-line/60 px-3 py-3 sm:px-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ui-subtle">
+              File-level comments
+            </p>
+            <div className="max-w-3xl space-y-3">
+              {unanchored.map((comment, i) => (
+                <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
+              ))}
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }

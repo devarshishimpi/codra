@@ -1,7 +1,7 @@
 import { LoadError } from '@codraoss/ui';
-import { useState } from 'react';
+import { useState, lazy, Suspense  } from 'react';
 import { useParams } from 'react-router-dom';
-import { LazyMotion, m, domMax } from 'motion/react';
+import { LazyMotion, domAnimation } from 'motion/react';
 import { ClipboardList, FileDiff } from 'lucide-react';
 import { useJobDetail } from '@client/hooks/use-job-detail';
 import { JobHeader } from '@client/components/features/job-detail/job-header';
@@ -10,7 +10,8 @@ import { JobStatusNotice } from '@client/components/features/job-detail/job-stat
 import { JobMetaCards } from '@client/components/features/job-detail/job-meta-cards';
 import { JobReviewOverview } from '@client/components/features/job-detail/job-review-overview';
 import { JobFindingsList } from '@client/components/features/job-detail/job-findings-list';
-import { JobDiffs } from '@client/components/features/job-detail/job-diffs';
+
+const JobDiffs = lazy(() => import('@client/components/features/job-detail/job-diffs').then((m) => ({ default: m.JobDiffs })));
 import { JobDetailSkeleton } from '@client/components/features/job-detail/job-skeleton';
 import { cn } from '@codraoss/ui/utils';
 
@@ -64,8 +65,8 @@ export function JobDetailPage() {
       {/* Terminal outcome (failed / superseded / stopped / partial) gets its own banner above the tabs. */}
       <JobStatusNotice job={job} />
 
-      {/* domMax, not domAnimation: the underline uses `layoutId`, which needs the layout feature. */}
-      <LazyMotion features={domMax}>
+      {/* Using domAnimation instead of domMax to save bundle size */}
+      <LazyMotion features={domAnimation}>
         <nav className="flex items-center gap-1 border-b border-ui-line" role="tablist" aria-label="Job detail sections">
           {TABS.map(({ id: tabId, label, icon: Icon }) => {
             const active = tab === tabId;
@@ -84,9 +85,7 @@ export function JobDetailPage() {
                 <Icon size={14} strokeWidth={2} />
                 {label}
                 {active && (
-                  <m.span
-                    layoutId="job-tab-underline"
-                    transition={{ type: 'spring', duration: 0.4, bounce: 0.15 }}
+                  <span
                     className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[var(--btn-primary-bg)]"
                   />
                 )}
@@ -103,7 +102,9 @@ export function JobDetailPage() {
           <JobFindingsList job={job} />
         </div>
       ) : (
-        <JobDiffs job={job} />
+        <Suspense fallback={<div className="p-4 text-center text-sm text-ui-subtle">Loading diffs...</div>}>
+          <JobDiffs job={job} />
+        </Suspense>
       )}
     </section>
   );

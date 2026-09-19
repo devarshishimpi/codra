@@ -18,9 +18,13 @@ async function serveIndex(c: Context<ApiEnv>) {
   const assets = (c.env as any).ASSETS;
   if (assets && typeof assets.fetch === 'function') {
     // Method call, and `/` not `/index.html`: detaching throws, and `/index.html` 307s into a loop.
-    return assets.fetch(new Request(new URL('/', c.req.url), c.req.raw));
+    const response = await assets.fetch(new Request(new URL('/', c.req.url), c.req.raw));
+    const newResponse = new Response(response.body, response);
+    newResponse.headers.set('Cache-Control', 'no-cache');
+    return newResponse;
   }
 
+  c.header('Cache-Control', 'no-cache');
   return c.text('Not Found: Please mount UI static assets handler here.', 404);
 }
 

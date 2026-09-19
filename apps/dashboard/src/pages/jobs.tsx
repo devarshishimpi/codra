@@ -1,5 +1,5 @@
 import { Button, EmptyState, Input, LoadError, Select } from '@codraoss/ui';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { api } from '@client/lib/api';
 import { JobsTable } from '@client/components/shared/jobs-table';
 import { PageHeader } from '@client/components/layout/page-header';
@@ -19,6 +19,14 @@ export function JobsPage() {
   });
 
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearch(filters.search);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [filters.search]);
 
   const load = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true);
@@ -26,7 +34,7 @@ export function JobsPage() {
       const jobsRes = await api.getJobs({
         status:  filters.status  || undefined,
         verdict: filters.verdict || undefined,
-        search:  filters.search  || undefined,
+        search:  debouncedSearch  || undefined,
         limit:   itemsPerPage,
         offset:  (filters.page - 1) * itemsPerPage,
       });
@@ -40,9 +48,9 @@ export function JobsPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filters, itemsPerPage]);
+  }, [filters.status, filters.verdict, filters.page, debouncedSearch, itemsPerPage]);
 
-  usePolling(load, 15_000, [filters, itemsPerPage]);
+  usePolling(load, 15_000, [filters.status, filters.verdict, filters.page, debouncedSearch, itemsPerPage]);
 
   const totalPages = Math.ceil(total / itemsPerPage);
   const rangeStart = total === 0 ? 0 : (filters.page - 1) * itemsPerPage + 1;
@@ -113,6 +121,7 @@ export function JobsPage() {
                 { value: 'cancelled', label: 'Cancelled' }
               ]}
               triggerClassName="gap-1.5 px-2.5 text-[13px]"
+              aria-label="Filter by status"
             />
           </div>
 
@@ -128,11 +137,12 @@ export function JobsPage() {
                 { value: 'comment', label: 'Comment' }
               ]}
               triggerClassName="gap-1.5 px-2.5 text-[13px]"
+              aria-label="Filter by verdict"
             />
           </div>
         </div>
 
-        <JobsTable jobs={jobs} loading={loading} fill />
+        <JobsTable jobs={jobs} loading={loading} fill skeletonRows={itemsPerPage} />
 
         {!loading && jobs.length === 0 && (
           <EmptyState
@@ -175,6 +185,7 @@ export function JobsPage() {
                   options={[10, 20, 50, 100].map(n => ({ value: String(n), label: String(n) }))}
                   variant="card"
                   triggerClassName="h-8 w-[4.25rem] gap-1 px-2.5 text-xs tabular-nums"
+                  aria-label="Rows per page"
                 />
               </div>
 
