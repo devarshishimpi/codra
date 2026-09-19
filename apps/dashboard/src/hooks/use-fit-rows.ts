@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface FitRowsOptions {
   /** Height of one desktop table row, in px. Matches the `h-12` cell in JobsTable. */
@@ -102,7 +102,7 @@ export function useFitRows({
     });
   }, [rowHeight, mobileRowHeight, min, max, reserve]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     measure();
 
     const el = ref.current;

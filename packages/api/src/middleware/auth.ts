@@ -7,7 +7,7 @@ export const requireSession = createMiddleware<ApiEnv>(async (c, next) => {
   const session = await readSession(c);
   if (!session) {
     if (wantsHtml(c.req.raw)) {
-      return c.redirect('/login');
+      return c.redirect('/');
     }
 
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

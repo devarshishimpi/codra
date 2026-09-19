@@ -35,7 +35,7 @@ export function LandingPage() {
         shape="square"
         onClick={toggleTheme}
         aria-label="Toggle theme"
-        className="absolute right-4 top-4 z-10 sm:right-6 sm:top-6"
+        className="absolute right-4 top-4 z-10 min-h-[44px] min-w-[44px] sm:right-6 sm:top-6 sm:min-h-0 sm:min-w-0"
       >
         {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
       </Button>
@@ -44,14 +44,22 @@ export function LandingPage() {
         <div className="rounded-2xl border border-ui-line bg-ui-base px-6 py-10 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.55)] sm:px-10 sm:py-10">
           <div className="flex flex-col items-center text-center">
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-ui-line bg-ui-canvas">
-            <img
-              src={theme === 'dark' ? '/icons/codra-icon-dark.svg' : '/icons/codra-icon-light.svg'}
-              alt="Codra"
-              className="h-14 w-14"
-            />
+              <svg
+                width="100"
+                height="100"
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-14 w-14"
+              >
+                <rect width="100" height="100" fill={theme === 'dark' ? 'black' : 'white'} />
+                <rect x="19" y="31" width="15" height="38" rx="2" fill={theme === 'dark' ? '#C2D200' : '#B5C400'} />
+                <rect x="34" y="31" width="15" height="40" rx="2" transform="rotate(-90 34 31)" fill={theme === 'dark' ? '#C2D200' : '#B5C400'} />
+                <rect x="34" y="84" width="15" height="40" rx="2" transform="rotate(-90 34 84)" fill={theme === 'dark' ? '#C2D200' : '#B5C400'} />
+              </svg>
             </div>
 
-            <h1 className="mt-6 font-display text-2xl font-semibold tracking-tight text-ui-strong sm:text-[1.75rem]">
+            <h1 className="mt-6 text-2xl font-semibold tracking-tight text-ui-strong sm:text-[1.75rem]">
               Sign in to Codra
             </h1>
             <p className="mt-2 text-sm text-ui-subtle">

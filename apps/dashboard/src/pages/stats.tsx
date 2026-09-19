@@ -23,9 +23,8 @@ export function StatsPage() {
   // Downloads the lazy chart chunk in parallel with the first stats fetch rather than after it.
   useEffect(prefetchMetricsCharts, []);
 
-  // Switching the range reloads every metric; clear current data first so skeletons show while it loads.
+  // Switching the range reloads every metric; keep current data while it loads.
   const changeDays = (next: number) => {
-    setStats(null);
     setDays(next);
   };
 

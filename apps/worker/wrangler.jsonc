@@ -84,7 +84,8 @@
       "/api/*",
       "/auth/*",
       "/webhook*",
-      "/settings*"
+      "/settings*",
+      "/account*"
     ]
   },
   "secrets": {

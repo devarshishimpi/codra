@@ -1,5 +1,6 @@
 import { Badge, Button, Switch } from '@codraoss/ui';
 import { Settings2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { RepoConfigRecord } from '@codraoss/schema';
 import { describeModelRoute, type ModelOption, type ModelRouteConfig } from '@client/components/features/models/model-route';
 import { getRepoRoute, hasMeaningfulCustomStrategy, formatLastActivity, type GlobalModelConfig } from './repo-route';
@@ -21,6 +22,17 @@ export function RepoRow({
   onToggleEnabled,
   onEdit,
 }: RepoRowProps) {
+  const [optimisticEnabled, setOptimisticEnabled] = useState(repo.enabled);
+
+  useEffect(() => {
+    setOptimisticEnabled(repo.enabled);
+  }, [repo.enabled]);
+
+  const handleToggle = (nextEnabled: boolean) => {
+    setOptimisticEnabled(nextEnabled);
+    onToggleEnabled(repo, nextEnabled);
+  };
+
   const route = getRepoRoute(repo, globalConfig);
   const custom = hasMeaningfulCustomStrategy(repo, globalConfig);
   const lastActivity = formatLastActivity(repo.lastJobCreatedAt);
@@ -34,8 +46,8 @@ export function RepoRow({
             <h2 className="ui-font-mono truncate text-[13px] text-ui-default">
               {repo.owner}/{repo.repo}
             </h2>
-            <Badge variant={repo.enabled ? 'success' : 'neutral'} className="shrink-0">
-              {repo.enabled ? 'Enabled' : 'Paused'}
+            <Badge variant={optimisticEnabled ? 'success' : 'neutral'} className="shrink-0">
+              {optimisticEnabled ? 'Enabled' : 'Paused'}
             </Badge>
             <Badge variant={custom ? 'default' : 'neutral'} className="hidden shrink-0 sm:inline-flex">
               {custom ? 'Custom strategy' : 'Global strategy'}
@@ -53,17 +65,17 @@ export function RepoRow({
         </p>
 
         <div className="flex min-w-0 flex-wrap items-center gap-3 lg:justify-end">
-          <div className="flex items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-2 py-2 pl-2">
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-ui-subtle">
               Reviews
             </span>
             <Switch
-              checked={repo.enabled}
+              checked={optimisticEnabled}
               disabled={togglePending}
-              aria-label={`${repo.enabled ? 'Pause' : 'Enable'} reviews for ${repo.owner}/${repo.repo}`}
-              onCheckedChange={(nextEnabled) => onToggleEnabled(repo, nextEnabled)}
+              aria-label={`${optimisticEnabled ? 'Pause' : 'Enable'} reviews for ${repo.owner}/${repo.repo}`}
+              onCheckedChange={handleToggle}
             />
-          </div>
+          </label>
           <Button
             variant="secondary"
             size="sm"

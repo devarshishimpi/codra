@@ -108,9 +108,13 @@ export function ReviewSection({
             </>
           ) : (
             <>
-              <Skeleton height={44} />
-              <Skeleton height={44} />
-              <Skeleton height={44} />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex flex-col gap-2">
+                  <Skeleton height={16} width="40%" />
+                  <Skeleton height={36} />
+                  <Skeleton height={32} />
+                </div>
+              ))}
             </>
           )}
         </div>

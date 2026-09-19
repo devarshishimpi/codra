@@ -52,9 +52,23 @@ export function DefaultModelsSection({
             density="comfortable"
           />
         ) : (
-          <div className="space-y-3">
-            <Skeleton height={20} />
-            <Skeleton height={20} width="70%" />
+          <div className="min-w-0 space-y-5">
+            <div className="flex items-center justify-between gap-4">
+              <Skeleton height={16} width="60%" />
+              <Skeleton height={32} width={90} borderRadius={6} />
+            </div>
+            <div className="overflow-hidden rounded-lg border border-ui-line">
+              <div className="border-b border-ui-line/60 bg-ui-fill/4 px-4 py-3">
+                <Skeleton height={14} width={100} />
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-[160px_1fr] gap-2">
+                  <Skeleton height={36} borderRadius={6} />
+                  <Skeleton height={36} borderRadius={6} />
+                </div>
+                <Skeleton height={16} width={100} />
+              </div>
+            </div>
           </div>
         )}
       </div>
