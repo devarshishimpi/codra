@@ -147,7 +147,7 @@ export function JobsPage() {
               label: 'See how to interact with Codra',
               href: 'https://github.com/devarshishimpi/codra#readme',
             }}
-            className="rounded-none border-0"
+            className="min-h-0 flex-1 rounded-none border-0"
           />
         )}
 

@@ -228,7 +228,7 @@ export function ReposPage() {
   }
 
   return (
-    <section className="page-enter flex flex-col gap-5">
+    <section className="page-enter flex min-h-0 flex-1 flex-col gap-5">
       <PageHeader
         title="Repositories"
         description={
@@ -283,9 +283,10 @@ export function ReposPage() {
             label: 'See how to interact with Codra',
             href: 'https://github.com/devarshishimpi/codra#readme',
           }}
+          className="min-h-0 flex-1"
         />
       ) : (
-        <div className="ui-panel min-w-0 overflow-hidden">
+        <div className="ui-panel min-h-0 min-w-0 flex-1 overflow-hidden">
           <div className="flex flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
               <Search
