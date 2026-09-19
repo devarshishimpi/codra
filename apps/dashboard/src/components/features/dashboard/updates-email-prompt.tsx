@@ -78,7 +78,9 @@ export function UpdatesEmailPrompt() {
           });
         }
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        console.error('[UpdatesEmailPrompt] Failed to fetch email status:', err);
+      });
 
     return () => {
       cancelled = true;
