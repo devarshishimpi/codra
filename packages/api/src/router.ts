@@ -46,6 +46,10 @@ export function createApiRouter(options: ApiRouterOptions = {}) {
   for (const middleware of options.beforeAuth ?? []) {
     app.use('*', middleware);
   }
+
+  // Machine health check — no session required
+  app.get('/healthz', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
   app.use('/auth/logout', requireSession);
   app.use('/auth/logout', requireCsrfHeader);
 

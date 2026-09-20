@@ -1,10 +1,10 @@
-import { Button, ConfirmDialog } from '@codraoss/ui';
+﻿import { Button, ConfirmDialog } from '@codraoss/ui';
 import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ExternalLink, Loader2, RotateCcw, Terminal, Trash2 } from 'lucide-react';
 import type { ButtonProps } from '@codraoss/ui';
-import { UpdatesEmailPrompt } from '@client/components/features/dashboard/updates-email-prompt';
+import { UpdatesEmailPrompt } from '@client/components/shared/updates-email-prompt';
 import { AuthorChip, VerdictPill } from './job-chips';
 import { formatAbsoluteDate, formatRelativeDate } from './job-chip-utils';
 import type { JobDetail } from '@codraoss/schema';
@@ -68,9 +68,9 @@ function JobActionButton({
   );
 }
 
-/** `·` inside a group of related facts, `|` between groups. */
+/** `Â·` inside a group of related facts, `|` between groups. */
 function Dot() {
-  return <span className="shrink-0 text-ui-subtle/60">·</span>;
+  return <span className="shrink-0 text-ui-subtle/60">Â·</span>;
 }
 
 function Pipe() {
@@ -194,9 +194,9 @@ export function JobHeader({
                 <Pipe />
                 <span
                   className="ui-font-mono hidden max-w-[22rem] truncate md:inline"
-                  title={`${job.headRef} → ${job.baseRef}`}
+                  title={`${job.headRef} â†’ ${job.baseRef}`}
                 >
-                  {job.baseRef} ← {job.headRef}
+                  {job.baseRef} â† {job.headRef}
                 </span>
               </>
             )}
@@ -235,3 +235,4 @@ export function JobHeader({
     </>
   );
 }
+

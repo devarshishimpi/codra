@@ -1,7 +1,7 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { createApiRouter } from '@codraoss/api';
 import { createTestEnv } from './helpers';
-import { FormatterService, formatFindingMarker, parseFindingMarker } from '@server/services/formatter';
+import { FormatterService, formatFindingMarker, parseFindingMarker } from '@codraoss/core/formatter';
 import type { ParsedReviewComment } from '@codraoss/schema';
 
 import { signPayload } from './mocks/fixtures';
@@ -151,3 +151,4 @@ describe('feedback webhooks', () => {
     expect((env.REVIEW_QUEUE as any).sent).toHaveLength(0);
   });
 });
+

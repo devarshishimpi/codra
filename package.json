@@ -1,6 +1,6 @@
 {
   "name": "codra",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Open-source code review engine",
   "private": true,
   "author": "Devarshi Shimpi",
@@ -26,6 +26,7 @@
     "deploy": "npm run build && npm run migrate && cd apps/worker && wrangler deploy",
     "dev": "concurrently -k -n CLIENT,WORKER -c cyan,green \"npm:dev:client\" \"npm:dev:worker\"",
     "dev:client": "vite build --watch --mode development",
+    "dev:node": "npm run dev -w @codraoss/node-server",
     "dev:worker": "cd apps/worker && wrangler dev --local --env-file ../../.dev.vars",
     "lint": "eslint test scripts packages apps",
     "lint:all": "npm run lint --workspaces --if-present",

@@ -29,5 +29,5 @@ export function makeLearningStore(env: AppBindings): LearningStore {
 }
 
 export function makeRepoConfigLoader(env: AppBindings): RepoConfigLoader {
-  return { loadRepoConfig: (input) => loadRepoConfig(env, input) };
+  return { loadRepoConfig: (input) => loadRepoConfig(env.APP_KV, toDbEnv(env), input) };
 }

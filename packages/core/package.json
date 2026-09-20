@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/core",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "The Codra review engine: pure, transport- and platform-agnostic code review logic behind ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -19,6 +19,7 @@
     ".": "./src/index.ts",
     "./ports": "./src/ports/index.ts",
     "./logger": "./src/logger.ts",
+    "./formatter": "./src/formatter.ts",
     "./diff": "./src/diff/index.ts",
     "./model-output": "./src/model-output/index.ts",
     "./rules/detect": "./src/rules/detect.ts",
@@ -55,6 +56,10 @@
       "./logger": {
         "types": "./dist/logger.d.ts",
         "import": "./dist/logger.js"
+      },
+      "./formatter": {
+        "types": "./dist/formatter.d.ts",
+        "import": "./dist/formatter.js"
       },
       "./diff": {
         "types": "./dist/diff/index.d.ts",
