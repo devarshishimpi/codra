@@ -10,7 +10,6 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     identityProvider: env.IDENTITY_PROVIDER,
 
     enqueueReviewJob: async (input) => {
-      logger.warn('[STUB] enqueueReviewJob — no queue backend configured', input);
       await env.REVIEW_QUEUE.send(input);
     },
     terminateJobWorkflow: async (job) => {

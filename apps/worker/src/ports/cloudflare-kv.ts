@@ -18,4 +18,3 @@ export class CloudflareKV implements KeyValueStore {
     await this.kv.delete(key);
   }
 }
-

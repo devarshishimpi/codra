@@ -68,9 +68,9 @@ function JobActionButton({
   );
 }
 
-/** `Â·` inside a group of related facts, `|` between groups. */
+/** `·` inside a group of related facts, `|` between groups. */
 function Dot() {
-  return <span className="shrink-0 text-ui-subtle/60">Â·</span>;
+  return <span className="shrink-0 text-ui-subtle/60">·</span>;
 }
 
 function Pipe() {
@@ -194,9 +194,9 @@ export function JobHeader({
                 <Pipe />
                 <span
                   className="ui-font-mono hidden max-w-[22rem] truncate md:inline"
-                  title={`${job.headRef} â†’ ${job.baseRef}`}
+                  title={`${job.headRef} → ${job.baseRef}`}
                 >
-                  {job.baseRef} â† {job.headRef}
+                  {job.baseRef} ← {job.headRef}
                 </span>
               </>
             )}
@@ -235,4 +235,3 @@ export function JobHeader({
     </>
   );
 }
-

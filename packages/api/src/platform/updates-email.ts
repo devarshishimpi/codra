@@ -41,7 +41,12 @@ export async function syncUpdatesEmail(
     body: JSON.stringify({ email }),
   });
 
-  if (!response.ok) return false;
+  if (!response.ok) {
+    // Need to import logger. If it doesn't exist in the current scope, add it.
+    // import { logger } from '../logger'; // Uncomment and adjust path if needed
+    console.warn('Failed to sync updates email', { status: response.status, url: response.url }); // Using console.warn as a fallback, replace with logger.warn if imported
+    return false;
+  }
 
   const record: UpdatesEmailRecord = {
     status: 'subscribed',

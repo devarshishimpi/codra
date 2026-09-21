@@ -28,7 +28,7 @@ export function createApiRouterDeps(env: AppBindings, ctx: ExecutionContext) {
     createReviewRuntime: () => createReviewRuntime(env),
     getOrFetchRawDiffForCompletedJob,
     logger,
-    getSecret: async (key) => (env as any)[key] as string || null,
+    getSecret: async (key) => (env[key as keyof AppBindings] as string | undefined) ?? null,
     aiBinding: env.AI,
     appUrl: env.APP_URL,
     botUsername: env.BOT_USERNAME,

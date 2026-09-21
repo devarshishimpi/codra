@@ -208,7 +208,7 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
           };
         } catch (error) {
           if (error instanceof ProviderRequestError) {
-             throw { status: error.status >= 500 ? 502 : error.status, message: error.message };
+             throw { status: error.status >= 500 ? 502 : error.status, message: error.message, originalError: error };
           }
           throw error;
         }
@@ -249,9 +249,15 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
 
         let encryptedApiKey: string | null | undefined;
         try {
-          encryptedApiKey = input.apiFormat === 'cloudflare-workers-ai'
-            ? null
-            : (input.clearApiKey ? null : (input.apiKey ? await encryptLlmApiKey(getSecretStore(p), input.apiKey.trim()) : undefined));
+if (input.apiFormat === 'cloudflare-workers-ai') {
+                    encryptedApiKey = null;
+                } else if (input.clearApiKey) {
+                    encryptedApiKey = null;
+                } else if (input.apiKey) {
+                    encryptedApiKey = await encryptLlmApiKey(getSecretStore(p), input.apiKey.trim());
+                } else {
+                    encryptedApiKey = undefined;
+                }
         } catch (error) {
           if (error instanceof Error && error.message.includes('LLM_CONFIG_ENCRYPTION_KEY')) {
             throw { isEncryptionConfigError: true, message: error.message };

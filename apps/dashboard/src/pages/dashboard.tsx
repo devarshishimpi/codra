@@ -33,14 +33,22 @@ export function DashboardPage() {
   };
 
   const loadStats = async () => {
-    const statsRes = await api.getStats(days);
-    setStats(statsRes.stats);
+    try {
+      const statsRes = await api.getStats(days);
+      setStats(statsRes.stats);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load stats');
+    }
   };
 
   const loadJobs = async () => {
     if (rows === null) return;
-    const jobsRes = await api.getJobs({ limit: rows });
-    setRecentJobs(jobsRes.jobs);
+    try {
+      const jobsRes = await api.getJobs({ limit: rows });
+      setRecentJobs(jobsRes.jobs);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load jobs');
+    }
   };
 
   const load = async (manual = false) => {

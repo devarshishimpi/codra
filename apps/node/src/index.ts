@@ -69,7 +69,7 @@ serve({
       ...envWithAssets,
       deps: createNodeApiDeps(env),
     };
-    try { console.log('envWithAssets:', Object.keys(envWithAssets), 'HYPERDRIVE:', envWithAssets.HYPERDRIVE); return await runWithDb(envWithAssets, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+    try { return await runWithDb(envWithAssets, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
   },
   port,
 }, (info) => {

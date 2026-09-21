@@ -4,4 +4,3 @@
   get(key: string, type?: 'text'): Promise<string | null>;
   delete(key: string): Promise<void>;
 }
-
