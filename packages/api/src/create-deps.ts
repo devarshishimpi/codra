@@ -114,7 +114,7 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
     gitProvider: {
       getAppInstallationUrl: async () => await GitHubClient.getAppInstallationUrl(toAppBindingsConfig(p)),
       listInstallations: async () => await GitHubClient.listInstallations(toAppBindingsConfig(p)),
-      createService: (installationId?: number | string | null) => new GitHubClient(toAppBindingsConfig(p), String(installationId)),
+      createService: (installationId?: number | string | null) => new GitHubClient(toAppBindingsConfig(p), installationId != null ? String(installationId) : undefined),
     },
     config: {
       getGlobalConfig: async () => await getGlobalConfig(p.kv),

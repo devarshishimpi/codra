@@ -115,7 +115,7 @@ export function useJobDetail(id: string) {
 
   useEffect(() => {
     const saveCache = () => {
-      if (latestJob.current) {
+      if (latestJob.current && latestJob.current.id === id) {
         writeJobCache(id, latestJob.current);
       }
     };

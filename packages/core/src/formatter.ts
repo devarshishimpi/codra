@@ -99,7 +99,7 @@ export class FormatterService {
     if (postedFindings === 0 && input.withheldFindings > 0) {
       // "No issues" is a weaker claim when candidates were dropped for failing to ground themselves,
       // and every one of them is on the dashboard.
-      notes.push(`${plural(input.withheldFindings, 'candidate')} did not survive the evidence and claim gates â€” see the [dashboard](${this.baseUrl}) for what was dropped and why.`);
+      notes.push(`${plural(input.withheldFindings, 'candidate')} did not survive the evidence and claim gates — see the [dashboard](${this.baseUrl}) for what was dropped and why.`);
     }
     
     const noteBlock = notes.length > 0
@@ -110,25 +110,6 @@ export class FormatterService {
       ? 'Every review posts a summary here. A clean pass also gets a 👍 on the pull request itself.'
       : 'If Codra has suggestions, it will comment; otherwise it will react with 👍.';
 
-    return `### Codra Review
-
-${headline}
-${noteBlock}
-**Reviewed commit:** \`${shortSha}\`
-
-<details>
-<summary>ℹ️ About Codra in GitHub</summary>
-
-<br/>
-
-[Your team has set up Codra to review pull requests in this repo](${this.baseUrl}/repos). Reviews are triggered when you:
-
-- **Open** a pull request for review
-- **Mark** a draft as ready
-
-${aboutOutcome}
-
-</details>`;
+    return `### Codra Review\n\n${headline}\n${noteBlock}\n**Reviewed commit:** \`${shortSha}\`\n\n<details>\n<summary>ℹ️ About Codra in GitHub</summary>\n\n<br/>\n\n[Your team has set up Codra to review pull requests in this repo](${this.baseUrl}/repos). Reviews are triggered when you:\n\n- **Open** a pull request for review\n- **Mark** a draft as ready\n\n${aboutOutcome}\n\n</details>`;
   }
 }
-
