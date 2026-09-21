@@ -73,18 +73,22 @@ if (process.env.START_WORKER !== 'false') {
   logger.info('BullMQ Background Worker started.');
 }
 
-const server = serve({
-  fetch: async (request) => {
-    const apiEnv = {
-      ...envWithAssets,
-      deps: createNodeApiDeps(env),
-    };
-    try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
-  },
-  port,
-}, (info) => {
-  logger.info(`Codra Node server running on http://localhost:${info.port}`);
-});
+if (process.env.START_API !== 'false') {
+  const server = serve({
+    fetch: async (request) => {
+      const apiEnv = {
+        ...envWithAssets,
+        deps: createNodeApiDeps(env),
+      };
+      try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+    },
+    port,
+  }, (info) => {
+    logger.info(`Codra Node server running on http://localhost:${info.port}`);
+  });
+} else {
+  logger.info('API Server disabled via START_API=false');
+}
 
 const shutdown = async () => {
   logger.info('Shutting down Codra Node server...');

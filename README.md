@@ -19,7 +19,9 @@
     |
     <a href="https://codra.run/docs">Docs</a>
     |
-    <a href="https://codra.run/docs/installation">Installation</a>
+    <a href="https://codra.run/docs/installation">Installation (Cloudflare)</a>
+    |
+    <a href="./docs/deployment/docker.md">Installation (Docker / Self-Hosted)</a>
     |
     <a href="https://github.com/devarshishimpi/codra/issues">Issues</a>
     |
@@ -35,7 +37,7 @@ Codra listens to GitHub pull request events, runs AI-powered review jobs, posts 
 
 ## Why Codra
 
-- **Own the whole review loop**: Run the GitHub App, Cloudflare Worker, queue, database, model credentials, and dashboard under your own control.
+- **Own the whole review loop**: Run the GitHub App, web server, queue, database, model credentials, and dashboard under your own control (deploy on Cloudflare Workers or your own VPS via Docker).
 - **Review with repository context**: Codra checks pull request diffs for correctness, security, performance, maintainability, and repo-specific patterns.
 - **Configure each repository**: Tune triggers, skipped paths, draft handling, mention reviews, labels, custom rules, and review budgets from the dashboard.
 - **Route models deliberately**: Use global defaults, per-repo model chains, fallbacks, and size-based overrides for larger pull requests.
