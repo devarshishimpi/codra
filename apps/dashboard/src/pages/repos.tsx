@@ -250,7 +250,7 @@ export function ReposPage() {
   }
 
   return (
-    <section className="page-enter flex flex-col gap-5">
+    <section className="page-enter flex min-h-0 flex-1 flex-col gap-5">
       <PageHeader
         title="Repositories"
         description={
@@ -292,8 +292,9 @@ export function ReposPage() {
         />
       )}
 
-      {repos.length === 0 ? (
-        <EmptyState
+    {repos.length === 0 ? (
+  <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+    <EmptyState
           icon={<GitBranch />}
           title="No Repositories Added"
           description="Add your repositories to get started with Codra"
@@ -305,9 +306,11 @@ export function ReposPage() {
             label: 'See how to interact with Codra',
             href: 'https://github.com/devarshishimpi/codra#readme',
           }}
-        />
-      ) : (
-        <div className="ui-panel min-w-0 overflow-hidden">
+             className="flex-1 rounded-none border-0"
+    />
+  </div>
+  ) : (
+        <div className="ui-panel min-h-0 min-w-0 flex-1 overflow-hidden">
           <div className="flex flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
               <Search
