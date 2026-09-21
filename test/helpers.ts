@@ -105,7 +105,7 @@ function requiredEnv(key: keyof NodeJS.ProcessEnv) {
   return value;
 }
 
-function unusedEnv(key: string): string {
+function _unusedEnv(key: string): string {
   throw new Error(`${key} is not required by the current test suite. Add it to the test env only when a test exercises that path.`);
 }
 

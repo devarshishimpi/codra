@@ -12,7 +12,7 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     enqueueReviewJob: async (input) => {
       await env.REVIEW_QUEUE.send(input);
     },
-    terminateJobWorkflow: async (job) => {
+    terminateJobWorkflow: async (_job) => {
       logger.warn('[STUB] terminateJobWorkflow called');
     },
     scheduleBestEffortJobMaintenance: () => {

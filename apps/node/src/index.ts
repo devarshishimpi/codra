@@ -5,7 +5,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') }); // Root level
 import { serve } from '@hono/node-server';
 import { createApiRouter } from '@codraoss/api';
 import { runWithDb } from '@codraoss/db/client';
-import { InMemoryKV, InMemoryQueue, InMemoryOrchestrator, InMemorySessionStore } from '@codraoss/core/ports';
+import { InMemoryOrchestrator, InMemorySessionStore } from '@codraoss/core/ports';
 import { createNodeApiDeps } from './api-deps';
 import { createNodeEnv } from './env';
 import { logger } from '@codraoss/api/logger';
@@ -39,7 +39,7 @@ const dashboardDist = path.resolve(process.cwd(), process.cwd().endsWith('node')
 const envWithAssets = {
   ...env,
   ASSETS: {
-    fetch: async (req: Request) => {
+    fetch: async (_req: Request) => {
       try {
         console.log('fetching index.html from', path.join(dashboardDist, 'index.html'));
         const html = fs.readFileSync(path.join(dashboardDist, 'index.html'), 'utf-8');
@@ -69,7 +69,7 @@ serve({
       ...envWithAssets,
       deps: createNodeApiDeps(env),
     };
-    try { return await runWithDb(envWithAssets, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+    try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
   },
   port,
 }, (info) => {

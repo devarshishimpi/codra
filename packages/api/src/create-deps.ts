@@ -32,7 +32,7 @@ export interface PlatformDeps {
 }
 
 import type { ApiRouterDeps, PlatformPort } from './ports';
-import type { SessionStore, KeyValueStore, ReviewRuntime, IdentityProvider } from '@codraoss/core/ports';
+import type { SessionStore, ReviewRuntime, IdentityProvider } from '@codraoss/core/ports';
 import type { KvCompat } from './platform/config';
 import type { DbEnv } from '@codraoss/db/env';
 

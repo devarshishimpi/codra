@@ -5,7 +5,7 @@ import { createReviewRuntime } from './adapters';
 import { logger } from './core/logger';
 import { getOrFetchRawDiffForCompletedJob } from './core/review';
 
-export function createApiRouterDeps(env: AppBindings, ctx: ExecutionContext) {
+export function createApiRouterDeps(env: AppBindings, _ctx: ExecutionContext) {
   return createSharedApiDeps({
     sessionStore: new CloudflareSessionStore(env.APP_KV),
     kv: env.APP_KV,

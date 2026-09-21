@@ -19,7 +19,7 @@ async function serveIndex(c: Context<ApiEnv>) {
   if (assets && typeof assets.fetch === 'function') {
     // Method call, and `/` not `/index.html`: detaching throws, and `/index.html` 307s into a loop.
     const response = await assets.fetch(new Request(new URL('/', c.req.url), c.req.raw));
-    const newResponse = new Response(response.body, response);
+    const newResponse = new Response(response.body, { status: response.status, statusText: response.statusText, headers: response.headers });
     newResponse.headers.set('Cache-Control', 'no-cache');
     return newResponse;
   }
