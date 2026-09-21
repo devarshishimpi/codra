@@ -9,11 +9,23 @@ import { InMemoryKV, InMemoryQueue, InMemoryOrchestrator, InMemorySessionStore }
 import { createNodeApiDeps } from './api-deps';
 import { createNodeEnv } from './env';
 import { logger } from '@codraoss/api/logger';
+import Redis from 'ioredis';
+import { RedisKVAdapter } from './adapters/redis-kv';
+import { Queue } from 'bullmq';
+import { RedisQueueAdapter } from './adapters/redis-queue';
+
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisClient = new Redis(redisUrl, { maxRetriesPerRequest: null }); // maxRetriesPerRequest: null is required for bullmq
+redisClient.on('error', (err) => {
+  logger.error('[Redis Error]', err);
+});
+
+const reviewQueue = new Queue('codra-reviews', { connection: redisClient });
 
 const stubs = {
   SESSION_STORE: new InMemorySessionStore(),
-  APP_KV: new InMemoryKV(),
-  REVIEW_QUEUE: new InMemoryQueue(),
+  APP_KV: new RedisKVAdapter(redisClient),
+  REVIEW_QUEUE: new RedisQueueAdapter(reviewQueue),
   REVIEW_ORCHESTRATOR: new InMemoryOrchestrator(),
 };
 
