@@ -145,9 +145,10 @@ export function JobsPage() {
         <JobsTable jobs={jobs} loading={loading} fill skeletonRows={itemsPerPage} />
 
         {!loading && jobs.length === 0 && (
-          <EmptyState
-            icon={<Activity />}
-            title="No jobs yet"
+         <EmptyState
+    className="flex-1 rounded-none border-0"
+    icon={<Activity />}
+    title="No jobs yet"
             description="Your pull request analysis logs will appear here"
             hints={[
               'Once you open a PR in any of the connected repos, analysis triggers automatically',
@@ -157,7 +158,6 @@ export function JobsPage() {
               label: 'See how to interact with Codra',
               href: 'https://github.com/devarshishimpi/codra#readme',
             }}
-            className="rounded-none border-0"
           />
         )}
 
