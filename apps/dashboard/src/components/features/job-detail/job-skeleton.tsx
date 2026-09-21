@@ -53,6 +53,12 @@ export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
         </div>
       </header>
 
+      {/* Placeholders for JobProgress and JobStatusNotice to prevent massive CLS */}
+      <div className="flex flex-col gap-5">
+        <Skeleton height={8} borderRadius={999} />
+        <Skeleton height={48} borderRadius={8} />
+      </div>
+
       {/* Tab strip - static, so it doesn't appear from nowhere when data lands. */}
       <div className="flex items-center gap-1 border-b border-ui-line" aria-hidden>
         <span className="relative -mb-px flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-ui-strong">

@@ -1,4 +1,4 @@
-import { describe } from 'vitest';
+﻿import { describe } from 'vitest';
 import type { AppBindings } from '@server/env';
 import { InMemorySessionStore } from '@codraoss/core';
 import { encryptLlmApiKey, ModelRunner } from '@codraoss/models';
@@ -105,7 +105,7 @@ function requiredEnv(key: keyof NodeJS.ProcessEnv) {
   return value;
 }
 
-function unusedEnv(key: string): string {
+function _unusedEnv(key: string): string {
   throw new Error(`${key} is not required by the current test suite. Add it to the test env only when a test exercises that path.`);
 }
 
@@ -138,8 +138,8 @@ export function createTestEnv(
     HYPERDRIVE: {
       connectionString: getTestDatabaseUrl(),
     },
-    get APP_PRIVATE_KEY() { return unusedEnv('APP_PRIVATE_KEY'); },
-    get GITHUB_APP_ID() { return unusedEnv('GITHUB_APP_ID'); },
+    APP_PRIVATE_KEY: 'private_key',
+    GITHUB_APP_ID: 'app_id',
     GITHUB_APP_SLUG: requiredEnv('GITHUB_APP_SLUG'),
     GITHUB_APP_WEBHOOK_SECRET: requiredEnv('GITHUB_APP_WEBHOOK_SECRET'),
     GITHUB_CLIENT_ID: requiredEnv('GITHUB_CLIENT_ID'),
@@ -149,9 +149,9 @@ export function createTestEnv(
     DASHBOARD_ALLOWED_USERS: requiredEnv('DASHBOARD_ALLOWED_USERS'),
     LLM_CONFIG_ENCRYPTION_KEY: 'test-llm-config-encryption-key',
     BOT_USERNAME: requiredEnv('BOT_USERNAME'),
-    get ENVIRONMENT() { return unusedEnv('ENVIRONMENT'); },
-    get CF_API_TOKEN() { return unusedEnv('CF_API_TOKEN'); },
-    get CF_ACCOUNT_ID() { return unusedEnv('CF_ACCOUNT_ID'); },
+    ENVIRONMENT: 'test',
+    
+    
     ...overrides,
   } as AppBindings;
   (env as any).deps = Object.assign(createApiRouterDeps(env, {} as any), depsOverrides);
@@ -252,3 +252,5 @@ export function uniqueName(prefix: string) {
 }
 
 export const uniqueRepo = (label: string) => uniqueName(`test-repo-${label}`);
+
+

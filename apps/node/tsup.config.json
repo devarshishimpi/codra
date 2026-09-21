@@ -1,0 +1,10 @@
+﻿{
+  "entry": ["src/index.ts"],
+  "format": "esm",
+  "target": "node20",
+  "splitting": false,
+  "sourcemap": true,
+  "clean": true,
+  "noExternal": ["@codraoss/api", "@codraoss/core", "@codraoss/db", "@codraoss/schema", "@codraoss/models", "@codraoss/provider-github"],
+  "outDir": "dist"
+}

@@ -58,8 +58,10 @@ export function ProfileCard({
           <Skeleton width={56} height={56} className="shrink-0 rounded-full" />
         ) : user!.avatarUrl ? (
           <img
-            src={user!.avatarUrl}
+            src={`${user!.avatarUrl}${user!.avatarUrl.includes('?') ? '&' : '?'}s=112`}
             alt=""
+            width={56}
+            height={56}
             className="h-14 w-14 shrink-0 rounded-full object-cover ring-1 ring-ui-line"
           />
         ) : (

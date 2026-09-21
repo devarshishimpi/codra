@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { FormatterService } from '@server/services/formatter';
+﻿import { describe, expect, it } from 'vitest';
+import { FormatterService } from '@codraoss/core/formatter';
 
 // The overview used to open with "Here are some automated review suggestions for this pull request"
 // whether or not there were any, so a clean pass read like a failed one.
@@ -95,3 +95,4 @@ describe('formatReviewOverview', () => {
     expect(one).not.toContain('1 changed lines');
   });
 });
+

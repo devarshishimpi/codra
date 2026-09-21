@@ -1,5 +1,5 @@
-import type { ParsedReviewComment } from '@codraoss/schema';
-import type { ReviewOverviewInput } from '@codraoss/core/ports';
+﻿import type { ParsedReviewComment } from '@codraoss/schema';
+import type { ReviewOverviewInput } from './ports';
 
 // The third field is OPTIONAL so every comment already on GitHub still parses; requiring it would silently stop recording deletions of historical comments.
 const FINDING_MARKER_PATTERN = /<!--\s*codra-fp:([0-9a-f]+):([0-9a-f]*)(?::([0-9a-f]*))?\s*-->/;
@@ -110,24 +110,6 @@ export class FormatterService {
       ? 'Every review posts a summary here. A clean pass also gets a 👍 on the pull request itself.'
       : 'If Codra has suggestions, it will comment; otherwise it will react with 👍.';
 
-    return `### Codra Review
-
-${headline}
-${noteBlock}
-**Reviewed commit:** \`${shortSha}\`
-
-<details>
-<summary>ℹ️ About Codra in GitHub</summary>
-
-<br/>
-
-[Your team has set up Codra to review pull requests in this repo](${this.baseUrl}/repos). Reviews are triggered when you:
-
-- **Open** a pull request for review
-- **Mark** a draft as ready
-
-${aboutOutcome}
-
-</details>`;
+    return `### Codra Review\n\n${headline}\n${noteBlock}\n**Reviewed commit:** \`${shortSha}\`\n\n<details>\n<summary>ℹ️ About Codra in GitHub</summary>\n\n<br/>\n\n[Your team has set up Codra to review pull requests in this repo](${this.baseUrl}/repos). Reviews are triggered when you:\n\n- **Open** a pull request for review\n- **Mark** a draft as ready\n\n${aboutOutcome}\n\n</details>`;
   }
 }

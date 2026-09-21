@@ -3,7 +3,7 @@ import type { TokenTracker } from '@codraoss/core/token-tracker';
 import type { AppBindings } from '../env';
 import { GitHubService } from '@codraoss/provider-github';
 import { isRetryableModelError, ModelRunner, nextChainIndexOf } from '@codraoss/models';
-import { FormatterService } from '../services/formatter';
+import { FormatterService } from '@codraoss/core/formatter';
 import { getResolvedModelConfig } from '@codraoss/db/model-configs';
 
 // The only place the four job-scoped collaborators are constructed. Every specifier above is the

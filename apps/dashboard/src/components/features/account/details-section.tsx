@@ -1,5 +1,5 @@
 import { SectionCard, Select, Skeleton, Text } from '@codraoss/ui';
-import { useMemo } from 'react';
+
 import { Mail } from 'lucide-react';
 import {
   COMMON_TIME_ZONES,
@@ -14,13 +14,16 @@ import type { AccountSettings, AuthSessionUser } from '@codraoss/schema/api';
 import { DetailGroup, RevealOnClick, DetailRow } from './detail-rows';
 
 // No "Automatic" option: defaults to UTC so timestamps read the same for everyone; the browser's own zone is folded into the list.
-function zoneOptions() {
+let cachedZoneOptions: { value: string; label: string }[] | null = null;
+function getZoneOptions() {
+  if (cachedZoneOptions) return cachedZoneOptions;
   const zones = Array.from(new Set([DEFAULT_TIME_ZONE, ...COMMON_TIME_ZONES, browserTimeZone()]))
     .sort((a, b) => a.localeCompare(b));
-  return zones.map((zone) => {
+  cachedZoneOptions = zones.map((zone) => {
     const offset = timeZoneOffsetLabel(zone);
     return { value: zone, label: offset ? `${zone} · ${offset}` : zone };
   });
+  return cachedZoneOptions;
 }
 
 function formatDate(value: string) {
@@ -51,7 +54,7 @@ export function AccountDetailsSection({
   onZoneChange: (zone: string) => void;
 }) {
   // Built once - a fresh array each render gave Select a new `options` identity, re-firing its highlight/measure effects and jittering the open panel.
-  const zoneOpts = useMemo(() => zoneOptions(), []);
+  const zoneOpts = getZoneOptions();
 
   return (
     <SectionCard
@@ -106,7 +109,7 @@ export function AccountDetailsSection({
             {pending ? (
               <Skeleton height={32} width={200} borderRadius={7} />
             ) : (
-              <div className="w-[15rem] shrink-0">
+              <div className="w-full max-w-[15rem]">
                 <Select
                   value={zonePref ?? DEFAULT_TIME_ZONE}
                   onValueChange={onZoneChange}

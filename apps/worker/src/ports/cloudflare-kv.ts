@@ -1,4 +1,4 @@
-import type { KeyValueStore } from '@codraoss/core';
+﻿import type { KeyValueStore } from '@codraoss/core';
 
 export class CloudflareKV implements KeyValueStore {
   constructor(private readonly kv: KVNamespace) {}
@@ -7,7 +7,7 @@ export class CloudflareKV implements KeyValueStore {
     await this.kv.put(key, value, options);
   }
 
-  async get(key: string, type: 'json' | 'text'): Promise<any> {
+  async get(key: string, type?: 'json' | 'text'): Promise<any> {
     if (type === 'json') {
       return this.kv.get(key, 'json');
     }

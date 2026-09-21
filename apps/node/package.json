@@ -1,0 +1,29 @@
+{
+  "name": "@codraoss/node-server",
+  "version": "0.9.6",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsup --watch --onSuccess \"node dist/index.js\"",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@codraoss/api": "*",
+    "@codraoss/core": "*",
+    "@codraoss/db": "*",
+    "@codraoss/models": "*",
+    "@codraoss/provider-github": "*",
+    "@codraoss/schema": "*",
+    "@hono/node-server": "^1.11.1",
+    "bullmq": "^6.3.8",
+    "dotenv": "^16.4.5",
+    "hono": "^4.6.0",
+    "ioredis": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "tsup": "^8.0.2"
+  }
+}

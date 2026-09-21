@@ -1,5 +1,5 @@
 import { Button, EmptyState, Input, LinkButton, LoadError, Select, Skeleton } from '@codraoss/ui';
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useState, Suspense, lazy  } from 'react';
 import { toast } from 'sonner';
 import { api } from '@client/lib/api';
 import { PageHeader } from '@client/components/layout/page-header';
@@ -15,7 +15,8 @@ import {
 } from '@client/components/features/models/model-route';
 
 import { RepoRow } from '@client/components/features/repos/repo-row';
-import { RepoModelModal } from '@client/components/features/repos/repo-model-modal';
+
+const RepoModelModal = lazy(() => import('@client/components/features/repos/repo-model-modal').then(m => ({ default: m.RepoModelModal })));
 
 
 import { repoId, hasMeaningfulCustomStrategy } from '@client/components/features/repos/repo-route';
@@ -87,14 +88,22 @@ export function ReposPage() {
   const [syncing, setSyncing] = useState(false);
   const [editingRepoId, setEditingRepoId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [strategyFilter, setStrategyFilter] = useState('');
   const [pendingToggles, setPendingToggles] = useState<Set<string>>(() => new Set());
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const editingRepo = repos.find(repo => repoId(repo) === editingRepoId) ?? null;
 
   const filteredRepos = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debouncedSearch.trim().toLowerCase();
     return repos.filter(repo => {
       if (q && !`${repo.owner}/${repo.repo}`.toLowerCase().includes(q)) return false;
       if (statusFilter === 'enabled' && !repo.enabled) return false;
@@ -106,7 +115,7 @@ export function ReposPage() {
       }
       return true;
     });
-  }, [repos, search, statusFilter, strategyFilter, globalConfig]);
+  }, [repos, debouncedSearch, statusFilter, strategyFilter, globalConfig]);
   const enabledCount = repos.filter(repo => repo.enabled).length;
 
   const loadRepos = () => {
@@ -217,6 +226,19 @@ export function ReposPage() {
       <section className="page-enter flex flex-col gap-5">
         <PageHeader title="Repositories" />
         <div className="ui-panel overflow-hidden">
+          <div className="flex flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
+            <div className="min-w-0 flex-1">
+              <Skeleton height={32} />
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="w-full sm:w-40">
+                <Skeleton height={32} />
+              </div>
+              <div className="w-full sm:w-40">
+                <Skeleton height={32} />
+              </div>
+            </div>
+          </div>
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="px-5 py-4 border-b border-ui-line/60 last:border-0">
               <Skeleton height={20} />
@@ -228,7 +250,7 @@ export function ReposPage() {
   }
 
   return (
-    <section className="page-enter flex flex-col gap-5">
+    <section className="page-enter flex min-h-0 flex-1 flex-col gap-5">
       <PageHeader
         title="Repositories"
         description={
@@ -270,7 +292,8 @@ export function ReposPage() {
         />
       )}
 
-      {repos.length === 0 ? (
+    {repos.length === 0 ? (
+      <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
         <EmptyState
           icon={<GitBranch />}
           title="No Repositories Added"
@@ -283,10 +306,12 @@ export function ReposPage() {
             label: 'See how to interact with Codra',
             href: 'https://github.com/devarshishimpi/codra#readme',
           }}
+          className="flex-1 rounded-none border-0"
         />
-      ) : (
-        <div className="ui-panel min-w-0 overflow-hidden">
-          <div className="flex flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
+      </div>
+    ) : (
+        <div className="ui-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
               <Search
                 size={13}
@@ -332,11 +357,14 @@ export function ReposPage() {
             </div>
           </div>
 
-          <div className="divide-y divide-ui-line/60">
+          <div className="flex-1 overflow-y-auto divide-y divide-ui-line/60 flex flex-col">
             {filteredRepos.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-ui-subtle">
-                No repositories match your filters.
-              </p>
+              <EmptyState
+                icon={<Search />}
+                title="No repositories found"
+                description="No repositories match your current search or filters."
+                className="flex-1 rounded-none border-0"
+              />
             ) : (
               filteredRepos.map(repo => {
                 const id = repoId(repo);
@@ -357,18 +385,20 @@ export function ReposPage() {
         </div>
       )}
 
-      <RepoModelModal
-        repo={editingRepo}
-        globalConfig={globalConfig}
-        modelOptions={modelOptions}
-        providerOptions={providerOptions}
-        open={editingRepo !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditingRepoId(null);
-        }}
-        onModelApplied={handleModelApplied}
-        onModelReset={handleModelReset}
-      />
+      <Suspense fallback={null}>
+        <RepoModelModal
+          repo={editingRepo}
+          globalConfig={globalConfig}
+          modelOptions={modelOptions}
+          providerOptions={providerOptions}
+          open={editingRepo !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditingRepoId(null);
+          }}
+          onModelApplied={handleModelApplied}
+          onModelReset={handleModelReset}
+        />
+      </Suspense>
     </section>
   );
 }

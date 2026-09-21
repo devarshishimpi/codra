@@ -58,7 +58,7 @@ export function useJobDetail(id: string) {
       if (!response.notModified && response.data) {
         latestJob.current = response.data.job;
         setJob(response.data.job);
-        writeJobCache(id, response.data.job);
+        // Do not cache here synchronously to prevent jank on the main thread every 3 seconds
       }
       setError(null);
       schedulePolling();
@@ -112,6 +112,19 @@ export function useJobDetail(id: string) {
   useEffect(() => {
     schedulePollingRef.current();
   }, [job?.status, job?.nextRetryAt]);
+
+  useEffect(() => {
+    const saveCache = () => {
+      if (latestJob.current && latestJob.current.id === id) {
+        writeJobCache(id, latestJob.current);
+      }
+    };
+    window.addEventListener('pagehide', saveCache);
+    return () => {
+      window.removeEventListener('pagehide', saveCache);
+      saveCache();
+    };
+  }, [id]);
 
   // Mount-only: the listener reads through the ref, so it never needs rebinding.
   useEffect(() => {

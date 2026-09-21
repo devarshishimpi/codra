@@ -35,7 +35,7 @@ export { GitHubError };
 export class GitHubClient {
   constructor(
     private env: AppBindingsConfig,
-    private readonly installationId: string,
+    private readonly installationId?: string,
     private readonly tracker?: { incrementSubrequests(count?: number): void },
   ) {}
 
@@ -43,20 +43,25 @@ export class GitHubClient {
   private memoToken: InstallationTokenCacheRecord | null = null;
 
   async getInstallationToken(): Promise<string> {
+        if (!this.installationId) {
+      throw new GitHubError(400, 'Missing installation ID', 'getInstallationToken', 'Cannot fetch installation token without an installation ID.');
+    }
+    const installationId = this.installationId; // Type narrowed to string here
+
     // Reuse the in-memory token while comfortably unexpired.
     if (this.memoToken?.token && new Date(this.memoToken.expiresAt).getTime() > Date.now() + 60_000) {
       return this.memoToken.token;
     }
 
-    const cached = await readCachedInstallationToken(this.env, this.installationId, this.tracker);
+    const cached = await readCachedInstallationToken(this.env, installationId, this.tracker);
     if (cached?.token) {
       this.memoToken = cached;
       return cached.token;
     }
 
     return withRetry('getInstallationToken', async () => {
-      const record = await fetchInstallationToken(this.env, this.installationId);
-      await writeCachedInstallationToken(this.env, this.installationId, record, this.tracker);
+      const record = await fetchInstallationToken(this.env, installationId);
+      await writeCachedInstallationToken(this.env, installationId, record, this.tracker);
       this.memoToken = record;
 
       return record.token;

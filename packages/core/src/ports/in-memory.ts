@@ -1,4 +1,4 @@
-import type { KeyValueStore } from './kv';
+﻿import type { KeyValueStore } from './kv';
 import type { QueueProducer } from './queue';
 import type { JobOrchestrator } from './orchestrator';
 import type { SessionStore, DashboardSessionUser } from './session-store';
@@ -12,7 +12,7 @@ export class InMemoryKV implements KeyValueStore {
     this.store.set(key, { value, expiresAt });
   }
 
-  async get(key: string, type: 'json' | 'text'): Promise<any> {
+  async get(key: string, type?: 'json' | 'text'): Promise<any> {
     const entry = this.store.get(key);
     if (!entry) return null;
     if (entry.expiresAt && Date.now() > entry.expiresAt) {

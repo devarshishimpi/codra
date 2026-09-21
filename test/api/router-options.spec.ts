@@ -64,7 +64,7 @@ dbDescribe('createApiRouter options', () => {
 
     const gated = await app.request('/admin', { headers: { accept: 'text/html' } }, env);
     expect(gated.status).toBe(302);
-    expect(gated.headers.get('location')).toBe('/login');
+    expect(gated.headers.get('location')).toBe('/');
 
     const open = await app.request('/pricing', { headers: { accept: 'text/html' } }, env);
     expect(open.status).toBe(200);

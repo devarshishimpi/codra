@@ -1,10 +1,10 @@
-import { Button, ConfirmDialog } from '@codraoss/ui';
+﻿import { Button, ConfirmDialog } from '@codraoss/ui';
 import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, ExternalLink, Loader2, RotateCcw, Terminal, Trash2 } from 'lucide-react';
 import type { ButtonProps } from '@codraoss/ui';
-import { UpdatesEmailPrompt } from '@client/components/features/dashboard/updates-email-prompt';
+import { UpdatesEmailPrompt } from '@client/components/shared/updates-email-prompt';
 import { AuthorChip, VerdictPill } from './job-chips';
 import { formatAbsoluteDate, formatRelativeDate } from './job-chip-utils';
 import type { JobDetail } from '@codraoss/schema';

@@ -1,4 +1,4 @@
-import { createApiRouter } from '@codraoss/api';
+﻿import { createApiRouter } from '@codraoss/api';
 import { getJobForProcessing, insertJob } from '@codraoss/db/jobs';
 
 import { getRepoConfigRecord } from '@codraoss/db/repo-configs';
@@ -86,7 +86,7 @@ describe('Dashboard API: repositories and repo config', () => {
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       requestedUrl = String(input);
       return Response.json({
-        content: Buffer.from('const greeting = "café — こんにちは";').toString('base64'),
+        content: Buffer.from('const greeting = "cafÃ© â€” ã“ã‚“ã«ã¡ã¯";').toString('base64'),
         encoding: 'base64',
       });
     });
@@ -94,7 +94,7 @@ describe('Dashboard API: repositories and repo config', () => {
     const client = new GitHubClient(env, '123');
     const content = await client.getRepoFile('owner', 'repo', 'src/app.ts', 'abc123');
 
-    expect(content).toBe('const greeting = "café — こんにちは";');
+    expect(content).toBe('const greeting = "cafÃ© â€” ã“ã‚“ã«ã¡ã¯";');
     expect(requestedUrl).toBe('https://api.github.com/repos/owner/repo/contents/src/app.ts?ref=abc123');
   });
 
@@ -102,13 +102,13 @@ describe('Dashboard API: repositories and repo config', () => {
     const env = createTestEnv();
     const repo = uniqueName('global-inherit');
 
-    await updateGlobalConfig(env, {
+    await updateGlobalConfig(env.APP_KV, {
       main: '@cf/zai-org/glm-4.7-flash',
       fallbacks: [],
       size_overrides: [],
     });
 
-    const loaded = await loadRepoConfig(env, {
+    const loaded = await loadRepoConfig(env.APP_KV, { workerMode: true, HYPERDRIVE: env.HYPERDRIVE, APP_KV: env.APP_KV }, {
       installationId: '123',
       owner: 'api-test-owner',
       repo,
@@ -122,13 +122,13 @@ describe('Dashboard API: repositories and repo config', () => {
     expect(record?.fallbackModels).toBeNull();
     expect(record?.sizeOverrides).toBeNull();
 
-    await updateGlobalConfig(env, {
+    await updateGlobalConfig(env.APP_KV, {
       main: 'gemma-4-26b-a4b-it',
       fallbacks: ['@cf/zai-org/glm-4.7-flash'],
       size_overrides: [],
     });
 
-    const reloaded = await loadRepoConfig(env, {
+    const reloaded = await loadRepoConfig(env.APP_KV, { workerMode: true, HYPERDRIVE: env.HYPERDRIVE, APP_KV: env.APP_KV }, {
       installationId: '123',
       owner: 'api-test-owner',
       repo,
@@ -164,7 +164,7 @@ describe('Dashboard API: repositories and repo config', () => {
       },
     });
 
-    await updateGlobalConfig(env, {
+    await updateGlobalConfig(env.APP_KV, {
       main: 'gemma-4-31b-it',
       fallbacks: ['gemma-4-26b-a4b-it'],
       size_overrides: [
@@ -204,3 +204,5 @@ describe('Dashboard API: repositories and repo config', () => {
     });
   });
 });
+
+

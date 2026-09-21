@@ -90,3 +90,5 @@ export function UpdatesEmailPrompt() {
     </section>
   );
 }
+
+// Trigger HMR

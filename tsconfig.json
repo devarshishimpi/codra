@@ -27,6 +27,7 @@
   "include": [
     "apps/worker/worker-configuration.d.ts",
     "apps/worker/src/**/*.ts",
+    "apps/node/src/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts",
     "apps/dashboard/src/**/*.ts",

@@ -1,4 +1,4 @@
-// DO NOT SPLIT THE REVIEW-SETTINGS TESTS OUT OF THIS FILE.
+﻿// DO NOT SPLIT THE REVIEW-SETTINGS TESTS OUT OF THIS FILE.
 //
 // The settings suites here read-modify-write the same singleton `global_settings` row set. In
 // separate files they race, because `fileParallelism` is on and no unique row name can isolate a
@@ -310,8 +310,8 @@ describe('Dashboard API: auth, session and account', () => {
     const env = createTestEnv();
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json({ ok: true }));
 
-    await expect(syncUpdatesEmail(env, 42, 'user@example.com')).resolves.toBe(true);
-    await expect(syncUpdatesEmail(env, 42, 'user@example.com')).resolves.toBe(false);
+    await expect(syncUpdatesEmail(env.APP_KV, 42, 'user@example.com')).resolves.toBe(true);
+    await expect(syncUpdatesEmail(env.APP_KV, 42, 'user@example.com')).resolves.toBe(false);
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith('https://codra.run/api/emails', expect.objectContaining({
@@ -374,3 +374,7 @@ dbDescribe('review max files persistence', () => {
     });
   });
 });
+
+
+
+

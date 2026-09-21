@@ -32,26 +32,40 @@ export function DashboardPage() {
     setDays(next);
   };
 
-  const load = async (manual = false) => {
+  const loadStats = async () => {
+    try {
+      const statsRes = await api.getStats(days);
+      setStats(statsRes.stats);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load stats');
+    }
+  };
+
+  const loadJobs = async () => {
     if (rows === null) return;
+    try {
+      const jobsRes = await api.getJobs({ limit: rows });
+      setRecentJobs(jobsRes.jobs);
+    } catch (e: any) {
+      setError(e.message || 'Failed to load jobs');
+    }
+  };
+
+  const load = async (manual = false) => {
     if (manual) setRefreshing(true);
     try {
-      const [statsRes, jobsRes] = await Promise.all([
-        api.getStats(days),
-        api.getJobs({ limit: rows }),
-      ]);
-      setStats(statsRes.stats);
-      setRecentJobs(jobsRes.jobs);
+      await Promise.all([loadStats(), loadJobs()]);
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to refresh dashboard.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
+      if (manual) setRefreshing(false);
     }
   };
 
-  usePolling(load, 15_000, [days, rows]);
+  usePolling(loadStats, 15_000, [days]);
+  usePolling(loadJobs, 15_000, [rows]);
 
 
   return (

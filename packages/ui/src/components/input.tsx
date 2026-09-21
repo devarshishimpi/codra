@@ -4,9 +4,9 @@ import { cn } from '../lib/utils';
 type InputSize = 'xs' | 'sm' | 'base' | 'lg';
 
 const SIZE_CLASS: Record<InputSize, string> = {
-  xs: 'h-6 rounded-md px-1.5 text-xs',
-  sm: 'h-8 rounded-md px-2 text-xs',
-  base: 'h-9 rounded-md px-3 text-sm',
+  xs: 'h-6 rounded-md px-1.5 text-base sm:text-xs',
+  sm: 'h-8 rounded-md px-2 text-base sm:text-xs',
+  base: 'h-9 rounded-md px-3 text-base sm:text-sm',
   lg: 'h-10 rounded-md px-4 text-base',
 };
 
