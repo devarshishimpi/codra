@@ -54,7 +54,7 @@ describe('formatReviewOverview', () => {
   it('describes the thumbs-up as accompanying the summary on a clean pass', () => {
     const body = overview();
 
-    expect(body).toContain('ðŸ‘');
+    expect(body).toContain('👍');
     // The old wording made comment and reaction alternatives; a clean pass now does both.
     expect(body).not.toContain('otherwise it will react');
   });
@@ -62,7 +62,7 @@ describe('formatReviewOverview', () => {
   it('keeps the original comment-or-react wording when findings were posted', () => {
     const body = overview({ postedFindings: 2 });
 
-    expect(body).toContain('If Codra has suggestions, it will comment; otherwise it will react with ðŸ‘.');
+    expect(body).toContain('If Codra has suggestions, it will comment; otherwise it will react with 👍.');
   });
 
   // "No issues" is a weaker claim when candidates were dropped for failing to ground themselves.

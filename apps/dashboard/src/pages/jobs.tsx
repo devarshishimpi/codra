@@ -142,7 +142,9 @@ export function JobsPage() {
           </div>
         </div>
 
-        <JobsTable jobs={jobs} loading={loading} fill skeletonRows={itemsPerPage} />
+        {(loading || jobs.length > 0) && (
+          <JobsTable jobs={jobs} loading={loading} fill skeletonRows={itemsPerPage} />
+        )}
 
         {!loading && jobs.length === 0 && (
          <EmptyState

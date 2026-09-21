@@ -36,7 +36,7 @@ export class FormatterService {
       case 'P2':  return img('p2',  'P2');
       case 'P3':  return img('p3',  'P3');
       case 'nit': return img('nit', 'nit');
-      default:    return 'âšª';
+      default:    return '⚪';
     }
   }
 
@@ -89,7 +89,7 @@ export class FormatterService {
     // which reads as a failure rather than a pass. Say what was checked and that nothing came of it.
     // With findings the original wording stays.
     const headline = postedFindings === 0
-      ? `âœ… **Nothing to flag.** Reviewed ${plural(filesReviewed, 'file')} (${plural(linesReviewed, 'changed line')}) and found no issues worth raising.`
+      ? `✅ **Nothing to flag.** Reviewed ${plural(filesReviewed, 'file')} (${plural(linesReviewed, 'changed line')}) and found no issues worth raising.`
       : 'Here are some automated review suggestions for this pull request.';
 
     const notes: string[] = [];
@@ -107,8 +107,8 @@ export class FormatterService {
       : '';
 
     const aboutOutcome = postedFindings === 0
-      ? 'Every review posts a summary here. A clean pass also gets a ðŸ‘ on the pull request itself.'
-      : 'If Codra has suggestions, it will comment; otherwise it will react with ðŸ‘.';
+      ? 'Every review posts a summary here. A clean pass also gets a 👍 on the pull request itself.'
+      : 'If Codra has suggestions, it will comment; otherwise it will react with 👍.';
 
     return `### Codra Review
 
@@ -117,7 +117,7 @@ ${noteBlock}
 **Reviewed commit:** \`${shortSha}\`
 
 <details>
-<summary>â„¹ï¸ About Codra in GitHub</summary>
+<summary>ℹ️ About Codra in GitHub</summary>
 
 <br/>
 

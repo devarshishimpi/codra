@@ -293,8 +293,8 @@ export function ReposPage() {
       )}
 
     {repos.length === 0 ? (
-  <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
-    <EmptyState
+      <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+        <EmptyState
           icon={<GitBranch />}
           title="No Repositories Added"
           description="Add your repositories to get started with Codra"
@@ -306,12 +306,12 @@ export function ReposPage() {
             label: 'See how to interact with Codra',
             href: 'https://github.com/devarshishimpi/codra#readme',
           }}
-             className="flex-1 rounded-none border-0"
-    />
-  </div>
-  ) : (
-        <div className="ui-panel min-h-0 min-w-0 flex-1 overflow-hidden">
-          <div className="flex flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
+          className="flex-1 rounded-none border-0"
+        />
+      </div>
+    ) : (
+        <div className="ui-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
               <Search
                 size={13}
@@ -357,11 +357,14 @@ export function ReposPage() {
             </div>
           </div>
 
-          <div className="divide-y divide-ui-line/60">
+          <div className="flex-1 overflow-y-auto divide-y divide-ui-line/60 flex flex-col">
             {filteredRepos.length === 0 ? (
-              <p className="px-4 py-10 text-center text-sm text-ui-subtle">
-                No repositories match your filters.
-              </p>
+              <EmptyState
+                icon={<Search />}
+                title="No repositories found"
+                description="No repositories match your current search or filters."
+                className="flex-1 rounded-none border-0"
+              />
             ) : (
               filteredRepos.map(repo => {
                 const id = repoId(repo);
