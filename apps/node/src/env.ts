@@ -1,8 +1,7 @@
-﻿import type { SessionStore, IdentityProvider, KeyValueStore, QueueProducer, JobOrchestrator } from '@codraoss/core';
+﻿import type { SessionStore, IdentityProvider, KeyValueStore, QueueProducer, JobOrchestrator } from '@codraoss/core/ports';
 import type { ReviewJobMessage } from '@codraoss/schema';
 
 export interface NodeAppBindings {
-  // â”€â”€ Platform stores (in-memory stubs for now) â”€â”€
   SESSION_STORE: SessionStore;
   IDENTITY_PROVIDER?: IdentityProvider;
   APP_KV: KeyValueStore;
@@ -31,7 +30,7 @@ export function createNodeEnv(stubs: {
   SESSION_STORE: SessionStore;
   APP_KV: KeyValueStore;
   REVIEW_QUEUE: QueueProducer<ReviewJobMessage>;
-  REVIEW_ORCHESTRATOR: JobOrchestrator;
+  REVIEW_ORCHESTRATOR?: JobOrchestrator; // Mark as optional
 }): NodeAppBindings {
   const requireEnv = (key: string) => {
     const val = process.env[key];
@@ -41,6 +40,7 @@ export function createNodeEnv(stubs: {
 
   return {
     ...stubs,
+    REVIEW_ORCHESTRATOR: stubs.REVIEW_ORCHESTRATOR!,
     HYPERDRIVE: { connectionString: requireEnv('DATABASE_URL') },
     APP_PRIVATE_KEY: requireEnv('APP_PRIVATE_KEY'),
     GITHUB_APP_ID: requireEnv('GITHUB_APP_ID'),

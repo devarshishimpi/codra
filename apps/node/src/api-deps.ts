@@ -1,6 +1,7 @@
 import { createSharedApiDeps } from '@codraoss/api';
 import type { NodeAppBindings } from './env';
 import { logger } from '@codraoss/api/logger';
+import { createReviewRuntime } from './runtime';
 
 export function createNodeApiDeps(env: NodeAppBindings) {
   return createSharedApiDeps({
@@ -18,9 +19,7 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     scheduleBestEffortJobMaintenance: () => {
       // In node, this is a long running process, we can just spawn a promise.
     },
-    createReviewRuntime: () => {
-      throw new Error('Review runtime not implemented for Node yet.');
-    },
+    createReviewRuntime: () => createReviewRuntime(env),
     getOrFetchRawDiffForCompletedJob: async () => '',
     logger,
     getSecret: async (key) => process.env[key] ?? null,
