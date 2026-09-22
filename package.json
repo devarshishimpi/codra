@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "build": "vite build && npm run cf-typegen",
-    "build:packages": "npm run build -w @codraoss/schema && npm run build -w @codraoss/core && npm run build -w @codraoss/provider-github && npm run build -w @codraoss/db && npm run build -w @codraoss/models && npm run build -w @codraoss/api && npm run build -w @codraoss/ui",
+    "build:packages": "npm run build -w @codraoss/schema && npm run build -w @codraoss/core && npm run build -w @codraoss/provider-github && npm run build -w @codraoss/db && npm run build -w @codraoss/models && npm run build -w @codraoss/api && npm run build -w @codraoss/ui && npm run build -w @codraoss/node-adapters",
     "build:all": "npm run build --workspaces --if-present",
     "cf-typegen": "cd apps/worker && wrangler types ./src/worker-env.d.ts",
     "deploy": "npm run build && npm run migrate && cd apps/worker && wrangler deploy",
