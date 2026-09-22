@@ -9,7 +9,7 @@ export interface NodeAppBindings {
   REVIEW_ORCHESTRATOR: JobOrchestrator;
 
   // â”€â”€ Database â”€â”€
-  HYPERDRIVE: { connectionString: string };
+  DATABASE_CONFIG: { connectionString: string };
 
   // â”€â”€ Environment strings (loaded from process.env via dotenv) â”€â”€
   APP_PRIVATE_KEY: string;
@@ -41,7 +41,7 @@ export function createNodeEnv(stubs: {
   return {
     ...stubs,
     REVIEW_ORCHESTRATOR: stubs.REVIEW_ORCHESTRATOR!,
-    HYPERDRIVE: { connectionString: requireEnv('DATABASE_URL') },
+    DATABASE_CONFIG: { connectionString: requireEnv('DATABASE_URL') },
     APP_PRIVATE_KEY: requireEnv('APP_PRIVATE_KEY'),
     GITHUB_APP_ID: requireEnv('GITHUB_APP_ID'),
     GITHUB_APP_SLUG: process.env.GITHUB_APP_SLUG,

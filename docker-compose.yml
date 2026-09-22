@@ -47,6 +47,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    stop_grace_period: 2m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
 
 volumes:
   postgres_data:

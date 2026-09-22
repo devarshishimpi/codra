@@ -33,29 +33,12 @@ const stubs = {
 };
 
 const env = createNodeEnv(stubs);
-env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(createReviewRuntime(env));
+env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(createReviewRuntime(env), stubs.REVIEW_QUEUE);
 
 import fs from 'node:fs';
 import { serveStatic } from '@hono/node-server/serve-static';
 
 const dashboardDist = path.resolve(process.cwd(), process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client');
-
-const envWithAssets = {
-  ...env,
-  ASSETS: {
-    fetch: async (_req: Request) => {
-      try {
-        console.log('fetching index.html from', path.join(dashboardDist, 'index.html'));
-        const html = fs.readFileSync(path.join(dashboardDist, 'index.html'), 'utf-8');
-        console.log('html length:', html.length);
-        return new Response(html, { headers: { 'content-type': 'text/html' } });
-      } catch (e) {
-        console.error('ASSETS error:', e);
-        return new Response('Dashboard build not found. Run npm run build -w @codraoss/dashboard', { status: 404 });
-      }
-    }
-  }
-};
 
 const app = createApiRouter();
 app.onError((err, c) => {
@@ -65,22 +48,26 @@ app.onError((err, c) => {
 app.use('/assets/*', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
 app.use('/*.svg', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
 app.use('/*.ico', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
+app.get('*', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client', path: 'index.html' }));
+
 const port = parseInt(process.env.PORT || '3000', 10);
 
 let worker: ReturnType<typeof startWorker> | undefined;
 if (process.env.START_WORKER !== 'false') {
-  worker = startWorker(env, redisUrl);
+  worker = startWorker(env, redisUrl, stubs.REVIEW_QUEUE);
   logger.info('BullMQ Background Worker started.');
 }
 
 if (process.env.START_API !== 'false') {
+  app.get('/health', (c) => c.text('OK'));
+
   const server = serve({
     fetch: async (request) => {
       const apiEnv = {
-        ...envWithAssets,
+        ...env,
         deps: createNodeApiDeps(env),
       };
-      try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+      try { return await runWithDb({ ...env, HYPERDRIVE: env.DATABASE_CONFIG }, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
     },
     port,
   }, (info) => {

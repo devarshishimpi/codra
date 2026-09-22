@@ -16,7 +16,7 @@ export function makeModelFactory(env: NodeAppBindings) {
     secretStore: {
       getSecret: async (key) => env[key as keyof NodeAppBindings] as string || process.env[key] || null,
     },
-    getConfig: (modelId) => getResolvedModelConfig({ HYPERDRIVE: env.HYPERDRIVE, APP_KV: env.APP_KV }, modelId),
+    getConfig: (modelId) => getResolvedModelConfig({ HYPERDRIVE: env.DATABASE_CONFIG, APP_KV: env.APP_KV }, modelId),
     aiBinding: undefined,
     tracker,
     jobId,

@@ -21,7 +21,7 @@ import {
 } from './adapters/services';
 
 export function createReviewRuntime(env: NodeAppBindings): ReviewRuntime & DbEnv {
-  const dbEnv = { HYPERDRIVE: env.HYPERDRIVE, APP_KV: env.APP_KV, workerMode: false };
+  const dbEnv = { HYPERDRIVE: env.DATABASE_CONFIG, APP_KV: env.APP_KV, workerMode: false };
 
   return {
     ...dbEnv,
