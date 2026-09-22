@@ -12,6 +12,9 @@ const TELEMETRY_TIMEOUT_MS = 5000;
 function isDisabled(env: NodeAppBindings): boolean {
   const flag = String(process.env.TELEMETRY_DISABLED ?? '').toLowerCase();
   if (flag === 'true' || flag === '1') return true;
+  // ENVIRONMENT defaults to 'development', so without the NODE_ENV/VITEST check a test that
+  // exercises this sink would post a real event.
+  if (process.env.NODE_ENV === 'test' || process.env.VITEST) return true;
   return ['test', 'local'].includes(String(env.ENVIRONMENT ?? '').toLowerCase());
 }
 

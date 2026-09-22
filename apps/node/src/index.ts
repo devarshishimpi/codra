@@ -4,7 +4,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '../../.dev.vars') }); // Fall
 dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') }); // Root level
 import { serve } from '@hono/node-server';
 import { createApiRouter } from '@codraoss/api';
-import { runWithDb } from '@codraoss/db/client';
+import { closeDb } from '@codraoss/db/client';
 import { InMemorySessionStore } from '@codraoss/core/ports';
 import { createNodeApiDeps } from './api-deps';
 import { createNodeEnv, type NodeAppBindings } from './env';
@@ -79,7 +79,9 @@ const server = runApi
           ...envWithAssets,
           deps: createNodeApiDeps(env),
         };
-        try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+        // No runWithDb: it opens a postgres pool per call and never ends it, so wrapping the
+        // request path leaked a connection per request. getDb falls back to the process-wide pool.
+        try { return await app.fetch(request, apiEnv as any); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
       },
       port,
     }, (info) => {
@@ -96,7 +98,11 @@ if (!server && !reviewWorker) {
 
 // worker.close() waits for the review in flight to finish, so a redeploy does not abandon a job
 // mid-phase with its lease still held.
-const SHUTDOWN_TIMEOUT_MS = 30_000;
+// Long enough to outlast a review phase: worker.close() waits for the job in flight, and model
+// calls plus the engine's inter-phase sleeps run to minutes. Too short a budget and every redeploy
+// kills a running review, leaving its row 'running' with the lease still held.
+// Docker caps this independently -- raise stop_grace_period past it, or the container is killed first.
+const SHUTDOWN_TIMEOUT_MS = Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 300_000);
 
 let shuttingDown = false;
 async function shutdown(signal: string) {
@@ -123,6 +129,9 @@ async function shutdown(signal: string) {
     if (server && 'closeAllConnections' in server) server.closeAllConnections();
     await reviewQueue.close();
     redisClient.disconnect();
+    // The pooled Postgres socket is an active handle: without ending it the process stays up after
+    // everything else has closed.
+    await closeDb();
     clearTimeout(forceExit);
   } catch (error) {
     logger.error('Error during shutdown', error);

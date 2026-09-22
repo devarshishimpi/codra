@@ -9,13 +9,15 @@ type DbClient = {
 
 const dbStorage = new AsyncLocalStorage<DbClient>();
 
-function createDbClient(env: DbEnv): DbClient {
+function createDbClient(env: DbEnv, onOpen?: (close: () => Promise<void>) => void): DbClient {
   const sql = postgres(env.HYPERDRIVE.connectionString, {
     max: 5,
     fetch_types: false,
     prepare: false,
     onnotice: () => {},
   });
+
+  onOpen?.(() => sql.end({ timeout: 5 }));
 
   return {
     async query<T>(sqlText: string, params: unknown[] = []) {
@@ -65,6 +67,10 @@ export function runWithDb<T>(env: DbEnv, fn: () => T): T {
 // Module-scoped Map pools connections outside runWithDb, but must self-heal when request context changes.
 const fallbackClients = new Map<string, DbClient>();
 
+// Parallel to fallbackClients: the postgres handle behind each, so a long-lived host can end them on
+// shutdown. Without this the open socket keeps Node's event loop alive after SIGTERM.
+const fallbackCloses = new Map<string, () => Promise<void>>();
+
 // Catch dead request context I/O errors and terminated connections.
 function isStaleConnectionError(error: unknown): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -79,10 +85,19 @@ export function getDb(env: DbEnv) {
   const connectionString = env.HYPERDRIVE.connectionString;
   let client = fallbackClients.get(connectionString);
   if (!client) {
-    client = createDbClient(env);
+    client = createDbClient(env, (close) => fallbackCloses.set(connectionString, close));
     fallbackClients.set(connectionString, client);
   }
   return client;
+}
+
+// Only the pooled clients are closable. A runWithDb client belongs to one invocation and is dropped
+// with it, and holding those open here would retain a handle per request on Workers.
+export async function closeDb(): Promise<void> {
+  const closing = [...fallbackCloses.values()].map((close) => close());
+  fallbackCloses.clear();
+  fallbackClients.clear();
+  await Promise.allSettled(closing);
 }
 
 // Retries op once on a fresh client if the module-cached socket has gone stale.
@@ -95,7 +110,7 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
 
     const connectionString = env.HYPERDRIVE.connectionString;
     fallbackClients.delete(connectionString);
-    const fresh = createDbClient(env);
+    const fresh = createDbClient(env, (close) => fallbackCloses.set(connectionString, close));
     fallbackClients.set(connectionString, fresh);
     return op(fresh);
   }

@@ -6,6 +6,12 @@ import { NodeOrchestrator } from './adapters/node-orchestrator';
 import type { NodeAppBindings } from './env';
 import { REVIEW_QUEUE_NAME } from './queue';
 
+// BullMQ defaults to 1, which lets a single review monopolise the container: the engine sleeps
+// in-process between phases and while polling async model batches, and none of that is work the slot
+// could not spend on another job. 4 matches the engine's highest admission level; the engine still
+// decides how many actually run at once.
+const WORKER_CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? 4);
+
 export interface ReviewWorker {
   worker: Worker;
   close(): Promise<void>;
@@ -33,7 +39,7 @@ export function startWorker(env: NodeAppBindings, redisUrl: string): ReviewWorke
 
       await new NodeOrchestrator(env).startReviewJob(job.id ?? parsed.data.deliveryId, parsed.data);
     },
-    { connection },
+    { connection, concurrency: WORKER_CONCURRENCY },
   );
 
   worker.on('completed', (job) => {

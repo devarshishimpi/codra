@@ -14,8 +14,11 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     enqueueReviewJob: async (input) => {
       await env.REVIEW_QUEUE.send(input);
     },
-    // No durable instance to kill: a Node review runs inside the BullMQ job, and cancelling it is
-    // the job store's business, which the caller has already handled by the time this runs.
+    // There is no durable instance to terminate: a Node review runs inside its BullMQ job. The stop
+    // and rerun routes call this BEFORE cancelling, to stop the old run racing the new one, and a
+    // no-op cannot honour that -- the loop keeps working the current phase until it next reads the
+    // job's status and sees it is terminal. Closing that gap needs a cooperative cancel signal the
+    // loop polls; until then, stop is eventually-effective rather than immediate.
     terminateJobWorkflow: async () => {},
     scheduleBestEffortJobMaintenance: () => {
       // In node, this is a long running process, we can just spawn a promise.
