@@ -1,10 +1,9 @@
 import type { Clock, IdGenerator, KvStore } from '@codraoss/core/ports';
-import type { NodeAppBindings } from '../env';
 
-export function makeKvStore(env: NodeAppBindings): KvStore {
+export function makeKvStore(appKv: KvStore): KvStore {
   return {
-    get: (key) => env.APP_KV.get(key),
-    put: (key, value, options) => env.APP_KV.put(key, value, options),
+    get: (key) => appKv.get(key),
+    put: (key, value, options) => appKv.put(key, value, options),
   };
 }
 

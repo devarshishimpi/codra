@@ -1,0 +1,10 @@
+{
+  "entry": ["src/index.ts"],
+  "format": ["esm"],
+  "outDir": "dist",
+  "clean": true,
+  "sourcemap": true,
+  "splitting": false,
+  "target": "node20",
+  "noExternal": []
+}

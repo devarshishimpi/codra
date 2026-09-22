@@ -22,7 +22,12 @@ export class RedisSessionStore implements SessionStore {
     if (!sessionString) {
       return null;
     }
-    return JSON.parse(sessionString) as DashboardSessionUser;
+    try {
+      return JSON.parse(sessionString) as DashboardSessionUser;
+    } catch {
+      // Return null if parsing fails (corrupted JSON)
+      return null;
+    }
   }
 
   async destroySession(token: string): Promise<void> {

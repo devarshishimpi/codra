@@ -1,15 +1,16 @@
 import { Worker, type Job } from 'bullmq';
 import { reviewJobMessageSchema, type ReviewJobMessage } from '@codraoss/schema';
-import { NodeOrchestrator } from './adapters/node-orchestrator';
-import { logger } from '@codraoss/api/logger';
-import type { NodeAppBindings } from './env';
-import Redis from 'ioredis';
-import { createReviewRuntime } from './runtime';
+import { NodeOrchestrator } from './node-orchestrator';
+import type { ReviewRuntime } from '@codraoss/core/ports';
 import type { QueueProducer } from '@codraoss/core/ports';
+import type Redis from 'ioredis';
 
-export function startWorker(env: NodeAppBindings, redisUrl: string, queue: QueueProducer<ReviewJobMessage>): Worker {
-  const connection = new Redis(redisUrl, { maxRetriesPerRequest: null });
-  
+export function startWorker(
+  redisConnection: Redis,
+  queue: QueueProducer<ReviewJobMessage>,
+  createRuntime: () => ReviewRuntime,
+  logger: { info: (msg: string) => void, error: (msg: string, err?: any) => void }
+): Worker {
   const worker = new Worker(
     'codra-reviews',
     async (job: Job) => {
@@ -19,11 +20,12 @@ export function startWorker(env: NodeAppBindings, redisUrl: string, queue: Queue
         throw new Error('Invalid job payload');
       }
 
-      const reviewRuntime = createReviewRuntime(env);
-      const orchestrator = new NodeOrchestrator(reviewRuntime, queue);
+      const reviewRuntime = createRuntime();
+      // Need to cast to any since DbEnv is dynamically merged downstream
+      const orchestrator = new NodeOrchestrator(reviewRuntime as any, queue);
       await orchestrator.startReviewJob(job.id ?? 'unknown', parseResult.data);
     },
-    { connection }
+    { connection: redisConnection }
   );
 
   worker.on('completed', (job) => {

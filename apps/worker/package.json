@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/worker",
-  "version": "0.9.6",
+  "version": "0.9.12",
   "private": true,
   "type": "module",
   "dependencies": {

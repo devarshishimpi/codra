@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/models",
-  "version": "0.9.6",
+  "version": "0.9.12",
   "description": "LLM provider adapters and model catalog for the Codra review engine.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -78,8 +78,8 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "@codraoss/schema": "^0.9.5",
-    "@codraoss/core": "^0.9.5"
+    "@codraoss/schema": "*",
+    "@codraoss/core": "*"
   },
   "devDependencies": {
     "tsup": "^8.0.0"

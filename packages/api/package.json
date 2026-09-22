@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/api",
-  "version": "0.9.8",
+  "version": "0.9.12",
   "description": "Codra's HTTP surface as a mountable Hono router, wired through ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -16,9 +16,18 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": "./src/index.ts",
-    "./logger": "./src/logger.ts",
-    "./platform": "./src/platform/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./logger": {
+      "types": "./dist/logger.d.ts",
+      "import": "./dist/logger.js"
+    },
+    "./platform": {
+      "types": "./dist/platform/index.d.ts",
+      "import": "./dist/platform/index.js"
+    }
   },
   "files": [
     "dist",
@@ -26,24 +35,7 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public",
-    "main": "./dist/index.js",
-    "module": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "exports": {
-      ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.js"
-      },
-      "./logger": {
-        "types": "./dist/logger.d.ts",
-        "import": "./dist/logger.js"
-      },
-      "./platform": {
-        "types": "./dist/platform/index.d.ts",
-        "import": "./dist/platform/index.js"
-      }
-    }
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
@@ -54,14 +46,17 @@
   "dependencies": {
     "hono": "^4.12.25",
     "zod": "^4.3.6",
-    "@codraoss/schema": "^0.9.5",
-    "@codraoss/core": "^0.9.5",
-    "@codraoss/db": "^0.9.5",
-    "@codraoss/provider-github": "^0.9.5",
-    "@codraoss/models": "^0.9.6"
+    "@codraoss/schema": "*",
+    "@codraoss/core": "*",
+    "@codraoss/db": "*",
+    "@codraoss/provider-github": "*",
+    "@codraoss/models": "*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "tsup": "^8.0.0"
-  }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts"
 }

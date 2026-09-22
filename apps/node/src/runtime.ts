@@ -10,7 +10,7 @@ import { makeJobStore, makeFileReviewStore, makeLearningStore, makeModelConfigRe
 import { loadRepoConfig } from '@codraoss/api/platform';
 
 // Node-specific adapters
-import { cryptoIds, systemClock } from './adapters/platform';
+import { cryptoIds, systemClock } from '@codraoss/node-adapters';
 import { makeTelemetrySink } from './adapters/telemetry';
 import {
   makeFormatterFactory,

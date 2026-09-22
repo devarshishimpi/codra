@@ -2,8 +2,6 @@ import { createSharedApiDeps } from '@codraoss/api';
 import type { NodeAppBindings } from './env';
 import { logger } from '@codraoss/api/logger';
 import { createReviewRuntime } from './runtime';
-import { Queue } from 'bullmq';
-import Redis from 'ioredis';
 
 export function createNodeApiDeps(env: NodeAppBindings) {
   return createSharedApiDeps({
@@ -16,15 +14,12 @@ export function createNodeApiDeps(env: NodeAppBindings) {
       await env.REVIEW_QUEUE.send(input);
     },
     terminateJobWorkflow: async (job) => {
-      const workerQueue = new Queue('codra-reviews', { connection: new Redis(process.env.REDIS_URL || 'redis://localhost:6379') });
-      const bullMqJob = await workerQueue.getJob(job.id);
-      if (bullMqJob) {
-        await bullMqJob.remove();
+      if (env.REVIEW_QUEUE.deleteJob) {
+        await env.REVIEW_QUEUE.deleteJob(job.id);
         logger.info(`[API Deps] Terminated job workflow for job ${job.id}`);
       } else {
-        logger.warn(`[API Deps] Attempted to terminate non-existent or completed job ${job.id}`);
+        logger.warn(`[API Deps] QueueAdapter does not support deleteJob. Cannot terminate ${job.id}`);
       }
-      await workerQueue.close();
     },
     scheduleBestEffortJobMaintenance: () => {
       // In node, this is a long running process, we can just spawn a promise.
