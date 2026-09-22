@@ -1,10 +1,11 @@
 {
   "entry": ["src/index.ts"],
   "format": ["esm"],
-  "outDir": "dist",
-  "clean": true,
-  "sourcemap": true,
+  "dts": true,
   "splitting": false,
+  "sourcemap": true,
+  "clean": true,
   "target": "node20",
+  "outDir": "dist",
   "noExternal": []
 }

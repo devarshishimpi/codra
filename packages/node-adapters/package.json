@@ -3,6 +3,7 @@
   "version": "0.9.13",
   "description": "Node.js platform adapters for Codra, including BullMQ, Redis, and Stateless Orchestration.",
   "type": "module",
+  "sideEffects": false,
   "main": "./src/index.ts",
   "types": "./dist/index.d.ts",
   "exports": {
