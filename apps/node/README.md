@@ -24,14 +24,19 @@ The dashboard is at <http://localhost:3000>.
 | Service     | What it does                                              |
 | ----------- | --------------------------------------------------------- |
 | `postgres`  | Database, on a named volume so data survives restarts      |
-| `redis`     | Session storage, config cache, and the review job queue    |
+| `redis`     | Config cache and the review job queue                      |
 | `migrate`   | Applies `packages/db/migrations`, then exits               |
 | `codra-app` | The API, dashboard, and webhook receiver on port 3000      |
 
 The app waits for Postgres and Redis to report healthy and for `migrate` to
-finish, so a first boot lands on a ready schema. Postgres and Redis are
-published on `127.0.0.1` only, so deploying this file to a VPS does not expose
-the database to the internet.
+finish, so a first boot lands on a ready schema.
+
+Postgres and Redis are published on `127.0.0.1` only, so deploying this file to
+a VPS does not expose them to the internet. They are still reachable by anything
+else on the host, and they ship with development credentials, so change
+`POSTGRES_PASSWORD` before you deploy and drop the `ports:` entries from
+`docker-compose.yml` if you do not need to reach them from the host; the
+services find each other over the compose network either way.
 
 Useful commands:
 
@@ -75,7 +80,11 @@ npm run dev --workspace=@codraoss/node-server
 The server reads `.dev.vars` from the repository root, and expects Postgres and
 Redis to be reachable at `DATABASE_URL` and `REDIS_URL`.
 
-## Current limitation
+## Current limitations
+
+Dashboard sessions are held in memory, not in Redis, so restarting or
+redeploying the container signs every dashboard user out. They sign back in
+through GitHub; nothing else is lost.
 
 Queued reviews are not processed yet. The webhook receiver, dashboard, and queue
 producer all work, but the review runtime for Node is still being built

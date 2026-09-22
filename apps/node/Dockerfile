@@ -62,6 +62,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
+# tsup emits ESM. Node 22 only runs it unflagged because of module syntax
+# auto-detection; this marks the bundle explicitly so an older base image or a
+# stricter loader cannot turn startup into "Cannot use import statement outside
+# a module".
+RUN printf '{"type":"module"}\n' > package.json
+
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/apps/node/dist ./dist
 COPY --from=builder /app/dist/client ./dist/client
