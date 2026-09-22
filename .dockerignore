@@ -1,0 +1,27 @@
+# Build context trimming for apps/node/Dockerfile.
+# node_modules and dist are rebuilt inside the image; secrets must never enter it.
+
+node_modules
+**/node_modules
+dist
+**/dist
+.wrangler
+**/.wrangler
+
+.git
+.github
+.changeset
+
+.dev.vars
+.env
+.env.*
+!.env.docker.example
+
+*.log
+npm-debug.log*
+coverage
+.vscode
+.idea
+.DS_Store
+
+test

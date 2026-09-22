@@ -1,0 +1,86 @@
+# Full Codra stack for self-hosting: Postgres, Redis, and the Node server.
+#
+#   cp .env.docker.example .env
+#   docker compose up -d
+#
+# Postgres and Redis are published on the loopback interface only, so a VPS
+# running this file does not expose its database to the internet.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-codra}
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-codra}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Applies packages/db/migrations against an empty database and exits. The app
+  # waits on it, so a fresh `docker compose up` boots against a ready schema.
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/node/Dockerfile
+    image: codra-node:latest
+    restart: 'no'
+    command: ['node', 'packages/db/scripts/migrate.mjs']
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@postgres:5432/codra}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  codra-app:
+    build:
+      context: .
+      dockerfile: apps/node/Dockerfile
+    image: codra-node:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:postgres@postgres:5432/codra}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      PORT: '3000'
+    ports:
+      - '${PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://127.0.0.1:3000/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  postgres-data:
+  redis-data:
