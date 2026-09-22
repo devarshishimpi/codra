@@ -58,9 +58,14 @@ app.onError((err, c) => {
   console.error('HONO ERROR:', err);
   return c.text('Custom Error: ' + err.message, 500);
 });
-app.use('/assets/*', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
-app.use('/*.svg', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
-app.use('/*.ico', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
+const clientRoot = process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client';
+
+app.use('/assets/*', serveStatic({ root: clientRoot }));
+// Hono has no suffix matching, so '/*.svg' and '/*.ico' never matched: the root-level
+// icons vite copies out of public/ are mounted by their own paths instead.
+app.use('/icons/*', serveStatic({ root: clientRoot }));
+app.use('/favicon.ico', serveStatic({ root: clientRoot }));
+app.use('/favicon.svg', serveStatic({ root: clientRoot }));
 const port = parseInt(process.env.PORT || '3000', 10);
 
 serve({
