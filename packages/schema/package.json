@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/schema",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "Shared types and Zod contracts for Codra, the open-source code review engine.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",

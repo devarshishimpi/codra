@@ -44,7 +44,6 @@ import {
   REPO_CONFIG_CACHE_VERSION,
 } from './constants';
 
-// Re-exported for server use; client imports directly to keep zod out of browser bundle.
 export {
   reviewSeverities,
   reviewConcurrencyLevels,

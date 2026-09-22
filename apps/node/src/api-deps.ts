@@ -15,14 +15,18 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     },
     terminateJobWorkflow: async (job) => {
       if (env.REVIEW_QUEUE.deleteJob) {
-        await env.REVIEW_QUEUE.deleteJob(job.id);
-        logger.info(`[API Deps] Terminated job workflow for job ${job.id}`);
+        try {
+          await env.REVIEW_QUEUE.deleteJob(job.id);
+          logger.info(`[API Deps] Terminated job workflow for job ${job.id}`);
+        } catch (error) {
+          logger.error(`[API Deps] Failed to terminate job workflow for job ${job.id}: ${error}`);
+        }
       } else {
         logger.warn(`[API Deps] QueueAdapter does not support deleteJob. Cannot terminate ${job.id}`);
       }
     },
     scheduleBestEffortJobMaintenance: () => {
-      // In node, this is a long running process, we can just spawn a promise.
+
     },
     createReviewRuntime: () => createReviewRuntime(env),
     getOrFetchRawDiffForCompletedJob: async () => '',

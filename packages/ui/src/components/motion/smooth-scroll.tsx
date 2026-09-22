@@ -11,7 +11,6 @@ import {
   useRef,
 } from 'react';
 
-// Named fn, not a lib/ease token: Lenis needs a (t) => number easing fn, not bezier points.
 const EASE_SCROLL = (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t));
 
 export type ScrollTarget = number | string | HTMLElement;
@@ -23,13 +22,10 @@ export type ScrollToOptions = {
 };
 
 export type SmoothScrollApi = {
-  /** Null on the reduced-motion / native path. */
   lenis: Lenis | null;
   scrollY: MotionValue<number>;
   progress: MotionValue<number>;
-  /** px/frame. */
   velocity: MotionValue<number>;
-  /** Jumps instantly under reduced motion. */
   scrollTo: (target: ScrollTarget, options?: ScrollToOptions) => void;
 };
 
@@ -37,14 +33,11 @@ const SmoothScrollContext = createContext<SmoothScrollApi | null>(null);
 
 export interface SmoothScrollProps {
   children: ReactNode;
-  /** True drives window scroll; false scrolls a contained area. */
   root?: boolean;
-  /** Lower = smoother, heavier. */
   lerp?: number;
   duration?: number;
   orientation?: 'vertical' | 'horizontal';
   wheelMultiplier?: number;
-  /** Off by default: native touch momentum is already good on mobile. */
   touch?: boolean;
   className?: string;
 }
@@ -208,7 +201,6 @@ export function SmoothScroll({
           smoothWheel: true,
           syncTouch: touch,
           easing: EASE_SCROLL,
-          // Else Lenis preventDefault()s every wheel event, blocking nested scroll areas.
           allowNestedScroll: true,
         }}
       >

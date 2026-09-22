@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/api",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "Codra's HTTP surface as a mountable Hono router, wired through ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -16,18 +16,9 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./logger": {
-      "types": "./dist/logger.d.ts",
-      "import": "./dist/logger.js"
-    },
-    "./platform": {
-      "types": "./dist/platform/index.d.ts",
-      "import": "./dist/platform/index.js"
-    }
+    ".": "./src/index.ts",
+    "./logger": "./src/logger.ts",
+    "./platform": "./src/platform/index.ts"
   },
   "files": [
     "dist",
@@ -35,7 +26,21 @@
     "README.md"
   ],
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "exports": {
+      ".": {
+        "import": "./dist/index.js",
+        "types": "./dist/index.d.ts"
+      },
+      "./logger": {
+        "import": "./dist/logger.js",
+        "types": "./dist/logger.d.ts"
+      },
+      "./platform": {
+        "import": "./dist/platform/index.js",
+        "types": "./dist/platform/index.d.ts"
+      }
+    }
   },
   "scripts": {
     "build": "tsup",
@@ -46,11 +51,11 @@
   "dependencies": {
     "hono": "^4.12.34",
     "zod": "^4.3.6",
-    "@codraoss/schema": "*",
-    "@codraoss/core": "*",
-    "@codraoss/db": "*",
-    "@codraoss/provider-github": "*",
-    "@codraoss/models": "*"
+    "@codraoss/schema": "workspace:*",
+    "@codraoss/core": "workspace:*",
+    "@codraoss/db": "workspace:*",
+    "@codraoss/provider-github": "workspace:*",
+    "@codraoss/models": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.3",

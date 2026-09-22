@@ -25,7 +25,6 @@ interface SelectProps {
   triggerClassName?: string;
   triggerStyle?: CSSProperties;
   leadingIcon?: ReactNode;
-  /** Decides the dropdown's background so it stays distinguishable from where the trigger sits. */
   variant?: 'page' | 'card';
 }
 
@@ -56,12 +55,10 @@ export function Select({
   const [rect, setRect] = useState<TriggerRect | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  /** What last moved the highlight - only keyboard moves should auto-scroll. */
   const highlightSource = useRef<'keyboard' | 'pointer'>('keyboard');
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  // Depends on `open` only: keying off `options`/`value` yanked the highlight back when a caller passed a freshly-built array mid-interaction.
   useEffect(() => {
     if (!open) return;
     highlightSource.current = 'keyboard';
@@ -70,7 +67,6 @@ export function Select({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  // Keyboard only: on hover this looped (hover → scrollIntoView → reposition → mouseenter again), causing jitter.
   useEffect(() => {
     if (!open || highlightSource.current !== 'keyboard') return;
     optionRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
@@ -83,8 +79,6 @@ export function Select({
       const target = e.target as Node;
       if (triggerRef.current?.contains(target)) return;
       if (panelRef.current?.contains(target)) return;
-      // The label forwards its click to the trigger, so treating it as "outside" would close the
-      // panel here and let that forwarded click reopen it -- one click, no visible change.
       if (labelRef.current?.contains(target)) return;
       setOpen(false);
     };
@@ -106,7 +100,6 @@ export function Select({
     return () => observer.disconnect();
   }, []);
 
-  // Flips upward when there's no room below; batched to one animation frame since scroll/resize fire faster than repaints.
   useLayoutEffect(() => {
     if (!open) return;
     const trigger = triggerRef.current;
@@ -122,7 +115,6 @@ export function Select({
       setPlacement(below < h + 16 && above > below ? 'top' : 'bottom');
     };
     const scheduleUpdate = (e?: Event) => {
-      // Scrolling the list doesn't move the trigger; recomputing only causes flicker.
       if (e && e.target instanceof Node && panelRef.current?.contains(e.target)) return;
       if (frame !== null) return;
       frame = requestAnimationFrame(update);
@@ -230,7 +222,6 @@ export function Select({
           />
         </div>
 
-        {/* Portaled to <body> so it can't be clipped by an ancestor's stacking context. */}
         {createPortal(
           <SelectPanel
             panelRef={panelRef}

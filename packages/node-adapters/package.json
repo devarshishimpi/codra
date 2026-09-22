@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/node-adapters",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "Node.js platform adapters for Codra, including BullMQ, Redis, and Stateless Orchestration.",
   "type": "module",
   "main": "./src/index.ts",
@@ -43,10 +43,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@codraoss/api": "*",
-    "@codraoss/core": "*",
-    "@codraoss/db": "*",
-    "@codraoss/schema": "*",
+    "@codraoss/api": "workspace:*",
+    "@codraoss/core": "workspace:*",
+    "@codraoss/db": "workspace:*",
+    "@codraoss/schema": "workspace:*",
     "bullmq": "^6.3.8",
     "ioredis": "^6.0.0",
     "nanoid": "^5.0.9"

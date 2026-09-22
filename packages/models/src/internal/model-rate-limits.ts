@@ -9,12 +9,12 @@ export interface RateLimitPersistence {
 }
 
 export class ModelRateLimitBook {
-  // Slot held before client timeout starts (Workers: 6 concurrent conns/invocation).
+  // Slot held before client timeout starts.
   private readonly callGate = new ModelCallGate();
 
   private readonly modelRateLimits = new Map<string, { limitTokens?: number; cooldownUntil: number }>();
 
-  // Keyed by model, not provider, so an all-Google chain doesn't serialize.
+  // Keyed by model.
   private readonly tokenMeteredModels = new Map<string, ModelCallGate>();
 
   private hydrated: Promise<void> | null = null;

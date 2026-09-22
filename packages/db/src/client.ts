@@ -15,7 +15,7 @@ function createDbClient(env: DbEnv): DbClient {
     fetch_types: false,
     prepare: false,
     onnotice: () => {},
-    ssl: env.HYPERDRIVE.connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : false,
+    ssl: env.HYPERDRIVE.connectionString.includes('sslmode=require') ? { rejectUnauthorized: process.env.NODE_ENV !== 'production' } : false,
   });
 
   return {
@@ -92,7 +92,7 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
   try {
     return await op(getDb(env));
   } catch (error) {
-    if (inScope || !isStaleConnectionError(error)) throw error;
+    if (inScope || env.workerMode !== false || !isStaleConnectionError(error)) throw error;
 
     const connectionString = env.HYPERDRIVE.connectionString;
     fallbackClients.delete(connectionString);

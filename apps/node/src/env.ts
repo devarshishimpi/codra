@@ -8,10 +8,10 @@ export interface NodeAppBindings {
   REVIEW_QUEUE: QueueProducer<ReviewJobMessage>;
   REVIEW_ORCHESTRATOR: JobOrchestrator;
 
-  // â”€â”€ Database â”€â”€
+
   DATABASE_CONFIG: { connectionString: string };
 
-  // â”€â”€ Environment strings (loaded from process.env via dotenv) â”€â”€
+
   APP_PRIVATE_KEY: string;
   GITHUB_APP_ID: string;
   GITHUB_APP_SLUG?: string;
@@ -30,7 +30,7 @@ export function createNodeEnv(stubs: {
   SESSION_STORE: SessionStore;
   APP_KV: KeyValueStore;
   REVIEW_QUEUE: QueueProducer<ReviewJobMessage>;
-  REVIEW_ORCHESTRATOR?: JobOrchestrator; // Mark as optional
+  REVIEW_ORCHESTRATOR?: JobOrchestrator;
 }): NodeAppBindings {
   const requireEnv = (key: string) => {
     const val = process.env[key];

@@ -14,12 +14,10 @@ import {
 const GEMINI_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const GEMINI_MAX_RETRIES = 2;
 const GEMINI_DEFAULT_OUTPUT_TOKENS = OUTPUT_TOKENS_FLOOR;
-// 65k leaves room for thinking tokens plus dense multi-file output.
 const GEMINI_MAX_OUTPUT_TOKENS = 65_536;
 const GEMINI_MAX_RETRY_DELAY_MS = 5_000;
 const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
-// 429 handled separately; only retryable if a cool-off is stated.
 function isRetryableGeminiStatus(status: number) {
   return status === 408 || status === 500 || status === 502 || status === 503 || status === 504 || status === 524;
 }
@@ -77,8 +75,8 @@ export function classifySchemaRejection(status: number, message: string): 'confi
 
 function isRetryableTransportError(error: unknown) {
   if (!(error instanceof Error)) return false;
-  // Skip retrying timeouts (caller already grants up to 2m); defer to fallback chain.
-  if (error.name === 'TimeoutError' || error.message.toLowerCase().includes('timed out')) return false;
+// Skip retrying timeouts.
+if (error.name === 'TimeoutError' || error.message.toLowerCase().includes('timed out')) return false;
   if (error.message.includes('fetch failed')) return true;
   return error instanceof TypeError;
 }
@@ -110,7 +108,7 @@ export async function reviewWithGoogle(
   let currentCeiling = Math.min(GEMINI_MAX_OUTPUT_TOKENS, answerBudget + thinkingBudget);
   let ceilingRaised = false;
   const fail = (error: unknown): never => {
-    // Confident rejections only: a probe that failed anyway proves nothing, and latching would strip the schema from every later call in the job. A successful probe latches via `degraded` instead.
+    // Latch confident rejections only.
     if (schemaRejected && schemaRejectionBranch === 'confident' && typeof error === 'object' && error !== null) {
       Object.defineProperty(error, 'schemaDropped', { value: true, configurable: true });
     }
@@ -205,8 +203,8 @@ export async function reviewWithGoogle(
         continue;
       }
 
-      // Unexplained invalid-argument 400: strip optional features one at a time -- grammar, then thinking budget -- refunding the attempt each time. The latches bound this ladder to two extra probes.
-      if (response.status === 400 && /invalid argument/i.test(message)) {
+// Unexplained invalid-argument 400: strip optional features one at a time (grammar, then thinking budget).
+if (response.status === 400 && /invalid argument/i.test(message)) {
         if (responseJsonSchema && !schemaRejected) {
           schemaRejected = true;
           schemaRejectionBranch = 'catchall';
@@ -233,8 +231,8 @@ export async function reviewWithGoogle(
       const requestedDelayMs = response.status === 429
         ? retryAfterDelayMs(response.headers.get('retry-after')) ?? requestedRetryDelayFromBody(message)
         : null;
-      // Unstated 429s back off ~60s, making them unretryable here; retry only short, stated cool-offs.
-      const isRetryable = response.status === 429
+  // Retry only short, stated cool-offs.
+  const isRetryable = response.status === 429
         ? requestedDelayMs !== null && requestedDelayMs <= GEMINI_MAX_RETRY_DELAY_MS
         : isRetryableGeminiStatus(response.status);
       const retryDelayMs = Math.min(
@@ -318,7 +316,7 @@ export async function reviewWithGoogle(
       return fail(new Error('Gemini returned an empty response.'));
     }
 
-    // Attach partial text so a later fallback model can salvage it.
+    // Attach partial text for fallback models.
     if (truncated && input.truncationIntolerant) {
       const error = new UnparseableModelResponseError(model, 'finishReason=MAX_TOKENS');
       attachPartialResponse(error, {

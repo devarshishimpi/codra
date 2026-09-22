@@ -15,7 +15,6 @@ import type { ModelChainContext } from './model-chain-runner';
 import type { ModelRateLimitBook } from './model-rate-limits';
 import type { ModelChainProgressStore } from './model-chain-progress';
 
-// Past two quota failures per file burns subrequests for nothing.
 const MAX_QUOTA_FAILURES_PER_FILE = 2;
 
 export type ModelReviewContext = ModelChainContext & {
@@ -49,8 +48,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
   });
   const wholeChain = [primary, ...fallbacks];
 
-  // Resume index is the min across bin members, clamped so it can't empty the chain.
-  const recorded = await Promise.all(progressLabels.map((key) => ctx.chainProgress.startIndexFor(key)));
+// Resume index is min across bin members, clamped to prevent emptying chain.
+const recorded = await Promise.all(progressLabels.map((key) => ctx.chainProgress.startIndexFor(key)));
   const startIndex = Math.min(Math.min(...recorded), Math.max(wholeChain.length - 1, 0));
   const modelsToTry = wholeChain.slice(startIndex);
   if (startIndex > 0) {
@@ -134,8 +133,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
       continue;
     }
 
-    // Floor applies even to the primary model, not just fallbacks.
-    if (ctx.tracker && !ctx.tracker.hasRemainingSubrequests(SUBREQUEST_HEADROOM_FOR_MODEL_CALL)) {
+// Floor applies even to primary model, not just fallbacks.
+if (ctx.tracker && !ctx.tracker.hasRemainingSubrequests(SUBREQUEST_HEADROOM_FOR_MODEL_CALL)) {
       logger.warn(`Deferring ${label}: not enough subrequest budget left to commit a prompt`, {
         subrequests: ctx.tracker.getSubrequestCount(),
         needed: SUBREQUEST_HEADROOM_FOR_MODEL_CALL,
@@ -167,8 +166,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
         ctx.tracker.record(response.modelUsed, response.inputTokens, response.outputTokens);
       }
 
-      // isLastModel uses the absolute chain index so resumed jobs don't accept prematurely.
-      const parsed = params.parse(response.rawText, {
+// `isLastModel` uses the absolute chain index for resumed jobs.
+const parsed = params.parse(response.rawText, {
         isLastModel: startIndex + modelIndex >= wholeChain.length - 1,
       });
       await ctx.chainProgress.noteSuccess(currentModel);
@@ -177,8 +176,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
       return { ...response, userPrompt, parsed };
     } catch (error) {
       const isLastModel = startIndex + modelIndex >= wholeChain.length - 1;
-      // Salvage a truncated partial from the final model rather than fail outright.
-      const partial = isLastModel ? partialResponseOf(error) : null;
+// Salvage truncated partials from the final model.
+const partial = isLastModel ? partialResponseOf(error) : null;
       if (partial) {
         try {
           const parsed = params.parse(partial.rawText, { isLastModel: true });
@@ -259,8 +258,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
       retryCause,
     );
 
-    // Skipped once at chain's end, so a fresh retry starts clean rather than looping.
-    if (attemptedFailedThrough > 0 && attemptedFailedThrough < wholeChain.length) {
+// Skipped at chain end, so a fresh retry starts clean.
+if (attemptedFailedThrough > 0 && attemptedFailedThrough < wholeChain.length) {
       await Promise.all(progressLabels.map((key) => ctx.chainProgress.advance(key, attemptedFailedThrough)));
       Object.defineProperty(error, 'nextChainIndex', { value: attemptedFailedThrough, configurable: true });
     } else {
@@ -270,8 +269,8 @@ export async function runModelChain<T>(ctx: ModelReviewContext, params: {
   }
 
   if (!attemptedAnyModel) {
-    // Unwrap so a permanent operator error isn't hidden behind a transient wrapper.
-    if (lastError !== undefined) {
+// Unwrap permanent operator error.
+if (lastError !== undefined) {
       if (isTransientModelFailure(lastError)) {
         throw new RetryableModelError(`Every model for ${label} failed to resolve; retrying later.`, lastError);
       }

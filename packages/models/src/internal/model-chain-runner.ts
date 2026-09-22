@@ -16,7 +16,7 @@ import type { ModelInput, ModelResponse } from '../types';
 
 // Import from services/model.ts, not here -- four specs vi.mock that specifier.
 
-// Implementation detail, NOT new public API: kept private on ModelRunner because three specs reach these via `(service as any)`.
+// `ModelChainContext` kept private as an implementation detail.
 export type ModelChainContext = {
   selectModel(params: { totalLineCount: number; config: RepoConfig }): { primary: string; fallbacks: string[] };
   resolveModel(model: string): Promise<ResolvedModelConfig>;
@@ -97,16 +97,16 @@ export async function generateSummary(ctx: ModelChainContext, params: {
   throw lastError;
 }
 
-// Best-effort: any throw here means "verification unavailable", keeping the pre-verification findings.
+// Best-effort: failures retain pre-verification findings.
 export async function verifyFindings(ctx: ModelChainContext, params: { candidates: VerifyCandidate[]; config: RepoConfig }): Promise<ModelResponse> {
   const { primary, fallbacks } = ctx.selectModel({ totalLineCount: 0, config: params.config });
   const modelsToTry = [primary, ...fallbacks];
   const input: ModelInput = {
     systemPrompt: VERIFY_SYSTEM_PROMPT,
     userPrompt: buildVerifyPrompt(params.candidates),
-    // Must be the verify grammar, not the file-review one -- that schema makes strict decoding unsatisfiable and the pass a silent no-op.
+    // Must use verify grammar, not file-review.
     responseSchema: VERIFY_RESPONSE_SCHEMA as unknown as ModelInput['responseSchema'],
-    // A missing verdict is not a pass; a truncated list would silently withhold findings.
+    // Truncated list silently withholds findings.
     truncationIntolerant: true,
   };
   const requestedTimeoutMs = clampTimeoutToChainBudget(verifyTimeoutMs(params.candidates.length));
@@ -117,7 +117,7 @@ export async function verifyFindings(ctx: ModelChainContext, params: { candidate
   const recordGateWait = (waitedMs: number) => { gateWaitMs += waitedMs; };
 
   for (const [modelIndex, currentModel] of modelsToTry.entries()) {
-    // Matters more here than in reviewFileChunk: finalize can't hibernate, so a full model chain through an outage can burn the whole invocation budget and fail the job terminally.
+    // Finalize can't hibernate; prevent full-chain budget burn.
     if (modelIndex > 0 && ctx.tracker?.isNearLimit()) {
       logger.warn('Stopping the verification chain; subrequest budget for this invocation is nearly exhausted', {
         skippedModels: modelsToTry.slice(modelIndex),

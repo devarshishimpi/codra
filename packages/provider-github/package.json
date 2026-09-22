@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/provider-github",
-  "version": "0.9.12",
+  "version": "0.9.13",
   "description": "GitHub git-provider adapter for Codra: App auth, webhooks, OAuth, and review posting.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -53,8 +53,8 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "@codraoss/core": "*",
-    "@codraoss/schema": "*"
+    "@codraoss/core": "workspace:*",
+    "@codraoss/schema": "workspace:*"
   },
   "devDependencies": {
     "tsup": "^8.0.2"

@@ -43,24 +43,19 @@ export const apiActions = [
 
 export type KnownApiAction = (typeof apiActions)[number];
 
-// Open union: consumers can add their own action names while the known list keeps autocomplete.
 export type ApiAction = KnownApiAction | (string & {});
 
 export type AuthSessionResponse = {
   user: AuthSessionUser;
-  // Omitted, or a '*' entry, means "allow everything".
   permissions?: string[];
 };
 
-// Durable account record persisted in Postgres (account_settings).
 export type AccountSettings = {
-  // Stable, unique account id (uuid) - distinct from the GitHub user id.
   id: string;
   githubUserId: number;
   githubUsername: string;
   accountName: string | null;
   accountEmail: string | null;
-  // Presentation only (timestamps are always stored UTC); `null` means "follow the viewer's browser timezone".
   timezone: string | null;
 };
 
@@ -80,9 +75,6 @@ export type JobDetailResponse = {
   job: JobDetail;
 };
 
-/** Per-file reconstructed diff/prompt text, fetched on demand (see GET /api/jobs/:id/diffs) --
-    diff_input isn't persisted in Postgres, so this comes from KV or a fresh GitHub fetch. Files
-    with no entry are unavailable (e.g. the underlying commits are gone). */
 export type JobDiffsResponse = {
   diffs: Record<string, string>;
 };

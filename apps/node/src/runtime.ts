@@ -3,13 +3,13 @@ import type { DbEnv } from '@codraoss/db/env';
 import { TokenTracker } from '@codraoss/core/token-tracker';
 import type { NodeAppBindings } from './env';
 
-// Adapters from @codraoss/db/repositories
+
 import { makeJobStore, makeFileReviewStore, makeLearningStore, makeModelConfigReader, makeReviewSettingsReader, makeWebhookDeliveryReader } from '@codraoss/db/repositories';
 
-// Config
+
 import { loadRepoConfig } from '@codraoss/api/platform';
 
-// Node-specific adapters
+
 import { cryptoIds, systemClock } from '@codraoss/node-adapters';
 import { makeTelemetrySink } from './adapters/telemetry';
 import {

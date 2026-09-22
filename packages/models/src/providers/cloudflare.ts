@@ -8,11 +8,10 @@ export interface CloudflareAiBinding {
   run(model: string, args: unknown, options?: unknown): Promise<unknown>;
 }
 
-// Reasoning models under strict-JSON can burn the token budget thinking and never emit; fail fast and defer.
+// Reasoning models under strict-JSON can burn the token budget thinking and never emit.
 const CLOUDFLARE_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const CLOUDFLARE_DEFAULT_OUTPUT_TOKENS = OUTPUT_TOKENS_FLOOR;
-// Workers AI context windows vary widely by model, so this stays modest next to Gemini's: an over-large
-// `max_completion_tokens` is refused by the smaller models rather than clamped.
+// Workers AI context windows vary widely, so this stays modest: larger `max_completion_tokens` are clamped.
 const CLOUDFLARE_MAX_OUTPUT_TOKENS = 16_384;
 
 type UnknownRecord = Record<string, unknown>;
@@ -117,7 +116,7 @@ function extractCloudflareUsage(result: unknown) {
   };
 }
 
-// Grammar comes from the CALLER: hardcoding the file-review schema here once forced the verifier to emit a file-review object, silently defaulting `results` to `[]`.
+// Grammar comes from CALLER.
 function buildCloudflareInferenceRequest(input: ModelInput) {
   const prompts = jsonOnlyPrompts(input);
   return {
@@ -237,9 +236,9 @@ export async function reviewWithCloudflare(
   providerName = 'Cloudflare',
   options?: { timeoutMs?: number },
 ): Promise<ModelResponse> {
-  // Single attempt: a retry would spend another subrequest on a model that just failed, when the fallback chain is about to try another.
-  const timeoutMs = options?.timeoutMs ?? CLOUDFLARE_TIMEOUT_MS;
-  let timer: ReturnType<typeof setTimeout> | undefined;
+// Single attempt: retries would waste subrequests on a failing model.
+const timeoutMs = options?.timeoutMs ?? CLOUDFLARE_TIMEOUT_MS;
+let timer: ReturnType<typeof setTimeout> | undefined;
 
   // Promise.race only stops us awaiting; the binding's abort signal is what actually cancels the still-running subrequest.
   const controller = new AbortController();

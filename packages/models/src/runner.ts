@@ -20,36 +20,29 @@ import { ModelRateLimitBook } from './internal/model-rate-limits';
 import { ModelChainProgressStore } from './internal/model-chain-progress';
 import { type ModelChainContext, generateSummary, verifyFindings } from './internal/model-chain-runner';
 import { type ModelReviewContext, reviewFile, reviewFiles } from './internal/model-review-file';
-// Re-exported so test doubles can be typed against the real shape.
 export type { BatchReviewOutcome } from './internal/model-review-file';
 import { pollReviewBatch, submitReviewBatch } from './internal/model-review-batch';
 
-// Re-exported: core/review.ts and two specs import these.
 export { RetryableModelError, isRetryableModelError, nextChainIndexOf } from './internal/model-support';
-
 export { PROMPT_FIT_SAFETY_FACTOR, estimatePromptTokens } from './internal/model-support';
-// Re-exported to avoid a sibling import (no-restricted-imports).
 export { ModelChainProgressStore } from './internal/model-chain-progress';
 export { isPlausibleTokenBucket, parseRateLimitFromError } from './internal/model-support';
 
 const PROVIDER_UNAVAILABLE_TTL_SECONDS = 24 * 60 * 60;
 export class ModelRunner {
-  // Caches the in-flight promise so concurrent calls for a model share one request.
+  // Caches in-flight config requests.
   private readonly resolvedModelCache = new Map<string, Promise<ResolvedModelConfig | null>>();
 
-  // Keyed by model, not provider; backed by chainProgress so cool-offs persist across invocations.
+  // Backed by chainProgress to persist across invocations.
   private readonly rateLimits: ModelRateLimitBook;
 
-  // KV can't flip unavailable to available within one invocation, so cache per instance.
+  // Cached per instance.
   private readonly providerUnavailableCache = new Map<string, Promise<boolean>>();
 
-  // Confirmed unsupported for async batching this invocation; skip re-probing.
   private readonly asyncUnsupportedModels = new Set<string>();
-
-  // Same, for constrained decoding, keyed by grammar so one refusal doesn't disable others.
   private readonly schemaUnsupportedModels = new Set<string>();
 
-  // Per-file progress so a deferral resumes instead of replaying.
+  // Per-file progress to resume defers.
   private readonly chainProgress: ModelChainProgressStore;
 
   constructor(
@@ -149,10 +142,10 @@ export class ModelRunner {
     const normalized = normalizeModel(model);
     let pending = this.resolvedModelCache.get(normalized);
     if (!pending) {
-      // Cache the null "not configured" result too, so it isn't requeried.
+      // Cache null to prevent requery.
       pending = this.deps.getConfig(normalized);
       this.resolvedModelCache.set(normalized, pending);
-      // Drop cache entry on error so the next call retries.
+      // Drop cache on error so next call retries.
       pending.catch(() => this.resolvedModelCache.delete(normalized));
     }
     const resolved = await pending;
@@ -178,10 +171,10 @@ export class ModelRunner {
     config: ResolvedModelConfig,
     input: ModelInput,
     timeoutMs?: number,
-    // Excludes queue wait from the caller's timing budget.
+    // Excludes queue wait from caller's budget.
     onGateWait?: (waitedMs: number) => void,
   ): Promise<ModelResponse> {
-    // Resolve credentials before the gate slot so slow work doesn't hold one.
+    // Resolve credentials before gate so slow work doesn't hold it.
     if (config.apiFormat === 'cloudflare-workers-ai') {
       if (!this.deps.aiBinding) {
         throw new Error(`Provider ${config.providerName} requires a Cloudflare AI binding, but none was provided.`);
@@ -197,7 +190,7 @@ export class ModelRunner {
       let response: ModelResponse;
       try {
         response = await this.rateLimits.runGated(config, onGateWait, () => {
-          // Read inside the gate: a hoisted read would race the opening wave.
+          // Read inside gate to prevent race conditions.
           const gatedInput = this.schemaUnsupportedModels.has(schemaKey)
             ? { ...input, responseSchema: undefined }
             : input;
@@ -209,7 +202,7 @@ export class ModelRunner {
           );
         });
       } catch (error) {
-        // Latch failure too, so a schema-dropped retry doesn't repay the 400 and full prompt.
+        // Latch failure to avoid repeated 400s.
         if (isSchemaDroppedError(error)) this.schemaUnsupportedModels.add(schemaKey);
         throw error;
       }
@@ -277,7 +270,7 @@ export class ModelRunner {
     return reviewFile(this.reviewCtx(), params);
   }
 
-  // batch.missing files must not be recorded as reviewed.
+  // Do not record batch.missing files.
   async reviewFiles(params: Parameters<typeof reviewFiles>[1]) {
     return reviewFiles(this.reviewCtx(), params);
   }

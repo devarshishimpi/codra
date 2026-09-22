@@ -195,7 +195,7 @@ export type BatchReviewOutcome = ModelResponse & {
   userPrompt: string;
 };
 
-// Caller must not record batch.missing as reviewed when fanning out to file rows.
+// Do not record batch.missing as reviewed.
 export async function reviewFiles(ctx: ModelReviewContext, params: {
   files: readonly FileDiff[];
   prTitle: string | null;

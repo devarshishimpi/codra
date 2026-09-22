@@ -1,6 +1,4 @@
-// beui.dev/components/motion/tabs
-// domMax rather than domAnimation: the active-tab indicator animates via layoutId/layoutRoot, and
-// layout projection only ships in the max bundle.
+// Beui tabs.
 import { LazyMotion, m, domMax, MotionConfig, useReducedMotion, type Transition } from 'motion/react';
 import {
   createContext,
@@ -30,7 +28,6 @@ function useTabs() {
   return ctx;
 }
 
-// A touch of overshoot so the active-tab indicator settles with life instead of snapping.
 const transition: Transition = {
   type: 'spring',
   stiffness: 170,
@@ -73,8 +70,6 @@ export function Tabs({
     <MotionConfig transition={reduce ? { duration: 0 } : transition}>
       <TabsCtx.Provider value={ctx}>
         <LazyMotion features={domMax}>
-          {/* layoutRoot: the indicator's layoutId measures in page coordinates, so without this
-              it would replay scroll offsets as movement inside fixed/scrolled containers. */}
           <m.div layoutRoot className={className}>
             {children}
           </m.div>
@@ -137,7 +132,6 @@ export function TabsTrigger({
     );
   }
 
-  // Segment uses a neutral raised surface (vs. pill's max-contrast) so it reads as a standard segmented control.
   const isSegment = variant === 'segment';
   const radius = variant === 'pill' ? 'rounded-full' : 'rounded-[5px]';
   const indicatorBg = isSegment ? 'bg-ui-base shadow-sm ring-1 ring-ui-line' : 'bg-primary';

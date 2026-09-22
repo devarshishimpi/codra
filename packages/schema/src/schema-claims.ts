@@ -1,6 +1,5 @@
 import { reviewCategories } from './schema-enums';
 
-// Enforced, not just labelled; drops whole types and filters candidates.
 export const claimTypes = [
   'react_hook_missing_deps',
   'react_missing_cleanup',
@@ -47,7 +46,6 @@ export function toClaimType(value: unknown): ClaimType {
   return (claimTypes as readonly string[]).includes(value as string) ? (value as ClaimType) : 'other';
 }
 
-// Decidable from diff hunk alone? A Record, so new types are COMPILE ERRORS until classified.
 export const CLAIM_TYPE_DECIDABILITY: Record<ClaimType, 'diff_local' | 'needs_whole_file' | 'needs_external_facts'> = {
   sql_injection: 'diff_local',
   unsafe_dom_sink: 'diff_local',
@@ -71,12 +69,10 @@ export const CLAIM_TYPE_DECIDABILITY: Record<ClaimType, 'diff_local' | 'needs_wh
   external_version_claim: 'needs_external_facts',
 };
 
-// Derived from table: anything undecidable from the diff.
 export const DEFAULT_DENIED_CLAIM_TYPES: ClaimType[] = claimTypes.filter(
   (type) => CLAIM_TYPE_DECIDABILITY[type] !== 'diff_local',
 );
 
-// Generate candidates, never post.
 export const DEFAULT_SHADOW_RULE_IDS = [
   'empty-catch',
   'debugger-statement',
@@ -89,7 +85,6 @@ export const DEFAULT_SHADOW_RULE_IDS = [
   'insecure-random',
 ] as const;
 
-// How finding ended its life; READ-VALIDATING. Retire by marking historical.
 export const findingDispositions = [
   'posted',
   'severity',

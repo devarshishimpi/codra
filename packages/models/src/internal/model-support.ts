@@ -2,7 +2,7 @@ import { normalizeModelId } from '@codraoss/schema';
 import { isTimeoutMessage, matchesAnyTransientSubstring } from '@codraoss/schema/transient-errors';
 import { UnparseableModelResponseError } from '../types';
 
-// Hook for future legacy ID rewrites, applied before resolution.
+// Hook for legacy ID rewrites.
 const MODEL_ALIASES: Record<string, string> = {};
 
 export function mergeCounts(sources: Array<Record<string, number> | undefined>): Record<string, number> {
@@ -22,14 +22,14 @@ export function estimatePromptTokens(systemPrompt: string, userPrompt: string): 
 
 export const PROMPT_FIT_SAFETY_FACTOR = 0.8;
 
-// Floor to reject misparsed request quotas, not real token buckets.
+// Floor to reject misparsed request quotas.
 export const MIN_PLAUSIBLE_TOKEN_BUCKET = 1_000;
 
 export function isPlausibleTokenBucket(limitTokens: number | undefined): boolean {
   return typeof limitTokens === 'number' && limitTokens >= MIN_PLAUSIBLE_TOKEN_BUCKET;
 }
 
-// Lives here (not with callers) to avoid vi.mock TypeError in specs.
+// Extracted to avoid vi.mock TypeError in specs.
 export function nextChainIndexOf(error: unknown): number | null {
   const value = (error as { nextChainIndex?: unknown } | null)?.nextChainIndex;
   return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
@@ -43,7 +43,7 @@ export const MAX_METERED_QUEUE_DEPTH = 2;
 
 const QUOTA_VIOLATION_PATTERN = /metric:\s*(\S+?),\s*limit:\s*(\d[\d_,]*)/gi;
 
-// Excludes request-count quotas, which would otherwise disable the model.
+// Excludes request-count quotas.
 const TOKEN_QUOTA_METRIC = /(?:input_token|output_token|token_count|_tokens)/i;
 
 export function parseRateLimitFromError(error: unknown): { limitTokens?: number; retryAfterMs?: number } {

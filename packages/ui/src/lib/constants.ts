@@ -1,6 +1,4 @@
-/**
- * Core UI magic numbers and standard constants.
- */
+// Core UI magic numbers and standard constants.
 
 // Animation timings (ms)
 export const UI_DURATION_FAST = 150;
