@@ -123,7 +123,7 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "@codraoss/schema": "workspace:*",
+    "@codraoss/schema": "^0.9.13",
     "jsonrepair": "^3.15.0",
     "picomatch": "^4.0.7",
     "zod": "^4.3.6"

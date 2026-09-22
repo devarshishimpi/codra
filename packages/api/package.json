@@ -51,11 +51,11 @@
   "dependencies": {
     "hono": "^4.12.34",
     "zod": "^4.3.6",
-    "@codraoss/schema": "workspace:*",
-    "@codraoss/core": "workspace:*",
-    "@codraoss/db": "workspace:*",
-    "@codraoss/provider-github": "workspace:*",
-    "@codraoss/models": "workspace:*"
+    "@codraoss/schema": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
+    "@codraoss/db": "^0.9.13",
+    "@codraoss/provider-github": "^0.9.13",
+    "@codraoss/models": "^0.9.13"
   },
   "devDependencies": {
     "@types/node": "^22.0.3",

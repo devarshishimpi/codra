@@ -67,8 +67,8 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "@codraoss/schema": "workspace:*",
-    "@codraoss/core": "workspace:*",
+    "@codraoss/schema": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
     "postgres": "^3.4.9"
   },
   "devDependencies": {

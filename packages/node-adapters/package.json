@@ -43,10 +43,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@codraoss/api": "workspace:*",
-    "@codraoss/core": "workspace:*",
-    "@codraoss/db": "workspace:*",
-    "@codraoss/schema": "workspace:*",
+    "@codraoss/api": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
+    "@codraoss/db": "^0.9.13",
+    "@codraoss/schema": "^0.9.13",
     "bullmq": "^6.3.8",
     "ioredis": "^6.0.0",
     "nanoid": "^5.0.9"
