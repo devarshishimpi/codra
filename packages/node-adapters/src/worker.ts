@@ -1,8 +1,7 @@
 import { Worker, type Job } from 'bullmq';
 import { reviewJobMessageSchema, type ReviewJobMessage } from '@codraoss/schema';
 import { NodeOrchestrator } from './node-orchestrator';
-import type { ReviewRuntime } from '@codraoss/core/ports';
-import type { QueueProducer } from '@codraoss/core/ports';
+import type { ReviewRuntime, QueueProducer  } from '@codraoss/core/ports';
 import type Redis from 'ioredis';
 
 export function startWorker(

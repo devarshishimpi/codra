@@ -125,11 +125,11 @@
   "dependencies": {
     "@codraoss/schema": "*",
     "jsonrepair": "^3.15.0",
-    "picomatch": "^4.0.5",
+    "picomatch": "^4.0.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
-    "tsup": "^8.0.0"
+    "tsup": "^8.0.2"
   }
 }

@@ -9,7 +9,7 @@ import { runWithDb } from '@codraoss/db/client';
 
 import { NodeOrchestrator, RedisKVAdapter, RedisQueueAdapter, RedisSessionStore, startWorker } from '@codraoss/node-adapters';
 import { createNodeApiDeps } from './api-deps';
-import { createNodeEnv, NodeAppBindings } from './env';
+import { createNodeEnv, type NodeAppBindings } from './env';
 import { logger } from '@codraoss/api/logger';
 import Redis from 'ioredis';
 import { Queue } from 'bullmq';
@@ -35,9 +35,9 @@ const reviewQueue = new Queue('codra-reviews', { connection: redisClient });
 
 const stubs = {
   SESSION_STORE: new RedisSessionStore(redisClient),
-  KV_STORE: new RedisKVAdapter(redisClient),
+  APP_KV: new RedisKVAdapter(redisClient),
   REVIEW_QUEUE: new RedisQueueAdapter(reviewQueue),
-  REVIEW_ORCHESTRATOR: undefined, // Will be set to NodeOrchestrator below
+  REVIEW_ORCHESTRATOR: undefined as NodeOrchestrator | undefined,
 };
 
 const env: NodeAppBindings = createNodeEnv(stubs);
@@ -86,12 +86,9 @@ if (process.env.START_API !== 'false') {
   // Add server to shutdown sequence
   if (server) {
     const originalClose = server.close;
-    server.close = () => new Promise<void>(resolve => {
-      originalClose(() => {
-        logger.info('HTTP server closed.');
-        resolve();
-      });
-    });
+    server.close = () => originalClose(() => {
+      logger.info('HTTP server closed.');
+    }) as any;
   }
 }
 

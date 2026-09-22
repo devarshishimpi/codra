@@ -44,7 +44,7 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "hono": "^4.12.25",
+    "hono": "^4.12.34",
     "zod": "^4.3.6",
     "@codraoss/schema": "*",
     "@codraoss/core": "*",
@@ -53,8 +53,8 @@
     "@codraoss/models": "*"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsup": "^8.0.0"
+    "@types/node": "^22.0.3",
+    "tsup": "^8.0.2"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",

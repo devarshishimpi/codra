@@ -49,10 +49,10 @@
     "@codraoss/schema": "*",
     "bullmq": "^6.3.8",
     "ioredis": "^6.0.0",
-    "nanoid": "^5.0.7"
+    "nanoid": "^5.0.9"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsup": "^8.0.0"
+    "@types/node": "^22.0.3",
+    "tsup": "^8.0.2"
   }
 }
