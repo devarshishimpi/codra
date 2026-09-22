@@ -29,16 +29,16 @@
     "access": "public",
     "exports": {
       ".": {
-        "import": "./dist/index.js",
-        "types": "./dist/index.d.ts"
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
       },
       "./logger": {
-        "import": "./dist/logger.js",
-        "types": "./dist/logger.d.ts"
+        "types": "./dist/logger.d.ts",
+        "import": "./dist/logger.js"
       },
       "./platform": {
-        "import": "./dist/platform/index.js",
-        "types": "./dist/platform/index.d.ts"
+        "types": "./dist/platform/index.d.ts",
+        "import": "./dist/platform/index.js"
       }
     }
   },
