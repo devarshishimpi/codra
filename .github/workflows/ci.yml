@@ -60,6 +60,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check build coverage
+        run: npm run check:builds
+
       - name: Build packages
         run: npm run build:packages
 

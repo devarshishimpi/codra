@@ -39,7 +39,8 @@
     "typecheck": "tsc --noEmit",
     "typecheck:all": "npm run typecheck --workspaces --if-present",
     "release": "npm run build:packages",
-    "check:exports": "node scripts/check-package-exports.mjs"
+    "check:exports": "node scripts/check-package-exports.mjs",
+    "check:builds": "node scripts/check-package-builds.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
