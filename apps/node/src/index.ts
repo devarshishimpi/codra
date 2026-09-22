@@ -5,14 +5,22 @@ dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') }); // Root level
 import { serve } from '@hono/node-server';
 import { createApiRouter } from '@codraoss/api';
 import { runWithDb } from '@codraoss/db/client';
-import { InMemoryOrchestrator, InMemorySessionStore } from '@codraoss/core/ports';
+import { InMemorySessionStore } from '@codraoss/core/ports';
 import { createNodeApiDeps } from './api-deps';
-import { createNodeEnv } from './env';
+import { createNodeEnv, type NodeAppBindings } from './env';
 import { logger } from '@codraoss/api/logger';
 import Redis from 'ioredis';
 import { RedisKVAdapter } from './adapters/redis-kv';
 import { Queue } from 'bullmq';
 import { RedisQueueAdapter } from './adapters/redis-queue';
+import { NodeOrchestrator } from './adapters/node-orchestrator';
+import { REVIEW_QUEUE_NAME } from './queue';
+import { startWorker } from './worker';
+
+// Both default on, so a single container is the whole deployment. Setting one to 'false' splits the
+// API and the review workers across containers that scale independently.
+const runApi = process.env.START_API !== 'false';
+const runWorker = process.env.START_WORKER !== 'false';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisClient = new Redis(redisUrl, { maxRetriesPerRequest: null }); // maxRetriesPerRequest: null is required for bullmq
@@ -20,16 +28,17 @@ redisClient.on('error', (err) => {
   logger.error('[Redis Error]', err);
 });
 
-const reviewQueue = new Queue('codra-reviews', { connection: redisClient });
+const reviewQueue = new Queue(REVIEW_QUEUE_NAME, { connection: redisClient });
 
-const stubs = {
+const env: NodeAppBindings = createNodeEnv({
   SESSION_STORE: new InMemorySessionStore(),
   APP_KV: new RedisKVAdapter(redisClient),
   REVIEW_QUEUE: new RedisQueueAdapter(reviewQueue),
-  REVIEW_ORCHESTRATOR: new InMemoryOrchestrator(),
-};
+  // Set below: the orchestrator needs the env it is being attached to.
+  REVIEW_ORCHESTRATOR: { startReviewJob: async () => {} },
+});
 
-const env = createNodeEnv(stubs);
+env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(env);
 
 import fs from 'node:fs';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -63,18 +72,66 @@ app.use('/*.svg', serveStatic({ root: process.cwd().endsWith('node') ? '../../di
 app.use('/*.ico', serveStatic({ root: process.cwd().endsWith('node') ? '../../dist/client' : 'dist/client' }));
 const port = parseInt(process.env.PORT || '3000', 10);
 
-serve({
-  fetch: async (request) => {
-    const apiEnv = {
-      ...envWithAssets,
-      deps: createNodeApiDeps(env),
-    };
-    try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
-  },
-  port,
-}, (info) => {
-  logger.info(`Codra Node server running on http://localhost:${info.port}`);
-});
+const server = runApi
+  ? serve({
+      fetch: async (request) => {
+        const apiEnv = {
+          ...envWithAssets,
+          deps: createNodeApiDeps(env),
+        };
+        try { return await runWithDb(env, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+      },
+      port,
+    }, (info) => {
+      logger.info(`Codra Node server running on http://localhost:${info.port}`);
+    })
+  : null;
+
+const reviewWorker = runWorker ? startWorker(env, redisUrl) : null;
+if (reviewWorker) logger.info(`Codra review worker listening on queue ${REVIEW_QUEUE_NAME}`);
+if (!server && !reviewWorker) {
+  logger.error('START_API and START_WORKER are both false: nothing to run');
+  process.exit(1);
+}
+
+// worker.close() waits for the review in flight to finish, so a redeploy does not abandon a job
+// mid-phase with its lease still held.
+const SHUTDOWN_TIMEOUT_MS = 30_000;
+
+let shuttingDown = false;
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`Received ${signal}, shutting down`);
+
+  // No process.exit() on the happy path: it discards buffered stdout, so the shutdown log lines are
+  // lost exactly when an operator needs them. Closing every handle lets the loop drain and Node
+  // exit 0 on its own; the timer is the backstop for a close that never resolves, and unref() keeps
+  // it from holding the process open by itself.
+  const forceExit = setTimeout(() => {
+    logger.error('Shutdown timed out, exiting');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+  forceExit.unref();
+
+  try {
+    // Stop accepting, drop sockets sitting idle on keep-alive, then let the worker finish the review
+    // it is holding before the remaining sockets are cut.
+    server?.close();
+    if (server && 'closeIdleConnections' in server) server.closeIdleConnections();
+    await reviewWorker?.close();
+    if (server && 'closeAllConnections' in server) server.closeAllConnections();
+    await reviewQueue.close();
+    redisClient.disconnect();
+    clearTimeout(forceExit);
+  } catch (error) {
+    logger.error('Error during shutdown', error);
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
+process.on('SIGINT', () => void shutdown('SIGINT'));
 
 
 
