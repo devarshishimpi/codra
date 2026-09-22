@@ -1,6 +1,8 @@
 import { createSharedApiDeps } from '@codraoss/api';
+import { getOrFetchRawDiffForCompletedJob } from '@codraoss/core';
 import type { NodeAppBindings } from './env';
 import { logger } from '@codraoss/api/logger';
+import { createReviewRuntime } from './adapters/review-runtime';
 
 export function createNodeApiDeps(env: NodeAppBindings) {
   return createSharedApiDeps({
@@ -12,16 +14,14 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     enqueueReviewJob: async (input) => {
       await env.REVIEW_QUEUE.send(input);
     },
-    terminateJobWorkflow: async (_job) => {
-      logger.warn('[STUB] terminateJobWorkflow called');
-    },
+    // No durable instance to kill: a Node review runs inside the BullMQ job, and cancelling it is
+    // the job store's business, which the caller has already handled by the time this runs.
+    terminateJobWorkflow: async () => {},
     scheduleBestEffortJobMaintenance: () => {
       // In node, this is a long running process, we can just spawn a promise.
     },
-    createReviewRuntime: () => {
-      throw new Error('Review runtime not implemented for Node yet.');
-    },
-    getOrFetchRawDiffForCompletedJob: async () => '',
+    createReviewRuntime: () => createReviewRuntime(env),
+    getOrFetchRawDiffForCompletedJob,
     logger,
     getSecret: async (key) => process.env[key] ?? null,
 
