@@ -110,6 +110,9 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
 
     const connectionString = env.HYPERDRIVE.connectionString;
     fallbackClients.delete(connectionString);
+    // Release the socket being replaced before its closer is overwritten; it is already stale, so a
+    // failure to end it is nothing to act on.
+    void fallbackCloses.get(connectionString)?.().catch(() => {});
     const fresh = createDbClient(env, (close) => fallbackCloses.set(connectionString, close));
     fallbackClients.set(connectionString, fresh);
     return op(fresh);

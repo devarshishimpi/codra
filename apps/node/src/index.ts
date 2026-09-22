@@ -28,17 +28,33 @@ redisClient.on('error', (err) => {
   logger.error('[Redis Error]', err);
 });
 
-const reviewQueue = new Queue(REVIEW_QUEUE_NAME, { connection: redisClient });
+// Without these a job gets exactly one attempt: BullMQ defaults to attempts: 0, and its retry check
+// is `attemptsMade + 1 < opts.attempts`. The engine's own try block does not cover resolving the job,
+// the admission query or claiming the lease, so a transient Postgres error there would escape and
+// strand the row with nothing to revisit it. Mirrors the Cloudflare driver, which runs each phase
+// under `retries: { limit: 5, delay: '60 seconds', backoff: 'exponential' }`. UnrecoverableError
+// still bypasses this, so an unparseable payload fails once.
+// Completed and failed jobs are trimmed so a long-lived install does not grow Redis without bound.
+const reviewQueue = new Queue(REVIEW_QUEUE_NAME, {
+  connection: redisClient,
+  defaultJobOptions: {
+    attempts: 5,
+    backoff: { type: 'exponential', delay: 60_000 },
+    removeOnComplete: { count: 1000 },
+    removeOnFail: { count: 5000 },
+  },
+});
 
 const env: NodeAppBindings = createNodeEnv({
   SESSION_STORE: new InMemorySessionStore(),
   APP_KV: new RedisKVAdapter(redisClient),
   REVIEW_QUEUE: new RedisQueueAdapter(reviewQueue),
-  // Set below: the orchestrator needs the env it is being attached to.
-  REVIEW_ORCHESTRATOR: { startReviewJob: async () => {} },
+  // Delegates rather than holding the instance, because the orchestrator needs the env being built
+  // here. The closure only runs once a job is in hand, by which point `orchestrator` is assigned.
+  REVIEW_ORCHESTRATOR: { startReviewJob: (id, params) => orchestrator.startReviewJob(id, params) },
 });
 
-env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(env);
+const orchestrator = new NodeOrchestrator(env);
 
 import fs from 'node:fs';
 import { serveStatic } from '@hono/node-server/serve-static';

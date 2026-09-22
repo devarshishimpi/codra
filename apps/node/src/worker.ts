@@ -2,7 +2,6 @@ import { UnrecoverableError, Worker, type Job } from 'bullmq';
 import Redis from 'ioredis';
 import { reviewJobMessageSchema } from '@codraoss/schema';
 import { logger } from '@codraoss/api/logger';
-import { NodeOrchestrator } from './adapters/node-orchestrator';
 import type { NodeAppBindings } from './env';
 import { REVIEW_QUEUE_NAME } from './queue';
 
@@ -37,7 +36,9 @@ export function startWorker(env: NodeAppBindings, redisUrl: string): ReviewWorke
         throw new UnrecoverableError('Invalid review job payload');
       }
 
-      await new NodeOrchestrator(env).startReviewJob(job.id ?? parsed.data.deliveryId, parsed.data);
+      // Goes through the port on env rather than constructing an orchestrator here, so the wiring
+      // in index.ts is the single place that decides what drives a review.
+      await env.REVIEW_ORCHESTRATOR.startReviewJob(job.id ?? parsed.data.deliveryId, parsed.data);
     },
     { connection, concurrency: WORKER_CONCURRENCY },
   );
