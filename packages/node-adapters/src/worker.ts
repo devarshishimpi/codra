@@ -20,8 +20,7 @@ export function startWorker(
       }
 
       const reviewRuntime = createRuntime();
-      // Need to cast to any since DbEnv is dynamically merged downstream
-      const orchestrator = new NodeOrchestrator(reviewRuntime as any, queue);
+      const orchestrator = new NodeOrchestrator(reviewRuntime, queue);
       await orchestrator.startReviewJob(job.id ?? 'unknown', parseResult.data);
     },
     { connection: redisConnection }

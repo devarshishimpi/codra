@@ -85,10 +85,13 @@ if (process.env.START_API !== 'false') {
 
 
   if (server) {
-    const originalClose = server.close;
-    server.close = () => originalClose(() => {
-      logger.info('HTTP server closed.');
-    }) as any;
+    const originalClose = server.close.bind(server);
+    server.close = function(callback?: (err?: Error) => void) {
+      return originalClose((err?: Error) => {
+        logger.info('HTTP server closed.');
+        if (callback) callback(err);
+      });
+    } as typeof server.close;
   }
 }
 
@@ -112,7 +115,6 @@ const shutdown = async () => {
   // Postgres client manages its own pool.
   
   logger.info('All services stopped. Exiting.');
-  process.exit(0);
 };
 
 process.on('SIGTERM', shutdown);

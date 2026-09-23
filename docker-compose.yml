@@ -5,7 +5,7 @@ services:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codra_secure_default_pass}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME_IN_PROD}
       POSTGRES_DB: codra
     ports:
       - "5432:5432"
@@ -36,7 +36,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-codra_secure_default_pass}@postgres:5432/codra
+      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME_IN_PROD}@postgres:5432/codra
       - REDIS_URL=redis://redis:6379
       - START_WORKER=true
       - PORT=3000

@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20-alpine3.24 AS builder
 WORKDIR /app
 
 # Install build dependencies if needed
@@ -28,7 +28,7 @@ RUN npm run build --workspace=@codraoss/node-server
 RUN npm prune --omit=dev
 
 # Build runner stage
-FROM node:20-alpine AS runner
+FROM node:20-alpine3.24 AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
