@@ -7,7 +7,9 @@
     "composite": false,
     "declaration": true,
     "emitDeclarationOnly": false,
-    "noEmit": false
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist"
   },
   "include": ["src/**/*"]
 }
