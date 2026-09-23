@@ -12,6 +12,7 @@ if (mode === 'promote') {
   for (const field of PROMOTABLE) {
     if (fields[field] !== undefined) {
       pkg[field] = fields[field];
+      delete pkg.publishConfig[field]; // Remove to prevent npm warnings
     }
   }
   

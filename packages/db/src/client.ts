@@ -11,10 +11,11 @@ const dbStorage = new AsyncLocalStorage<DbClient>();
 
 function createDbClient(env: DbEnv): DbClient {
   const sql = postgres(env.HYPERDRIVE.connectionString, {
-    max: 5,
+    max: process.env.DB_POOL_SIZE ? parseInt(process.env.DB_POOL_SIZE, 10) : 5,
     fetch_types: false,
     prepare: false,
     onnotice: () => {},
+    ssl: env.HYPERDRIVE.connectionString.includes('sslmode=require') ? { rejectUnauthorized: process.env.NODE_ENV !== 'production' } : false,
   });
 
   return {
@@ -97,6 +98,7 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
     fallbackClients.delete(connectionString);
     const fresh = createDbClient(env);
     fallbackClients.set(connectionString, fresh);
+
     return op(fresh);
   }
 }

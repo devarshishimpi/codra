@@ -31,14 +31,8 @@ export const reviewConfigSchema = z.object({
   large_file_threshold_lines: z.number().int().min(1).max(5_000).default(200),
   max_diff_lines_per_file: z.number().int().min(1).max(5_000).default(800),
   batch_small_files: z.boolean().default(true),
-  // Presentation cap: comments actually posted to the PR. Findings past this are still recorded
-  // (disposition 'cap') and shown on the dashboard; nothing upstream of posting should read it.
   max_comments: z.number().int().min(1).max(150).default(10),
-  // How many findings the pipeline works with (generator, verifier, dashboard); independent of
-  // max_comments so tightening the posted cap no longer quietly shrinks the review itself.
   review_breadth: z.number().int().min(1).max(150).default(25),
-  // Off by default: adds a large single file's post-change content as read-only context, costing
-  // one extra GitHub subrequest per qualifying file (see FILE_CONTEXT_CHAR_BUDGET).
   full_file_context: z.boolean().default(false),
   min_severity: z.enum(reviewSeverities).default('P3'),
   language_gates: z
@@ -98,7 +92,6 @@ export const repoConfigSchema = z.object({
         )
         .nullable()
         .optional(),
-      // Findings are UNIONED with the primary's, never voted on (F1 0.200 vs 0.149 best-single; agreement is not evidence). Never pair across a capability gap: strong + much weaker measured BELOW strong alone.
       secondary: z
         .object({
           model: z.string(),

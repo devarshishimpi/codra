@@ -4,8 +4,6 @@ import { ProviderRequestError, providerErrorMessage, jsonOnlyPrompts, type Model
 import { assertPublicBaseUrl } from '../url-guard';
 import { MODEL_TIMEOUT_MAX_MS, resolveOutputTokenCeiling } from '../limits';
 
-// Fallback when the caller supplies no diff-size-aware budget. Shares the review ceiling so an
-// omitting caller can never outlast the chain budget that governs everything else.
 const OPENAI_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const OPENAI_DEFAULT_OUTPUT_TOKENS = 4096;
 const OPENAI_MAX_OUTPUT_TOKENS = 16_384;

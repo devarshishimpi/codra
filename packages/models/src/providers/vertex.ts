@@ -10,22 +10,18 @@ import {
   resolveOutputTokenCeiling,
 } from '../limits';
 
-// Vertex's REST API rejects plain API keys and requires an OAuth2 token via RFC 7523 JWT-bearer grant, so `apiKey` here holds the full service-account JSON key, not a short API key string.
+// Vertex API requires OAuth2; apiKey holds service-account JSON.
 const VERTEX_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const VERTEX_DEFAULT_OUTPUT_TOKENS = OUTPUT_TOKENS_FLOOR;
-// Same Gemini models as the Google adapter, so the same ceiling and thinkingConfig (unbounded reasoning
-// would otherwise consume the whole ceiling and leave a truncated answer).
+// Same Gemini models as the Google adapter, so same ceiling and thinkingConfig applies.
 const VERTEX_MAX_OUTPUT_TOKENS = 65_536;
-// Retries for a 429 only, and only while the caller's own timeout still has room. See the loop below
-// for why resending an unchanged request is the correct response to this particular refusal.
+// Retries for a 429 only, and only while caller's timeout has room.
 const VERTEX_QUOTA_RETRIES = 2;
 const VERTEX_QUOTA_BACKOFF_MS = 4_000;
-// Room a resend needs to be worth starting at all; a Vertex 429 itself comes back in ~7s.
 const VERTEX_MIN_ATTEMPT_MS = 8_000;
 const OAUTH_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const OAUTH_SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const ACCESS_TOKEN_LIFETIME_S = 3600;
-// Refresh before real expiry so an in-flight review never starts a call with a token that expires mid-request.
 const TOKEN_REFRESH_MARGIN_MS = 60_000;
 
 interface VertexGenerateResponse {
@@ -47,7 +43,7 @@ interface CachedToken {
   expiresAt: number;
 }
 
-// Per-isolate cache, not per-request: saves a token mint (and a subrequest) on every file review after the first to hit a warm isolate.
+// Per-isolate cache.
 const tokenCache = new Map<string, CachedToken>();
 
 function parseServiceAccountKey(raw: string): ServiceAccountKey {
@@ -187,7 +183,7 @@ export async function reviewWithVertex(
     ],
     generationConfig: {
       responseMimeType: 'application/json',
-      // No `responseJsonSchema`: this adapter cannot drop a schema mid-flight, so a rejection would fail the file outright.
+      // No `responseJsonSchema`: this adapter cannot drop schema mid-flight.
       maxOutputTokens: ceiling,
       ...(includeThinking ? { thinkingConfig: { thinkingBudget } } : {}),
       // Same models as the Google adapter, so the same value keeps the two paths comparable.

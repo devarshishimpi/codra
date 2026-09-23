@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/node-server",
-  "version": "0.9.6",
+  "version": "0.9.13",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,20 +10,21 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@codraoss/api": "*",
-    "@codraoss/core": "*",
-    "@codraoss/db": "*",
-    "@codraoss/models": "*",
-    "@codraoss/provider-github": "*",
-    "@codraoss/schema": "*",
-    "@hono/node-server": "^1.11.1",
+    "@codraoss/api": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
+    "@codraoss/db": "^0.9.13",
+    "@codraoss/models": "^0.9.13",
+    "@codraoss/node-adapters": "^0.9.13",
+    "@codraoss/provider-github": "^0.9.13",
+    "@codraoss/schema": "^0.9.13",
+    "@hono/node-server": "^1.11.5",
     "bullmq": "^6.3.8",
-    "dotenv": "^16.4.5",
-    "hono": "^4.6.0",
+    "dotenv": "^16.4.7",
+    "hono": "^4.6.20",
     "ioredis": "^6.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.12.12",
+    "@types/node": "^20.12.14",
     "tsup": "^8.0.2"
   }
 }

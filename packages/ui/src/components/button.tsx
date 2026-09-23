@@ -7,7 +7,6 @@ import { buttonVariants } from '../components/button-variants';
 
 type Shape = 'base' | 'square' | 'circle';
 
-// Icon-only shapes: collapse padding and match width to the height of each size.
 const SQUARE_WIDTH: Record<string, string> = {
   xs: 'w-6 p-0',
   sm: 'w-8 p-0',
@@ -27,9 +26,7 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   shape?: Shape;
-  /** Element rendered before children (skipped while `loading`). */
   icon?: React.ReactNode;
-  /** Shows a spinner and disables the button. */
   loading?: boolean;
 }
 
@@ -37,7 +34,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, shape = 'base', asChild = false, icon, loading, children, ...props }, ref) => {
     const classes = cn(buttonVariants({ variant, size }), shapeClass(shape, size), className);
 
-    // `asChild` renders the child itself with props merged onto it (Base UI's equivalent of the former Radix Slot).
     return useRender({
       render: asChild && React.isValidElement(children) ? children : undefined,
       defaultTagName: 'button',
@@ -67,7 +63,6 @@ export interface LinkButtonProps
     VariantProps<typeof buttonVariants> {
   shape?: Shape;
   icon?: React.ReactNode;
-  /** Open in a new tab with safe rel attributes. */
   external?: boolean;
 }
 

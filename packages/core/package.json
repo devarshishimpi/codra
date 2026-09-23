@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/core",
-  "version": "0.9.6",
+  "version": "0.9.13",
   "description": "The Codra review engine: pure, transport- and platform-agnostic code review logic behind ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",
@@ -123,13 +123,13 @@
     "postpack": "node ../../scripts/swap-publish-exports.mjs restore"
   },
   "dependencies": {
-    "@codraoss/schema": "^0.9.5",
+    "@codraoss/schema": "^0.9.13",
     "jsonrepair": "^3.15.0",
-    "picomatch": "^4.0.5",
+    "picomatch": "^4.0.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
-    "tsup": "^8.0.0"
+    "tsup": "^8.0.2"
   }
 }

@@ -10,6 +10,7 @@
     <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-blue.svg"></a>
     <a href="https://github.com/sponsors/devarshishimpi"><img alt="Sponsor" src="https://img.shields.io/badge/Sponsor-devarshishimpi-EA4AAA?logo=githubsponsors"></a>
     <a href="https://workers.cloudflare.com/"><img alt="Cloudflare Workers" src="https://img.shields.io/badge/runtime-Cloudflare%20Workers-f38020?logo=cloudflare"></a>
+    <a href="https://nodejs.org/"><img alt="Node.js" src="https://img.shields.io/badge/runtime-Node.js-339933?logo=node.js&logoColor=white"></a>
     <a href="https://react.dev/"><img alt="Built with React" src="https://img.shields.io/badge/dashboard-React-61dafb?logo=react&logoColor=111"></a>
     <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/language-TypeScript-3178c6?logo=typescript&logoColor=fff"></a>
   </p>
@@ -19,7 +20,9 @@
     |
     <a href="https://codra.run/docs">Docs</a>
     |
-    <a href="https://codra.run/docs/installation">Installation</a>
+    <a href="https://codra.run/docs/installation">Installation (Cloudflare)</a>
+    |
+    <a href="./docs/deployment/docker.md">Installation (Docker / Self-Hosted)</a>
     |
     <a href="https://github.com/devarshishimpi/codra/issues">Issues</a>
     |
@@ -31,11 +34,11 @@
 
 Codra listens to GitHub pull request events, runs AI-powered review jobs, posts inline findings back to the PR, and gives you a dashboard to inspect jobs, repositories, model routing, review history, and failed queue runs.
 
-> **Beta** - Codra is under active development. Expect rough edges, missing features, and breaking changes between releases. Feedback and bug reports are welcome via [GitHub Issues](https://github.com/devarshishimpi/codra/issues).
+> **Beta** - Codra is under active development. Cloudflare Worker is stable for self-hosted use; Node standalone is newer and still being hardened. Expect rough edges. Bugs and feedback welcome via [GitHub Issues](https://github.com/devarshishimpi/codra/issues).
 
 ## Why Codra
 
-- **Own the whole review loop**: Run the GitHub App, Cloudflare Worker, queue, database, model credentials, and dashboard under your own control.
+- **Own the whole review loop**: Run the GitHub App, web server, queue, database, model credentials, and dashboard under your own control (deploy on Cloudflare Workers or your own VPS via Docker).
 - **Review with repository context**: Codra checks pull request diffs for correctness, security, performance, maintainability, and repo-specific patterns.
 - **Configure each repository**: Tune triggers, skipped paths, draft handling, mention reviews, labels, custom rules, and review budgets from the dashboard.
 - **Route models deliberately**: Use global defaults, per-repo model chains, fallbacks, and size-based overrides for larger pull requests.

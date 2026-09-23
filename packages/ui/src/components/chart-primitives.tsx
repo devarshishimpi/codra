@@ -28,8 +28,6 @@ export function GraphShell({
   className?: string;
 }) {
   return (
-    // Same chrome as the dashboard stat cards: card face carries the title, the chart itself sits
-    // in a recessed inner panel.
     <div
       className={cn(
         'flex flex-col rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black',
@@ -44,7 +42,6 @@ export function GraphShell({
       </div>
 
       <div className="ui-well relative mt-3 flex flex-1 flex-col overflow-hidden rounded-md">
-        {/* Dot texture lives on the recessed face, where the chart reads against it. */}
         <CardDots />
         {legend && (
           <div className="relative flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3.5 pt-3.5">
@@ -58,18 +55,11 @@ export function GraphShell({
 }
 
 export interface SeriesMarkerProps {
-  /** Flat CSS colour. Ignored when `hatched` is set, which paints its own fill. */
   color?: string;
-  /** The cross-hatched fill used for the input-token series. */
   hatched?: boolean;
-  /** A dashed rule instead of a swatch, for series drawn as a dashed line. */
   dashed?: boolean;
 }
 
-/**
- * The swatch that identifies a series. Shared by the legend and the tooltip so a series looks the
- * same in both - a tooltip dot that doesn't match its legend chip reads as a different series.
- */
 export function SeriesMarker({ color, hatched, dashed }: SeriesMarkerProps) {
   if (dashed) {
     return (

@@ -1,16 +1,16 @@
 {
   "name": "@codraoss/worker",
-  "version": "0.9.6",
+  "version": "0.9.13",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@codraoss/api": "*",
-    "@codraoss/core": "*",
-    "@codraoss/db": "*",
-    "@codraoss/models": "*",
-    "@codraoss/provider-github": "*",
-    "@codraoss/schema": "*",
-    "hono": "^4.12.25"
+    "@codraoss/api": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
+    "@codraoss/db": "^0.9.13",
+    "@codraoss/models": "^0.9.13",
+    "@codraoss/provider-github": "^0.9.13",
+    "@codraoss/schema": "^0.9.13",
+    "hono": "^4.12.34"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",

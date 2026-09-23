@@ -46,6 +46,8 @@ export interface ReviewGitProvider {
   removeIssueLabelsIfPresent(owner: string, repo: string, prNumber: number, labels: string[]): Promise<unknown>;
 }
 
+import type { TokenTracker } from '../token-tracker';
+
 export interface GitProviderFactory {
-  forInstallation(installationId: string): ReviewGitProvider;
+  forInstallation(installationId: string, tracker?: TokenTracker): ReviewGitProvider;
 }

@@ -3,18 +3,14 @@ import { Button } from '../components/button';
 import { cn } from '../lib/utils';
 
 interface LoadErrorProps {
-  /** Friendly headline, e.g. "Couldn't load dashboard data". */
   title?: string;
-  /** Raw error detail (e.g. "Failed to fetch"), shown as a mono chip. */
   detail?: string | null;
-  /** Guidance line under the title; defaults to connection-check copy. */
   hint?: string;
   onRetry?: () => void;
   retrying?: boolean;
   className?: string;
 }
 
-/** Friendly copy up front, raw error as a small mono chip - instead of a bare toast echoing "Failed to fetch". */
 export function LoadError({
   title = "Couldn't load data",
   detail,

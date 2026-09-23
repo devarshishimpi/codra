@@ -109,7 +109,6 @@ export function SelectPanel({
         overflow: 'hidden',
         pointerEvents: open ? 'auto' : 'none',
       }}
-      // Flush against the trigger, then separates into its own rounded pill.
       className="z-50 border border-ui-line bg-ui-base shadow-lg shadow-black/[0.04] dark:shadow-black/40"
     >
       <m.ul
@@ -135,9 +134,8 @@ export function SelectPanel({
                 tabIndex={-1}
                 onMouseEnter={() => onHighlight(index)}
                 onClick={() => onSelect(option.value)}
-                className={cn(
-                  // `whitespace-nowrap`: on the 72px "rows per page" select, the check icon ate the width and "10" wrapped to stacked digits.
-                  'flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-sm outline-none transition-colors',
+                  className={cn(
+                    'flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-sm outline-none transition-colors',
                   selected
                     ? 'bg-ui-brand/10 font-medium text-ui-brand'
                     : 'text-ui-default hover:bg-ui-fill hover:text-ui-strong focus-visible:bg-ui-fill',

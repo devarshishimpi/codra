@@ -1,4 +1,4 @@
-// Re-exported from @codraoss/core/ports so existing @codraoss/models/types imports keep working.
+// Re-export for compatibility.
 import type { ModelResponse as ModelResponseShape, ModelResponseSchema } from '@codraoss/core/ports';
 export type { ModelResponse, ModelResponseSchema } from '@codraoss/core/ports';
 

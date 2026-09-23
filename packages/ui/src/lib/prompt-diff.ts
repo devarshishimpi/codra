@@ -1,4 +1,4 @@
-// Parses the prompt's padded gutter diff ("NNNN MMMM Pcontent"), not raw git output (see parseUnifiedDiff in @server/core/diff).
+// Parses prompt padded gutter diff ("NNNN MMMM Pcontent").
 
 export interface DiffRow {
   kind: 'add' | 'del' | 'ctx' | 'hunk';
@@ -35,9 +35,9 @@ export function parsePromptDiff(diff: string): DiffRow[] {
       rows.push({ kind: 'hunk', oldNo: null, newNo: null, text: line });
       continue;
     }
-    if (!started) continue; // preamble before first hunk
+    if (!started) continue;
     if (line.startsWith('diff --git')) { started = false; continue; }
-    if (line.startsWith('\\')) continue; // no-newline marker
+    if (line.startsWith('\\')) continue;
     if (line.startsWith('[NOTE')) continue;
 
     const padded = parsePaddedLine(line);
@@ -65,7 +65,7 @@ export function parsePromptDiff(diff: string): DiffRow[] {
   return rows;
 }
 
-// line-only scan; avoids full parse for collapsed panels
+// Line-only scan; avoids full parse for collapsed panels
 export function diffStats(diff: string | null) {
   if (!diff) return { adds: 0, dels: 0, total: 0 };
   let adds = 0;

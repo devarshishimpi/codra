@@ -1,0 +1,59 @@
+{
+  "name": "@codraoss/node-adapters",
+  "version": "0.9.13",
+  "description": "Node.js platform adapters for Codra, including BullMQ, Redis, and Stateless Orchestration.",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "author": "Devarshi Shimpi",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devarshishimpi/codra.git",
+    "directory": "packages/node-adapters"
+  },
+  "bugs": {
+    "url": "https://github.com/devarshishimpi/codra/issues"
+  },
+  "homepage": "https://codra.run",
+  "scripts": {
+    "build": "tsup",
+    "prepack": "node ../../scripts/swap-publish-exports.mjs promote",
+    "postpack": "node ../../scripts/swap-publish-exports.mjs restore",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@codraoss/api": "^0.9.13",
+    "@codraoss/core": "^0.9.13",
+    "@codraoss/db": "^0.9.13",
+    "@codraoss/schema": "^0.9.13",
+    "bullmq": "^6.3.8",
+    "ioredis": "^6.0.0",
+    "nanoid": "^5.0.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.3",
+    "tsup": "^8.0.2"
+  }
+}

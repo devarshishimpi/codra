@@ -42,7 +42,6 @@ export function OnboardingCard({
     <div className={cn("ui-well overflow-hidden rounded-lg", className)}>
       <div className="px-3.5 pb-3.5 pt-5">
         
-        {/* Header */}
         <div className="relative mb-3.5 text-center">
           <p className="text-[14px] font-semibold leading-tight text-black dark:text-white">
             {allDone ? completedTitle : title}
@@ -63,9 +62,8 @@ export function OnboardingCard({
           )}
         </div>
 
-        {/* Segmented bar */}
         <div
-          className="mb-3.5 grid h-[22px] gap-[4px]"
+          className="mb-3.5 grid h-5.5 gap-1"
           style={{ gridTemplateColumns: `repeat(${safeSegments}, minmax(0, 1fr))` }}
           aria-hidden
         >
@@ -87,28 +85,26 @@ export function OnboardingCard({
           {steps.map((step) => {
             const content = (
               <div className={cn(
-                'flex w-full items-center gap-2.5 px-2 py-[9px]',
+                'flex w-full items-center gap-2.5 px-2 py-2.25',
                 'text-left text-[12px] font-medium leading-tight',
                 'transition-colors duration-150',
                 step.done
                   ? 'text-ui-subtle cursor-default'
                   : 'text-foreground hover:bg-ui-fill/50',
               )}>
-                {/* Check circle */}
-                <span
-                  className={cn(
-                    'flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border transition-colors duration-300',
-                    step.done
-                      ? 'border-[#00B3A3] bg-[#00B3A3] text-white'
-                      : 'border-ui-line bg-transparent text-transparent'
-                  )}
-                >
-                  <Check size={10} strokeWidth={3} />
-                </span>
-                
-                {/* Text */}
-                <span className="flex-1 truncate">{step.label}</span>
-              </div>
+        {/* Check circle */}
+        <span
+          className={cn(
+            'flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full border transition-colors duration-300',
+            step.done
+              ? 'border-[#00B3A3] bg-[#00B3A3] text-white'
+              : 'border-ui-line bg-transparent text-transparent'
+          )}
+        >
+          <Check size={10} strokeWidth={3} />
+        </span>
+        <span className="flex-1 truncate">{step.label}</span>
+      </div>
             );
 
             if (step.onClick) {
