@@ -99,7 +99,7 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
     const fresh = createDbClient(env);
     fallbackClients.set(connectionString, fresh);
 
-    return await op(fresh);
+    return op(fresh);
   }
 }
 

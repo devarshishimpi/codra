@@ -51,7 +51,7 @@ app.onError((err, c) => {
 });
 
 
-const distClientPath = path.resolve(__dirname, process.cwd().endsWith('node/dist') ? '../../dist/client' : '../dist/client');
+const distClientPath = path.resolve(__dirname, '../../../dist/client');
 app.use('/assets/*', serveStatic({ root: distClientPath }));
 app.use('/*.svg', serveStatic({ root: distClientPath }));
 app.use('/*.ico', serveStatic({ root: distClientPath }));
@@ -75,7 +75,7 @@ if (process.env.START_API !== 'false') {
         deps: createNodeApiDeps(env),
       };
 
-      try { return await runWithDb({ ...env, HYPERDRIVE: env.DATABASE_CONFIG }, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); throw e; }
+      try { return await runWithDb({ ...env, HYPERDRIVE: env.DATABASE_CONFIG }, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); return new Response('Internal Server Error', { status: 500 }); }
     },
     port,
     hostname: '0.0.0.0',

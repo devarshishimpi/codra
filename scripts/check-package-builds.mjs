@@ -24,7 +24,8 @@ for (const name of readdirSync(packagesDir)) {
   checked.push(id);
 
   // build:packages invokes each workspace via `npm run build -w <name>`
-  if (!buildPackages.includes(`-w ${id}`) && !buildPackages.includes(`-w ${name}`)) {
+  const isCovered = new RegExp(`-w\\s+${id}(?:\\s|$)`).test(buildPackages) || new RegExp(`-w\\s+${name}(?:\\s|$)`).test(buildPackages);
+  if (!isCovered) {
     errors.push(
       `${id}: has a "build" script but is missing from root "build:packages". ` +
         `CI lints every packages/*/ with publint, so its dist/ is never built on a fresh runner. ` +

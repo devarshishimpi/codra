@@ -12,7 +12,7 @@ export class NodeOrchestrator implements JobOrchestrator {
 
   async startReviewJob(id: string, params: ReviewJobMessage): Promise<void> {
     return runWithDb(this.env, async () => {
-      const currentParams = { ...params };
+      const currentParams = { jobId: id, ...params };
       currentParams.phase = currentParams.phase ?? 'prepare';
 
       const result = await runReview(this.env, currentParams);
