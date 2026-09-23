@@ -10,7 +10,7 @@ export class RedisQueueAdapter<T> implements QueueProducer<T> {
       jobOptions.delay = options.delaySeconds * 1000;
     }
 
-    await this.queue.add('review-job', message, jobOptions);
+    await this.queue.add('codra-reviews', message, jobOptions);
   }
 
   async deleteJob(jobId: string): Promise<void> {

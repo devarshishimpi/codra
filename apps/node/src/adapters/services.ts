@@ -14,7 +14,7 @@ export function makeModelFactory(env: NodeAppBindings) {
   return (jobId: string, tracker: TokenTracker): ReviewModel => new ModelRunner({
     kv: env.APP_KV as any,
     secretStore: {
-      getSecret: async (key) => env[key as keyof NodeAppBindings] as string || process.env[key] || null,
+      getSecret: async (key) => (env[key as keyof NodeAppBindings] as string | undefined | null) ?? process.env[key] ?? null,
     },
     getConfig: (modelId) => getResolvedModelConfig({ HYPERDRIVE: env.DATABASE_CONFIG, APP_KV: env.APP_KV }, modelId),
     aiBinding: undefined,
@@ -29,8 +29,8 @@ export function makeFormatterFactory(env: NodeAppBindings) {
 
 export function makeGitHubClientFactory(env: NodeAppBindings): GitProviderFactory {
   return {
-    forInstallation(installationId: string): ReviewGitProvider {
-      return new GitHubService(env, installationId);
+    forInstallation(installationId: string, tracker?: TokenTracker): ReviewGitProvider {
+      return new GitHubService(env, installationId, tracker);
     },
   };
 }

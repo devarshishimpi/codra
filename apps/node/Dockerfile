@@ -24,6 +24,9 @@ COPY packages ./packages
 # Build the node server and its dependencies
 RUN npm run build --workspace=@codraoss/node-server
 
+# Prune development dependencies before copying to runner stage
+RUN npm prune --omit=dev
+
 # Build runner stage
 FROM node:20-alpine AS runner
 WORKDIR /app

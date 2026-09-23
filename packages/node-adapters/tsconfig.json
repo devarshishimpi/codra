@@ -5,9 +5,9 @@
     "moduleResolution": "Bundler",
     "types": ["node"],
     "composite": false,
-    "declaration": false,
+    "declaration": true,
     "emitDeclarationOnly": false,
-    "noEmit": true
+    "noEmit": false
   },
   "include": ["src/**/*"]
 }

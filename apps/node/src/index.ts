@@ -1,4 +1,4 @@
-﻿import * as dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 import * as path from 'node:path';
 dotenv.config({ path: path.resolve(process.cwd(), '../../.dev.vars') });
 dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') });
@@ -25,7 +25,7 @@ const __dirname = dirname(__filename);
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisClient = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
-  tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined, // Managed Redis
+  tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: process.env.REDIS_INSECURE_TLS !== 'true' } : undefined, // Managed Redis
 });
 redisClient.on('error', (err) => {
   logger.error('[Redis Error]', err);

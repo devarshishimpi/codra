@@ -26,7 +26,7 @@ APP_URL=https://codra.yourdomain.com
 ENVIRONMENT=production
 
 # Database & Redis (these map to the docker-compose.yml service names)
-DATABASE_URL=postgres://postgres:password@postgres:5432/codra
+DATABASE_URL=postgres://postgres:codra_secure_default_pass@postgres:5432/codra
 REDIS_URL=redis://redis:6379
 
 # GitHub App Secrets
@@ -34,7 +34,10 @@ GITHUB_APP_ID=your_app_id
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 GITHUB_APP_WEBHOOK_SECRET=your_webhook_secret
-APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+# Note: For Docker Compose, you can preserve actual newlines in the private key without \n literals:
+APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
 
 # Application Settings
 AUTH_CALLBACK_URL=https://codra.yourdomain.com/api/auth/callback

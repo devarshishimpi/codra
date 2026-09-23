@@ -92,7 +92,7 @@ async function withStaleConnectionRecovery<T>(env: DbEnv, op: (db: DbClient) => 
   try {
     return await op(getDb(env));
   } catch (error) {
-    if (inScope || env.workerMode !== false || !isStaleConnectionError(error)) throw error;
+    if (env.workerMode === false || inScope || !isStaleConnectionError(error)) throw error;
 
     const connectionString = env.HYPERDRIVE.connectionString;
     fallbackClients.delete(connectionString);

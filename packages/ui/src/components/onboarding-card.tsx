@@ -103,7 +103,7 @@ export function OnboardingCard({
         >
           <Check size={10} strokeWidth={3} />
         </span>
-        <span className="truncate">{step.label}</span>
+        <span className="flex-1 truncate">{step.label}</span>
       </div>
             );
 

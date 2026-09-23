@@ -20,6 +20,7 @@ export function createNodeApiDeps(env: NodeAppBindings) {
           logger.info(`[API Deps] Terminated job workflow for job ${job.id}`);
         } catch (error) {
           logger.error(`[API Deps] Failed to terminate job workflow for job ${job.id}: ${error}`);
+          throw error;
         }
       } else {
         logger.warn(`[API Deps] QueueAdapter does not support deleteJob. Cannot terminate ${job.id}`);
