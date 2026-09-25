@@ -1,1 +1,5 @@
-﻿export { parseAllowedUsers, createOAuthState, consumeOAuthState } from '@codraoss/api/platform';
+﻿export {
+  parseAllowedUsers,
+  createOAuthState,
+  consumeOAuthState,
+} from "@codraoss/api/platform";

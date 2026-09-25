@@ -1,9 +1,16 @@
-import { Badge, Button, GithubMark, Input, LinkButton, Skeleton } from '@codraoss/ui';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { api } from '@client/lib/api';
-import { ExternalLink, Pencil, Check, X } from 'lucide-react';
-import type { AccountSettings, AuthSessionUser } from '@codraoss/schema/api';
+import {
+  Badge,
+  Button,
+  GithubMark,
+  Input,
+  LinkButton,
+  Skeleton,
+} from "@codraoss/ui";
+import { useState } from "react";
+import { toast } from "sonner";
+import { api } from "@client/lib/api";
+import { ExternalLink, Pencil, Check, X } from "lucide-react";
+import type { AccountSettings, AuthSessionUser } from "@codraoss/schema/api";
 
 export function ProfileCard({
   user,
@@ -22,7 +29,7 @@ export function ProfileCard({
   onAccountChange: (account: AccountSettings) => void;
 }) {
   const [editingName, setEditingName] = useState(false);
-  const [nameDraft, setNameDraft] = useState('');
+  const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);
 
   const startEditName = () => {
@@ -33,7 +40,7 @@ export function ProfileCard({
   const saveName = async () => {
     const trimmed = nameDraft.trim();
     if (!trimmed) {
-      toast.error('Name cannot be empty.');
+      toast.error("Name cannot be empty.");
       return;
     }
     setSavingName(true);
@@ -41,9 +48,9 @@ export function ProfileCard({
       const res = await api.updateAccountName(trimmed);
       onAccountChange(res.account);
       setEditingName(false);
-      toast.success('Account name updated');
+      toast.success("Account name updated");
     } catch (e) {
-      toast.error('Could not update name', {
+      toast.error("Could not update name", {
         description: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -58,7 +65,7 @@ export function ProfileCard({
           <Skeleton width={56} height={56} className="shrink-0 rounded-full" />
         ) : user!.avatarUrl ? (
           <img
-            src={`${user!.avatarUrl}${user!.avatarUrl.includes('?') ? '&' : '?'}s=112`}
+            src={`${user!.avatarUrl}${user!.avatarUrl.includes("?") ? "&" : "?"}s=112`}
             alt=""
             width={56}
             height={56}
@@ -83,8 +90,8 @@ export function ProfileCard({
                   value={nameDraft}
                   onChange={(e) => setNameDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') void saveName();
-                    if (e.key === 'Escape') setEditingName(false);
+                    if (e.key === "Enter") void saveName();
+                    if (e.key === "Escape") setEditingName(false);
                   }}
                   autoFocus
                   maxLength={120}
@@ -122,7 +129,7 @@ export function ProfileCard({
               <div className="group/name flex min-w-0 items-center gap-1.5">
                 <h2
                   className="truncate text-lg font-bold text-ui-strong"
-                  style={{ letterSpacing: '-0.01em' }}
+                  style={{ letterSpacing: "-0.01em" }}
                 >
                   {displayName}
                 </h2>
@@ -149,7 +156,12 @@ export function ProfileCard({
         </div>
 
         {pending ? (
-          <Skeleton width={148} height={32} borderRadius={6} className="shrink-0" />
+          <Skeleton
+            width={148}
+            height={32}
+            borderRadius={6}
+            className="shrink-0"
+          />
         ) : (
           <LinkButton
             href={profileUrl}

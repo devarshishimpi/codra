@@ -1,9 +1,5 @@
 {
-  "entry": [
-    "src/index.ts",
-    "src/logger.ts",
-    "src/platform/index.ts"
-  ],
+  "entry": ["src/index.ts", "src/logger.ts", "src/platform/index.ts"],
   "format": "esm",
   "dts": true,
   "splitting": true,

@@ -1,6 +1,6 @@
-import { Button } from '@codraoss/ui';
-import { RefreshCw } from 'lucide-react';
-import { TimeRangeSelect } from '@client/components/features/stats/time-range-select';
+import { Button } from "@codraoss/ui";
+import { RefreshCw } from "lucide-react";
+import { TimeRangeSelect } from "@client/components/features/stats/time-range-select";
 
 interface PageHeaderActionsProps {
   days: number;
@@ -23,7 +23,9 @@ export function PageHeaderActions({
         size="sm"
         onClick={onRefresh}
         disabled={refreshing}
-        icon={<RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />}
+        icon={
+          <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
+        }
       >
         Refresh
       </Button>

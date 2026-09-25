@@ -1,18 +1,30 @@
-import { logger } from '@codraoss/core/logger';
-import { ModelCallGate } from '../limits';
-import type { ResolvedModelConfig } from '@codraoss/schema';
-import { MAX_METERED_QUEUE_DEPTH, PROMPT_FIT_SAFETY_FACTOR, parseRateLimitFromError } from './model-support';
+import { logger } from "@codraoss/core/logger";
+import { ModelCallGate } from "../limits";
+import type { ResolvedModelConfig } from "@codraoss/schema";
+import {
+  MAX_METERED_QUEUE_DEPTH,
+  PROMPT_FIT_SAFETY_FACTOR,
+  parseRateLimitFromError,
+} from "./model-support";
 
 export interface RateLimitPersistence {
-  loadCooldowns(): Promise<Map<string, { cooldownUntil: number; limitTokens?: number }>>;
-  noteRateLimit(modelId: string, entry: { cooldownUntil: number; limitTokens?: number }): void;
+  loadCooldowns(): Promise<
+    Map<string, { cooldownUntil: number; limitTokens?: number }>
+  >;
+  noteRateLimit(
+    modelId: string,
+    entry: { cooldownUntil: number; limitTokens?: number },
+  ): void;
 }
 
 export class ModelRateLimitBook {
   // Slot held before client timeout starts.
   private readonly callGate = new ModelCallGate();
 
-  private readonly modelRateLimits = new Map<string, { limitTokens?: number; cooldownUntil: number }>();
+  private readonly modelRateLimits = new Map<
+    string,
+    { limitTokens?: number; cooldownUntil: number }
+  >();
 
   // Keyed by model.
   private readonly tokenMeteredModels = new Map<string, ModelCallGate>();
@@ -28,7 +40,10 @@ export class ModelRateLimitBook {
         const existing = this.modelRateLimits.get(modelName);
         this.modelRateLimits.set(modelName, {
           limitTokens: existing?.limitTokens ?? entry.limitTokens,
-          cooldownUntil: Math.max(existing?.cooldownUntil ?? 0, entry.cooldownUntil),
+          cooldownUntil: Math.max(
+            existing?.cooldownUntil ?? 0,
+            entry.cooldownUntil,
+          ),
         });
 
         // Serialize from the first call, not after re-earning our own 429.
@@ -53,14 +68,20 @@ export class ModelRateLimitBook {
 
     if (!this.tokenMeteredModels.has(resolved.modelName)) {
       this.tokenMeteredModels.set(resolved.modelName, new ModelCallGate(1));
-      logger.info(`Serializing calls to ${resolved.modelName}; it enforces a token-per-minute bucket`, {
-        provider: resolved.providerName,
-        limitTokens: limitTokens ?? null,
-      });
+      logger.info(
+        `Serializing calls to ${resolved.modelName}; it enforces a token-per-minute bucket`,
+        {
+          provider: resolved.providerName,
+          limitTokens: limitTokens ?? null,
+        },
+      );
     }
   }
 
-  async skipReason(modelName: string, estimatedPromptTokens: number): Promise<string | null> {
+  async skipReason(
+    modelName: string,
+    estimatedPromptTokens: number,
+  ): Promise<string | null> {
     await this.hydrate();
 
     const gate = this.tokenMeteredModels.get(modelName);
@@ -75,7 +96,10 @@ export class ModelRateLimitBook {
       return `cooling off for another ${Math.ceil((known.cooldownUntil - Date.now()) / 1000)}s`;
     }
 
-    if (known.limitTokens && estimatedPromptTokens > known.limitTokens * PROMPT_FIT_SAFETY_FACTOR) {
+    if (
+      known.limitTokens &&
+      estimatedPromptTokens > known.limitTokens * PROMPT_FIT_SAFETY_FACTOR
+    ) {
       return `prompt ~${estimatedPromptTokens} tokens exceeds its ${known.limitTokens}-token bucket`;
     }
 

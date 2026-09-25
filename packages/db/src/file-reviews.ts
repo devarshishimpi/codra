@@ -1,27 +1,27 @@
-import type { DbEnv } from './env';
-import type { ParsedReviewComment } from '@codraoss/schema';
+import type { DbEnv } from "./env";
+import type { ParsedReviewComment } from "@codraoss/schema";
 
-import { parseJsonColumn, queryRows, queryTransaction } from './client';
+import { parseJsonColumn, queryRows, queryTransaction } from "./client";
 import {
   REVIEW_COMMENT_INSERT_CASTS,
   REVIEW_COMMENT_INSERT_COLUMNS,
   reviewCommentInsertValues,
   reviewCommentsAggregate,
-} from './review-comment-sql';
+} from "./review-comment-sql";
 import {
   type SuppressedFinding,
   getSuppressedFindings,
   getFindingLabelTarget,
   markCommentsPosted,
   markCommentDispositions,
-} from './file-reviews-findings';
+} from "./file-reviews-findings";
 import {
   type BulkFileReviewInput,
   bulkInheritFileReviews,
   bulkMarkFilesFailed,
   bulkRecordRetryableFileReviewFailures,
   bulkUpsertFileReviews,
-} from './file-reviews-bulk';
+} from "./file-reviews-bulk";
 
 export {
   type SuppressedFinding,
@@ -45,7 +45,7 @@ export async function upsertFileReview(
   jobId: string,
   input: {
     filePath: string;
-    fileStatus: 'pending' | 'done' | 'skipped' | 'failed';
+    fileStatus: "pending" | "done" | "skipped" | "failed";
     modelUsed: string;
     modelProvider?: string | null;
     diffLineCount: number;
@@ -55,13 +55,18 @@ export async function upsertFileReview(
     inputTokens: number | null;
     outputTokens: number | null;
     durationMs: number | null;
-    verdict: 'approve' | 'comment' | null;
+    verdict: "approve" | "comment" | null;
     fileSummary: string | null;
     overallCorrectness?: string | null;
     confidenceScore?: number | null;
     errorMessage: string | null;
     // Findings dropped in the PARSER have no review_comments row to carry a disposition; without this, "everything was withheld" is indistinguishable from clean.
-    withheldCounts?: { evidence: number; claimDenied: number; contextOnly?: number; absenceRefuted?: number } | null;
+    withheldCounts?: {
+      evidence: number;
+      claimDenied: number;
+      contextOnly?: number;
+      absenceRefuted?: number;
+    } | null;
     // The call answered, but not cleanly: it ran without a response grammar, or its output was cut off
     // and salvaged. Persisted rather than logged so "how often did this happen" is a query.
     degraded?: string | null;
@@ -145,12 +150,15 @@ export async function upsertFileReview(
       ],
     );
 
-    await tx.query('DELETE FROM review_comments WHERE file_review_id = $1::uuid', [review.id]);
+    await tx.query(
+      "DELETE FROM review_comments WHERE file_review_id = $1::uuid",
+      [review.id],
+    );
 
     if (input.parsedComments.length > 0) {
       await tx.query(
         `
-          INSERT INTO review_comments (file_review_id, ${REVIEW_COMMENT_INSERT_COLUMNS.join(', ')})
+          INSERT INTO review_comments (file_review_id, ${REVIEW_COMMENT_INSERT_COLUMNS.join(", ")})
           SELECT $1::uuid, * FROM UNNEST(${REVIEW_COMMENT_INSERT_CASTS})
         `,
         [review.id, ...reviewCommentInsertValues(input.parsedComments)],
@@ -177,7 +185,10 @@ export async function recordRetryableFileReviewFailure(
   },
 ) {
   return await queryTransaction(env, async (tx) => {
-    const [review] = await tx.query<{ id: string; transient_error_count: number }>(
+    const [review] = await tx.query<{
+      id: string;
+      transient_error_count: number;
+    }>(
       `
         INSERT INTO file_reviews (
           job_id,
@@ -230,11 +241,13 @@ export async function recordRetryableFileReviewFailure(
       ],
     );
 
-    await tx.query('DELETE FROM review_comments WHERE file_review_id = $1::uuid', [review.id]);
+    await tx.query(
+      "DELETE FROM review_comments WHERE file_review_id = $1::uuid",
+      [review.id],
+    );
     return review.transient_error_count;
   });
 }
-
 
 export async function getModelUsageStats(env: DbEnv, days: number) {
   return queryRows<{
@@ -269,7 +282,7 @@ export async function getFileReviewsForJobs(env: DbEnv, jobIds: string[]) {
     id: string;
     job_id: string;
     file_path: string;
-    file_status: 'pending' | 'done' | 'skipped' | 'failed';
+    file_status: "pending" | "done" | "skipped" | "failed";
     model_used: string;
     diff_line_count: number;
     diff_input: string | null;
@@ -278,7 +291,7 @@ export async function getFileReviewsForJobs(env: DbEnv, jobIds: string[]) {
     input_tokens: number | null;
     output_tokens: number | null;
     duration_ms: number | null;
-    verdict: 'approve' | 'comment' | null;
+    verdict: "approve" | "comment" | null;
     file_summary: string | null;
     overall_correctness: string | null;
     confidence_score: number | null;
@@ -287,7 +300,8 @@ export async function getFileReviewsForJobs(env: DbEnv, jobIds: string[]) {
     transient_error_count: number;
     async_request_id: string | null;
     async_model: string | null;
-    withheld_counts: { evidence?: number; claimDenied?: number } | string | null;
+    withheld_counts:
+      { evidence?: number; claimDenied?: number } | string | null;
     // NULL pre-batching; 1 reviewed alone, N for a packed bin.
     batch_size: number | null;
   }>(
@@ -306,7 +320,9 @@ export async function getFileReviewsForJobs(env: DbEnv, jobIds: string[]) {
   return rows.map((row) => ({
     ...row,
     parsed_comments: parseJsonColumn(row.parsed_comments, []),
-    withheld_counts: parseJsonColumn(row.withheld_counts, {} as { evidence?: number; claimDenied?: number }),
+    withheld_counts: parseJsonColumn(
+      row.withheld_counts,
+      {} as { evidence?: number; claimDenied?: number },
+    ),
   }));
 }
-

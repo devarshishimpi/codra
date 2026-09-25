@@ -1,17 +1,23 @@
-import type { WebhookPayload, WebhookEventName } from '@codraoss/schema/webhook';
-import type { PullRequestWebhookPayload, IssueCommentWebhookPayload } from '@codraoss/schema/github';
+import type {
+  WebhookPayload,
+  WebhookEventName,
+} from "@codraoss/schema/webhook";
+import type {
+  PullRequestWebhookPayload,
+  IssueCommentWebhookPayload,
+} from "@codraoss/schema/github";
 
 export function normalizeGitHubWebhook(
   eventName: string,
   payload: unknown,
 ): { eventName: WebhookEventName; payload: WebhookPayload } | null {
-  if (eventName === 'pull_request') {
+  if (eventName === "pull_request") {
     const prPayload = payload as PullRequestWebhookPayload;
     return {
-      eventName: 'change_request',
+      eventName: "change_request",
       payload: {
         action: prPayload.action,
-        installationId: String(prPayload.installation?.id ?? ''),
+        installationId: String(prPayload.installation?.id ?? ""),
         repository: {
           owner: prPayload.repository.owner.login,
           name: prPayload.repository.name,
@@ -20,8 +26,14 @@ export function normalizeGitHubWebhook(
           number: prPayload.pull_request.number,
           title: prPayload.pull_request.title,
           author: prPayload.pull_request.user.login,
-          head: { sha: prPayload.pull_request.head.sha, ref: prPayload.pull_request.head.ref },
-          base: { sha: prPayload.pull_request.base.sha, ref: prPayload.pull_request.base.ref },
+          head: {
+            sha: prPayload.pull_request.head.sha,
+            ref: prPayload.pull_request.head.ref,
+          },
+          base: {
+            sha: prPayload.pull_request.base.sha,
+            ref: prPayload.pull_request.base.ref,
+          },
           draft: prPayload.pull_request.draft,
           body: prPayload.pull_request.body,
         },
@@ -29,13 +41,13 @@ export function normalizeGitHubWebhook(
     };
   }
 
-  if (eventName === 'issue_comment') {
+  if (eventName === "issue_comment") {
     const icPayload = payload as IssueCommentWebhookPayload;
     return {
-      eventName: 'comment',
+      eventName: "comment",
       payload: {
         action: icPayload.action,
-        installationId: String(icPayload.installation?.id ?? ''),
+        installationId: String(icPayload.installation?.id ?? ""),
         repository: {
           owner: icPayload.repository.owner.login,
           name: icPayload.repository.name,

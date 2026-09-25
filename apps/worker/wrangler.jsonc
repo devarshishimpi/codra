@@ -3,49 +3,47 @@
   "name": "codra",
   "main": "./src/index.ts",
   "compatibility_date": "2026-04-16",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
+  "compatibility_flags": ["nodejs_compat"],
   "routes": [
     {
       "pattern": "app.codra.devarshi.dev",
-      "custom_domain": true
-    }
+      "custom_domain": true,
+    },
   ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
     "logs": {
       "enabled": true,
-      "invocation_logs": true
+      "invocation_logs": true,
     },
     "traces": {
-      "enabled": true
-    }
+      "enabled": true,
+    },
   },
   "ai": {
     "binding": "AI",
-    "remote": true
+    "remote": true,
   },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "35b282fa80f24e67adfda063c3a839d1"
-    }
+      "id": "35b282fa80f24e67adfda063c3a839d1",
+    },
   ],
   "kv_namespaces": [
     {
       "binding": "APP_KV",
       "id": "f5f88c23f1f14342b2ec2c733470921b",
-      "preview_id": "9f2cdc0fdf8d4c868ae2754f66b839b8"
-    }
+      "preview_id": "9f2cdc0fdf8d4c868ae2754f66b839b8",
+    },
   ],
   "queues": {
     "producers": [
       {
         "binding": "REVIEW_QUEUE",
-        "queue": "codra-review-jobs"
-      }
+        "queue": "codra-review-jobs",
+      },
     ],
     "consumers": [
       {
@@ -54,21 +52,19 @@
         "max_batch_timeout": 5,
         "max_concurrency": 1,
         "retry_delay": 60,
-        "max_retries": 3
-      }
-    ]
+        "max_retries": 3,
+      },
+    ],
   },
   "workflows": [
     {
       "name": "codra-review-workflow",
       "binding": "REVIEW_WORKFLOW",
-      "class_name": "ReviewWorkflow"
-    }
+      "class_name": "ReviewWorkflow",
+    },
   ],
   "triggers": {
-    "crons": [
-      "*/2 * * * *"
-    ]
+    "crons": ["*/2 * * * *"],
   },
   "assets": {
     "directory": "../../dist/client",
@@ -85,8 +81,8 @@
       "/auth/*",
       "/webhook*",
       "/settings*",
-      "/account*"
-    ]
+      "/account*",
+    ],
   },
   "secrets": {
     "required": [
@@ -97,8 +93,8 @@
       "GITHUB_CLIENT_SECRET",
       "LLM_CONFIG_ENCRYPTION_KEY",
       "CF_API_TOKEN",
-      "CF_ACCOUNT_ID"
-    ]
+      "CF_ACCOUNT_ID",
+    ],
   },
   "vars": {
     "APP_URL": "https://app.codra.devarshi.dev",
@@ -106,6 +102,6 @@
     "BOT_USERNAME": "codra-app",
     "GITHUB_APP_SLUG": "codra-app-personal",
     "DASHBOARD_ALLOWED_USERS": "devarshishimpi",
-    "ENVIRONMENT": "production"
-  }
+    "ENVIRONMENT": "production",
+  },
 }

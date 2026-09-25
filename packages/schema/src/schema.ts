@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   reviewSeverities,
   reviewConcurrencyLevels,
@@ -6,7 +6,7 @@ import {
   REVIEW_CONCURRENCY_LIMITS,
   reviewMaxCommentsOptions,
   reviewMaxFilesRange,
-} from './review-limits';
+} from "./review-limits";
 import {
   reviewTriggers,
   jobStatuses,
@@ -14,7 +14,7 @@ import {
   reviewVerdicts,
   reviewCategories,
   llmApiFormats,
-} from './schema-enums';
+} from "./schema-enums";
 import {
   claimTypes,
   type ClaimType,
@@ -25,7 +25,7 @@ import {
   DEFAULT_SHADOW_RULE_IDS,
   findingDispositions,
   type FindingDisposition,
-} from './schema-claims';
+} from "./schema-claims";
 import {
   reviewConfigSchema,
   repoConfigSchema,
@@ -34,7 +34,7 @@ import {
   normalizeRepoModelConfig,
   normalizeRepoConfig,
   defaultRepoConfig,
-} from './schema-repo-config';
+} from "./schema-repo-config";
 import {
   KIMI_K2_5_MODEL,
   KIMI_K2_6_MODEL,
@@ -42,7 +42,7 @@ import {
   DEFAULT_OVERALL_CORRECTNESS,
   DEFAULT_OVERALL_EXPLANATION,
   REPO_CONFIG_CACHE_VERSION,
-} from './constants';
+} from "./constants";
 
 export {
   reviewSeverities,
@@ -87,12 +87,14 @@ export {
   REPO_CONFIG_CACHE_VERSION,
 };
 
-const dateStringSchema = z.union([z.string(), z.date()]).transform((d) => (d instanceof Date ? d.toISOString() : d));
+const dateStringSchema = z
+  .union([z.string(), z.date()])
+  .transform((d) => (d instanceof Date ? d.toISOString() : d));
 const coerceNumberSchema = z.coerce.number();
 
 export const jobStepSchema = z.object({
   name: z.string(),
-  status: z.enum(['pending', 'running', 'done', 'failed']),
+  status: z.enum(["pending", "running", "done", "failed"]),
   startedAt: dateStringSchema.nullable(),
   finishedAt: dateStringSchema.nullable(),
   error: z.string().nullable().optional(),
@@ -103,7 +105,7 @@ export const parsedReviewCommentSchema = z.object({
   line: z.number().int().positive().nullable().optional(),
   position: z.number().int().positive().nullable().optional(),
   severity: z.enum(reviewSeverities),
-  category: z.enum(reviewCategories).default('quality'),
+  category: z.enum(reviewCategories).default("quality"),
   title: z.string().min(1),
   body: z.string().min(1),
   codeSuggestion: z.string().min(1).nullable().optional(),
@@ -119,11 +121,11 @@ export const parsedReviewCommentSchema = z.object({
   contextSnippet: z.string().nullable().optional(),
   disposition: z.enum(findingDispositions).nullable().optional(),
   verifyReason: z.string().nullable().optional(),
-  humanLabel: z.enum(['marked_right', 'marked_wrong']).nullable().optional(),
+  humanLabel: z.enum(["marked_right", "marked_wrong"]).nullable().optional(),
   // Title-independent identity for suppression.
   fingerprintV2: z.string().min(1).nullable().optional(),
   // Absent means 'llm'. Always test `=== 'rule'` positively.
-  source: z.enum(['llm', 'rule']).nullable().optional(),
+  source: z.enum(["llm", "rule"]).nullable().optional(),
   // Which reviewer produced this, when a secondary reviewer is configured. Attribution for a human
   // reading the dashboard -- never an input to any gate, and never a weight: agreement between models
   // is anti-correlated with correctness in the measured corpus.
@@ -132,7 +134,9 @@ export const parsedReviewCommentSchema = z.object({
   ruleId: z.string().min(1).nullable().optional(),
 });
 
-export const findingLabelSchema = z.object({ label: z.enum(['right', 'wrong']) });
+export const findingLabelSchema = z.object({
+  label: z.enum(["right", "wrong"]),
+});
 
 const reviewFindingSchema = z.object({
   title: z.string().max(100),
@@ -144,10 +148,12 @@ const reviewFindingSchema = z.object({
   claim_type: z.unknown().optional(),
   code_location: z.object({
     absolute_file_path: z.string(),
-    line_range: z.object({
-      start: z.number().int().positive(),
-      end: z.number().int().positive(),
-    }).optional(),
+    line_range: z
+      .object({
+        start: z.number().int().positive(),
+        end: z.number().int().positive(),
+      })
+      .optional(),
     line: z.number().int().positive().optional(),
   }),
   code_suggestion: z.string().optional(),
@@ -155,53 +161,69 @@ const reviewFindingSchema = z.object({
 
 export const fileReviewModelOutputSchema = z.object({
   findings: z.array(reviewFindingSchema),
-  overall_correctness: z.string().optional().default(DEFAULT_OVERALL_CORRECTNESS),
-  overall_explanation: z.string().optional().default(DEFAULT_OVERALL_EXPLANATION),
+  overall_correctness: z
+    .string()
+    .optional()
+    .default(DEFAULT_OVERALL_CORRECTNESS),
+  overall_explanation: z
+    .string()
+    .optional()
+    .default(DEFAULT_OVERALL_EXPLANATION),
   overall_confidence_score: z.number().min(0).max(1).optional(),
 });
 
 // One entry per packed file. `.min(1)` throws on empty response.
 export const batchReviewModelOutputSchema = z.object({
-  files: z.array(
-    z.object({
-      absolute_file_path: z.string(),
-      findings: z.array(reviewFindingSchema),
-      overall_correctness: z.string().optional().default(DEFAULT_OVERALL_CORRECTNESS),
-      overall_explanation: z.string().optional().default(DEFAULT_OVERALL_EXPLANATION),
-      overall_confidence_score: z.number().min(0).max(1).optional(),
-    }),
-  ).min(1),
+  files: z
+    .array(
+      z.object({
+        absolute_file_path: z.string(),
+        findings: z.array(reviewFindingSchema),
+        overall_correctness: z
+          .string()
+          .optional()
+          .default(DEFAULT_OVERALL_CORRECTNESS),
+        overall_explanation: z
+          .string()
+          .optional()
+          .default(DEFAULT_OVERALL_EXPLANATION),
+        overall_confidence_score: z.number().min(0).max(1).optional(),
+      }),
+    )
+    .min(1),
   overall_confidence_score: z.number().min(0).max(1).optional(),
 });
 
-export const reviewJobMessageSchema = z.object({
-  jobId: z.uuid().optional(),
-  deliveryId: z.string().min(1),
-  phase: z.enum(['prepare', 'review', 'finalize']).optional(),
-  eventName: z.string().min(1).optional(),
-  payload: z.unknown().optional(),
-  installationId: z.string().min(1).optional(),
-  owner: z.string().min(1).optional(),
-  repo: z.string().min(1).optional(),
-  prNumber: z.number().int().positive().optional(),
-  commitSha: z.string().min(1).optional(),
-  trigger: z.enum(reviewTriggers).optional(),
-  requestId: z.string().optional(),
-  // Injected by workflow to bind to job row.
-  workflowInstanceId: z.string().optional(),
-  // Forces a fresh instance keyed on deliveryId.
-  forceFreshInstance: z.boolean().optional(),
-}).superRefine((message, ctx) => {
-  if (message.jobId || message.eventName) {
-    return;
-  }
+export const reviewJobMessageSchema = z
+  .object({
+    jobId: z.uuid().optional(),
+    deliveryId: z.string().min(1),
+    phase: z.enum(["prepare", "review", "finalize"]).optional(),
+    eventName: z.string().min(1).optional(),
+    payload: z.unknown().optional(),
+    installationId: z.string().min(1).optional(),
+    owner: z.string().min(1).optional(),
+    repo: z.string().min(1).optional(),
+    prNumber: z.number().int().positive().optional(),
+    commitSha: z.string().min(1).optional(),
+    trigger: z.enum(reviewTriggers).optional(),
+    requestId: z.string().optional(),
+    // Injected by workflow to bind to job row.
+    workflowInstanceId: z.string().optional(),
+    // Forces a fresh instance keyed on deliveryId.
+    forceFreshInstance: z.boolean().optional(),
+  })
+  .superRefine((message, ctx) => {
+    if (message.jobId || message.eventName) {
+      return;
+    }
 
-  ctx.addIssue({
-    code: 'custom',
-    message: 'Queue message must include either jobId or eventName.',
-    path: ['jobId'],
+    ctx.addIssue({
+      code: "custom",
+      message: "Queue message must include either jobId or eventName.",
+      path: ["jobId"],
+    });
   });
-});
 
 export const jobSummarySchema = z.object({
   id: z.uuid(),
@@ -238,13 +260,15 @@ export const jobsQuerySchema = z.object({
   owner: z.string().optional(),
   repo: z.string().optional(),
   prNumber: z.preprocess(
-    (v) => (v === undefined || v === '' ? undefined : Number(v)),
+    (v) => (v === undefined || v === "" ? undefined : Number(v)),
     z.number().int().positive().optional(),
   ),
   status: z.enum(jobStatuses).optional(),
   verdict: z.enum(reviewVerdicts).optional(),
   search: z.string().optional(),
-  limit: z.preprocess((v) => Number(v), z.number().int().min(1).max(100)).default(20),
+  limit: z
+    .preprocess((v) => Number(v), z.number().int().min(1).max(100))
+    .default(20),
   offset: z.preprocess((v) => Number(v), z.number().int().min(0)).default(0),
 });
 
@@ -413,7 +437,7 @@ export const modelConfigSchema = z.object({
   updatedAt: dateStringSchema,
 });
 
-export type LlmApiFormat = z.infer<typeof llmProviderSchema>['apiFormat'];
+export type LlmApiFormat = z.infer<typeof llmProviderSchema>["apiFormat"];
 export type LlmProvider = z.infer<typeof llmProviderSchema>;
 export type ModelConfig = z.infer<typeof modelConfigSchema>;
 
@@ -429,8 +453,10 @@ export type ResolvedModelConfig = ModelConfig & {
 export type StatsPayload = z.infer<typeof statsSchema>;
 
 export const reviewSettingsSchema = z.object({
-  concurrencyLevel: z.enum(reviewConcurrencyLevels).default('medium'),
-  maxComments: z.union([z.literal(5), z.literal(10), z.literal(15), z.literal(20)]).default(10),
+  concurrencyLevel: z.enum(reviewConcurrencyLevels).default("medium"),
+  maxComments: z
+    .union([z.literal(5), z.literal(10), z.literal(15), z.literal(20)])
+    .default(10),
   // Instance-wide, shared budget and limit.
   maxFiles: z
     .number()

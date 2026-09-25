@@ -1,4 +1,4 @@
-import type { DashboardSessionUser, SessionStore } from '@codraoss/core';
+import type { DashboardSessionUser, SessionStore } from "@codraoss/core";
 
 export class CloudflareSessionStore implements SessionStore {
   constructor(private readonly kv: KVNamespace) {}
@@ -16,14 +16,14 @@ export class CloudflareSessionStore implements SessionStore {
   }
 
   async readSession(token: string): Promise<DashboardSessionUser | null> {
-    const raw = await this.kv.get(this.sessionKey(token), 'json');
+    const raw = await this.kv.get(this.sessionKey(token), "json");
     if (!raw) return null;
 
     const session = raw as any;
     if (session.githubUserId && !session.provider) {
       // Backward compatibility: adapt old GitHub sessions to the new provider-neutral shape.
       return {
-        provider: 'github',
+        provider: "github",
         providerUserId: session.githubUserId.toString(),
         login: session.login,
         name: session.name,

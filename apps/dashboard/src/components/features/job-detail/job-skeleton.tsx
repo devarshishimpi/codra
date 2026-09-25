@@ -1,14 +1,20 @@
-import { LoadError, Skeleton } from '@codraoss/ui';
-import { Link } from 'react-router-dom';
-import { ChevronRight, ClipboardList, FileDiff, Info, ListChecks } from 'lucide-react';
-import { DETAIL_LABEL, DETAIL_ROW } from './job-chip-utils';
+import { LoadError, Skeleton } from "@codraoss/ui";
+import { Link } from "react-router-dom";
+import {
+  ChevronRight,
+  ClipboardList,
+  FileDiff,
+  Info,
+  ListChecks,
+} from "lucide-react";
+import { DETAIL_LABEL, DETAIL_ROW } from "./job-chip-utils";
 
 interface JobDetailSkeletonProps {
   error: string | null;
 }
 
 /* Same order the loaded page renders them, so nothing moves when the payload lands. */
-const DETAIL_LABELS = ['Status', 'Verdict', 'Trigger', 'Tokens', 'Created'];
+const DETAIL_LABELS = ["Status", "Verdict", "Trigger", "Tokens", "Created"];
 
 export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
   return (
@@ -22,7 +28,10 @@ export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
             <Link to="/jobs" className="transition-colors hover:text-ui-strong">
               Jobs
             </Link>
-            <ChevronRight size={12} className="shrink-0 text-ui-subtle opacity-60" />
+            <ChevronRight
+              size={12}
+              className="shrink-0 text-ui-subtle opacity-60"
+            />
             <Skeleton width={62} height={11} />
           </div>
 
@@ -60,7 +69,10 @@ export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
       </div>
 
       {/* Tab strip - static, so it doesn't appear from nowhere when data lands. */}
-      <div className="flex items-center gap-1 border-b border-ui-line" aria-hidden>
+      <div
+        className="flex items-center gap-1 border-b border-ui-line"
+        aria-hidden
+      >
         <span className="relative -mb-px flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-ui-strong">
           <ClipboardList size={14} strokeWidth={2} />
           Overview
@@ -75,14 +87,24 @@ export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="ui-panel min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 border-b border-ui-line px-4 py-3 sm:px-5">
-            <Info size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
-            <h2 className="text-[13px] font-medium text-ui-default">Job details</h2>
+            <Info
+              size={15}
+              strokeWidth={2}
+              className="shrink-0 text-ui-default"
+            />
+            <h2 className="text-[13px] font-medium text-ui-default">
+              Job details
+            </h2>
           </div>
           <div className="px-4 py-1.5 sm:px-5">
             {DETAIL_LABELS.map((label) => (
               <div key={label} className={DETAIL_ROW}>
                 <span className={DETAIL_LABEL}>{label}</span>
-                <Skeleton width={label === 'Verdict' ? 84 : 72} height={label === 'Verdict' ? 22 : 13} borderRadius={label === 'Verdict' ? 999 : undefined} />
+                <Skeleton
+                  width={label === "Verdict" ? 84 : 72}
+                  height={label === "Verdict" ? 22 : 13}
+                  borderRadius={label === "Verdict" ? 999 : undefined}
+                />
               </div>
             ))}
           </div>
@@ -90,8 +112,14 @@ export function JobDetailSkeleton({ error }: JobDetailSkeletonProps) {
 
         <div className="ui-panel min-w-0 overflow-hidden">
           <div className="flex items-center gap-2 border-b border-ui-line px-4 py-3 sm:px-5">
-            <ListChecks size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
-            <h2 className="text-[13px] font-medium text-ui-default">Progress steps</h2>
+            <ListChecks
+              size={15}
+              strokeWidth={2}
+              className="shrink-0 text-ui-default"
+            />
+            <h2 className="text-[13px] font-medium text-ui-default">
+              Progress steps
+            </h2>
           </div>
           <div className="px-4 py-1.5 sm:px-5">
             {Array.from({ length: 5 }).map((_, i) => (

@@ -1,10 +1,10 @@
-import { Skeleton } from '@codraoss/ui';
-import { toast } from 'sonner';
-import type { LlmProvider } from '@codraoss/schema';
-import { ProviderRow } from './provider-row';
-import type { ProviderDraft } from './settings-support';
+import { Skeleton } from "@codraoss/ui";
+import { toast } from "sonner";
+import type { LlmProvider } from "@codraoss/schema";
+import { ProviderRow } from "./provider-row";
+import type { ProviderDraft } from "./settings-support";
 
-const SKELETON_ROWS = ['first', 'second', 'third'];
+const SKELETON_ROWS = ["first", "second", "third"];
 
 export function ProviderList({
   loading,
@@ -36,7 +36,7 @@ export function ProviderList({
   if (loading) {
     return (
       <div className="divide-y divide-ui-line/60">
-        {SKELETON_ROWS.map(row => (
+        {SKELETON_ROWS.map((row) => (
           <div key={row} className="flex items-center gap-4 px-4 py-4 sm:px-5">
             <div className="flex-1 space-y-2">
               <Skeleton height={13} width="40%" />
@@ -53,14 +53,16 @@ export function ProviderList({
     return (
       <div className="px-5 py-14 text-center">
         <p className="text-sm font-medium text-ui-default">No providers yet</p>
-        <p className="mt-1 text-xs text-ui-subtle">Add one to start routing models.</p>
+        <p className="mt-1 text-xs text-ui-subtle">
+          Add one to start routing models.
+        </p>
       </div>
     );
   }
 
   return (
     <div className="divide-y divide-ui-line/60">
-      {providers.map(provider => (
+      {providers.map((provider) => (
         <ProviderRow
           key={provider.id}
           provider={provider}

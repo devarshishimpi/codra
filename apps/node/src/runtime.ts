@@ -1,27 +1,37 @@
-import type { ReviewRuntime } from '@codraoss/core/ports';
-import type { DbEnv } from '@codraoss/db/env';
-import { TokenTracker } from '@codraoss/core/token-tracker';
-import type { NodeAppBindings } from './env';
+import type { ReviewRuntime } from "@codraoss/core/ports";
+import type { DbEnv } from "@codraoss/db/env";
+import { TokenTracker } from "@codraoss/core/token-tracker";
+import type { NodeAppBindings } from "./env";
 
+import {
+  makeJobStore,
+  makeFileReviewStore,
+  makeLearningStore,
+  makeModelConfigReader,
+  makeReviewSettingsReader,
+  makeWebhookDeliveryReader,
+} from "@codraoss/db/repositories";
 
-import { makeJobStore, makeFileReviewStore, makeLearningStore, makeModelConfigReader, makeReviewSettingsReader, makeWebhookDeliveryReader } from '@codraoss/db/repositories';
+import { loadRepoConfig } from "@codraoss/api/platform";
 
-
-import { loadRepoConfig } from '@codraoss/api/platform';
-
-
-import { cryptoIds, systemClock } from '@codraoss/node-adapters';
-import { makeTelemetrySink } from './adapters/telemetry';
+import { cryptoIds, systemClock } from "@codraoss/node-adapters";
+import { makeTelemetrySink } from "./adapters/telemetry";
 import {
   makeFormatterFactory,
   makeGitHubClientFactory,
   makeGitHubFactory,
   makeModelErrorClassifier,
   makeModelFactory,
-} from './adapters/services';
+} from "./adapters/services";
 
-export function createReviewRuntime(env: NodeAppBindings): ReviewRuntime & DbEnv {
-  const dbEnv = { HYPERDRIVE: env.DATABASE_CONFIG, APP_KV: env.APP_KV, workerMode: false };
+export function createReviewRuntime(
+  env: NodeAppBindings,
+): ReviewRuntime & DbEnv {
+  const dbEnv = {
+    HYPERDRIVE: env.DATABASE_CONFIG,
+    APP_KV: env.APP_KV,
+    workerMode: false,
+  };
 
   return {
     ...dbEnv,
@@ -38,7 +48,7 @@ export function createReviewRuntime(env: NodeAppBindings): ReviewRuntime & DbEnv
     learning: makeLearningStore(dbEnv),
     modelConfigs: makeModelConfigReader(dbEnv),
     repoConfig: {
-      loadRepoConfig: (context) => loadRepoConfig(env.APP_KV, dbEnv, context)
+      loadRepoConfig: (context) => loadRepoConfig(env.APP_KV, dbEnv, context),
     },
     telemetry: makeTelemetrySink(env),
 

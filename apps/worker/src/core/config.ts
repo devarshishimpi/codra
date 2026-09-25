@@ -1,1 +1,6 @@
-﻿export { getGlobalConfig, updateGlobalConfig, invalidateRepoConfigCache, loadRepoConfig } from '@codraoss/api/platform';
+﻿export {
+  getGlobalConfig,
+  updateGlobalConfig,
+  invalidateRepoConfigCache,
+  loadRepoConfig,
+} from "@codraoss/api/platform";

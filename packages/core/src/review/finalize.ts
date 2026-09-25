@@ -1,16 +1,25 @@
-import { logger } from '../logger';
-import { defaultRepoConfig, type ParsedReviewComment, type RepoConfig } from '@codraoss/schema';
-import { shadowEvaluate } from '../finding-gates';
-import { getDiffFiles } from './diff-cache';
-import type { ReviewFormatter, ReviewGitProvider, ReviewModel, ReviewRuntime } from '../ports';
+import { logger } from "../logger";
+import {
+  defaultRepoConfig,
+  type ParsedReviewComment,
+  type RepoConfig,
+} from "@codraoss/schema";
+import { shadowEvaluate } from "../finding-gates";
+import { getDiffFiles } from "./diff-cache";
+import type {
+  ReviewFormatter,
+  ReviewGitProvider,
+  ReviewModel,
+  ReviewRuntime,
+} from "../ports";
 import {
   type PersistedReviewJob,
   enqueueJobPhase,
   heartbeatAndCheckSuperseded,
-} from './phase-control';
-import { FRESH_INVOCATION_YIELD_SECONDS } from '../constants';
-import { sendReviewTelemetry } from './telemetry';
-import { applyFindingGates } from './gate-pipeline';
+} from "./phase-control";
+import { FRESH_INVOCATION_YIELD_SECONDS } from "../constants";
+import { sendReviewTelemetry } from "./telemetry";
+import { applyFindingGates } from "./gate-pipeline";
 
 /**
  * Why a completed review is less than the whole pull request, for the job record the dashboard reads.
@@ -24,17 +33,21 @@ export function partialReviewMessage(input: {
   reviewedFileCount: number;
   filesOverCap: number;
 }): string | null {
-  const plural = (n: number) => (n === 1 ? '' : 's');
+  const plural = (n: number) => (n === 1 ? "" : "s");
   const reasons: string[] = [];
 
   if (input.failedFileCount > 0) {
-    reasons.push(`${input.failedFileCount} of ${input.reviewedFileCount} file${plural(input.reviewedFileCount)} could not be reviewed`);
+    reasons.push(
+      `${input.failedFileCount} of ${input.reviewedFileCount} file${plural(input.reviewedFileCount)} could not be reviewed`,
+    );
   }
   if (input.filesOverCap > 0) {
-    reasons.push(`${input.filesOverCap} file${plural(input.filesOverCap)} left out by the file and diff-size limits`);
+    reasons.push(
+      `${input.filesOverCap} file${plural(input.filesOverCap)} left out by the file and diff-size limits`,
+    );
   }
 
-  return reasons.length > 0 ? `Partial review: ${reasons.join('; ')}.` : null;
+  return reasons.length > 0 ? `Partial review: ${reasons.join("; ")}.` : null;
 }
 
 export async function runFinalizePhase(
@@ -45,7 +58,9 @@ export async function runFinalizePhase(
   formatter: ReviewFormatter,
   model: ReviewModel,
 ) {
-  await env.jobs.updateJobStep(job.id, 'Generating Summary', { status: 'running' });
+  await env.jobs.updateJobStep(job.id, "Generating Summary", {
+    status: "running",
+  });
 
   const pr = await github.getPullRequest(job.owner, job.repo, job.prNumber);
   const config = (job.configSnapshot ?? defaultRepoConfig) as RepoConfig;
@@ -61,55 +76,90 @@ export async function runFinalizePhase(
     const missingFiles = files.filter((f) => !reviewedPaths.has(f.path));
 
     if (missingFiles.length > 0) {
-      logger.warn(`Job ${job.id} reached finalize phase with ${missingFiles.length} missing file reviews. Forcing them to failed state.`);
+      logger.warn(
+        `Job ${job.id} reached finalize phase with ${missingFiles.length} missing file reviews. Forcing them to failed state.`,
+      );
       await env.fileReviews.bulkMarkFilesFailed(
         job.id,
-        missingFiles.map((file) => ({ filePath: file.path, diffLineCount: file.lineCount })),
-        { modelUsed: config.model?.main ?? 'unconfigured', errorMessage: 'This file was not reviewed before the review run completed.' },
+        missingFiles.map((file) => ({
+          filePath: file.path,
+          diffLineCount: file.lineCount,
+        })),
+        {
+          modelUsed: config.model?.main ?? "unconfigured",
+          errorMessage:
+            "This file was not reviewed before the review run completed.",
+        },
       );
 
       reviews = await env.fileReviews.getFileReviewsForJobs([job.id]);
     } else if (reviews.length < files.length) {
-      await env.jobs.updateJobStep(job.id, 'Reviewing Files', { status: 'running' });
-      await enqueueJobPhase(env, job.id, 'review', FRESH_INVOCATION_YIELD_SECONDS);
+      await env.jobs.updateJobStep(job.id, "Reviewing Files", {
+        status: "running",
+      });
+      await enqueueJobPhase(
+        env,
+        job.id,
+        "review",
+        FRESH_INVOCATION_YIELD_SECONDS,
+      );
       return;
     }
   }
 
-  await env.jobs.updateJobStep(job.id, 'Reviewing Files', { status: 'done' });
+  await env.jobs.updateJobStep(job.id, "Reviewing Files", { status: "done" });
 
-  const reviewedComments = reviews.flatMap((review) => review.parsed_comments as ParsedReviewComment[]);
+  const reviewedComments = reviews.flatMap(
+    (review) => review.parsed_comments as ParsedReviewComment[],
+  );
   const fileSummaries = reviews.map((review) => ({
     path: review.file_path,
-    summary: review.file_status === 'failed'
-      ? `Review failed: ${review.error_msg ?? 'Unknown file review error'}`
-      : (review.file_summary ?? ''),
-    verdict: review.file_status === 'failed' ? 'failed' : (review.verdict ?? 'comment'),
+    summary:
+      review.file_status === "failed"
+        ? `Review failed: ${review.error_msg ?? "Unknown file review error"}`
+        : (review.file_summary ?? ""),
+    verdict:
+      review.file_status === "failed"
+        ? "failed"
+        : (review.verdict ?? "comment"),
   }));
 
   const { concurrencyLevel, maxComments: globalMaxComments } = reviewSettings;
-  const effectiveMaxComments = Math.min(config.review.max_comments, globalMaxComments);
+  const effectiveMaxComments = Math.min(
+    config.review.max_comments,
+    globalMaxComments,
+  );
   const retryCount = job.retryOfJobId ? 1 : 0;
 
-  if (fileSummaries.length > 0 && fileSummaries.every((file) => file.verdict === 'failed')) {
-    await env.jobs.updateJobStep(job.id, 'Generating Summary', { status: 'failed', error: 'All files failed to review' });
+  if (
+    fileSummaries.length > 0 &&
+    fileSummaries.every((file) => file.verdict === "failed")
+  ) {
+    await env.jobs.updateJobStep(job.id, "Generating Summary", {
+      status: "failed",
+      error: "All files failed to review",
+    });
 
     await sendReviewTelemetry(
       env,
       job,
       files,
       reviews,
-      { findingsReported: 0, verdict: 'failed', severityDistribution: {} },
+      { findingsReported: 0, verdict: "failed", severityDistribution: {} },
       { concurrencyLevel, retryCount },
     );
 
-    throw new Error('All files failed to review');
+    throw new Error("All files failed to review");
   }
 
-  const hasFailures = fileSummaries.some((file) => file.verdict === 'failed');
-  const failedFileCount = fileSummaries.filter((file) => file.verdict === 'failed').length;
+  const hasFailures = fileSummaries.some((file) => file.verdict === "failed");
+  const failedFileCount = fileSummaries.filter(
+    (file) => file.verdict === "failed",
+  ).length;
 
-  await env.jobs.updateJobStep(job.id, 'Verifying Findings', { status: 'running' });
+  await env.jobs.updateJobStep(job.id, "Verifying Findings", {
+    status: "running",
+  });
 
   const {
     finalComments,
@@ -126,11 +176,17 @@ export async function runFinalizePhase(
     withheldByParser,
     byClaimType,
   } = await applyFindingGates({
-    env, job, config, files, model, effectiveMaxComments, reviewedComments, reviews,
+    env,
+    job,
+    config,
+    files,
+    model,
+    effectiveMaxComments,
+    reviewedComments,
+    reviews,
   });
 
-
-  logger.info('Finding pipeline outcome', {
+  logger.info("Finding pipeline outcome", {
     jobId: job.id,
     parsed: reviewedComments.length,
     verificationSkipped,
@@ -142,38 +198,54 @@ export async function runFinalizePhase(
     withheldByParser,
     byClaimType,
     byChannel: {
-      llm: finalComments.filter((c) => c.source !== 'rule').length,
-      rule: finalComments.filter((c) => c.source === 'rule').length,
+      llm: finalComments.filter((c) => c.source !== "rule").length,
+      rule: finalComments.filter((c) => c.source === "rule").length,
     },
     byRule: reviewedComments.reduce<Record<string, number>>((acc, c) => {
-      if (c.source === 'rule' && c.ruleId) acc[c.ruleId] = (acc[c.ruleId] ?? 0) + 1;
+      if (c.source === "rule" && c.ruleId)
+        acc[c.ruleId] = (acc[c.ruleId] ?? 0) + 1;
       return acc;
     }, {}),
     postedAny: finalComments.length > 0,
-    postedPer100Files: files.length > 0
-      ? Math.round((finalComments.length / files.length) * 1000) / 10
-      : 0,
+    postedPer100Files:
+      files.length > 0
+        ? Math.round((finalComments.length / files.length) * 1000) / 10
+        : 0,
   });
 
-  logger.info('Shadow filter evaluation', {
+  logger.info("Shadow filter evaluation", {
     jobId: job.id,
     ...shadowEvaluate(beforeVerifyList, finalComments),
   });
 
   // Failed on every skip reason: each one means findings were posted unverified.
-  await env.jobs.updateJobStep(job.id, 'Verifying Findings', verificationSkipped
-    ? { status: 'failed', error: `Verification did not run (${verificationSkipped}); findings were posted unverified.` }
-    : { status: 'done' });
+  await env.jobs.updateJobStep(
+    job.id,
+    "Verifying Findings",
+    verificationSkipped
+      ? {
+          status: "failed",
+          error: `Verification did not run (${verificationSkipped}); findings were posted unverified.`,
+        }
+      : { status: "done" },
+  );
 
-  const rawVerdict = formatter.summarizeVerdict([...finalComments, ...suppressedComments], hasFailures);
+  const rawVerdict = formatter.summarizeVerdict(
+    [...finalComments, ...suppressedComments],
+    hasFailures,
+  );
 
-  const everythingWithheld = finalComments.length === 0
-    && suppressedComments.length === 0
-    && (withheldByParser > 0 || omittedCount > 0);
-  const verdictSummary = everythingWithheld && rawVerdict.verdict === 'approve'
-    ? { ...rawVerdict, verdict: 'comment' as const }
-    : rawVerdict;
-  await env.jobs.updateJobStep(job.id, 'Generating Summary', { status: 'done' });
+  const everythingWithheld =
+    finalComments.length === 0 &&
+    suppressedComments.length === 0 &&
+    (withheldByParser > 0 || omittedCount > 0);
+  const verdictSummary =
+    everythingWithheld && rawVerdict.verdict === "approve"
+      ? { ...rawVerdict, verdict: "comment" as const }
+      : rawVerdict;
+  await env.jobs.updateJobStep(job.id, "Generating Summary", {
+    status: "done",
+  });
   await heartbeatAndCheckSuperseded(env, job.id, leaseOwner);
 
   const formattedSummary = formatter.formatReviewOverview({
@@ -181,39 +253,54 @@ export async function runFinalizePhase(
     postedFindings: finalComments.length,
     filesReviewed: files.length,
     linesReviewed: files.reduce((sum, file) => sum + file.lineCount, 0),
-    withheldFindings: withheldByParser + droppedByFilters + droppedByVerification,
+    withheldFindings:
+      withheldByParser + droppedByFilters + droppedByVerification,
     filesFailed: failedFileCount,
   });
 
   // Skipped-file counts are dashboard information, not PR content: skips have more than one cause.
   if (filesOverCap > 0) {
-    logger.info('Some reviewable files were skipped by the file or diff-size limits', {
-      jobId: job.id,
-      filesOverCap,
-      reviewed: files.length,
-      maxFiles: reviewSettings.maxFiles,
-    });
+    logger.info(
+      "Some reviewable files were skipped by the file or diff-size limits",
+      {
+        jobId: job.id,
+        filesOverCap,
+        reviewed: files.length,
+        maxFiles: reviewSettings.maxFiles,
+      },
+    );
   }
 
   const finalizeRetriedPastPost = job.steps.some(
-    (step) => step.name === 'Completing' && (step.status === 'running' || step.status === 'done'),
+    (step) =>
+      step.name === "Completing" &&
+      (step.status === "running" || step.status === "done"),
   );
-  await env.jobs.updateJobStep(job.id, 'Completing', { status: 'running' });
-  const existingReview: { id: number; postedIndices?: number[] } | null = finalizeRetriedPastPost
-    ? await github.findBotReviewForCommit(job.owner, job.repo, job.prNumber, pr.head.sha, env.botUsername)
-    : null;
-  const review = existingReview ?? await github.createReview(job.owner, job.repo, job.prNumber, {
-    commitSha: pr.head.sha,
-    event: formatter.toReviewEvent(verdictSummary.verdict),
-    body: formattedSummary,
-    comments: finalComments.map(comment => ({
-      path: comment.path,
-      line: comment.line ?? undefined,
-      side: 'RIGHT' as const,
-      position: comment.position ?? undefined,
-      body: formatter.formatInlineComment(comment),
-    })),
-  });
+  await env.jobs.updateJobStep(job.id, "Completing", { status: "running" });
+  const existingReview: { id: number; postedIndices?: number[] } | null =
+    finalizeRetriedPastPost
+      ? await github.findBotReviewForCommit(
+          job.owner,
+          job.repo,
+          job.prNumber,
+          pr.head.sha,
+          env.botUsername,
+        )
+      : null;
+  const review =
+    existingReview ??
+    (await github.createReview(job.owner, job.repo, job.prNumber, {
+      commitSha: pr.head.sha,
+      event: formatter.toReviewEvent(verdictSummary.verdict),
+      body: formattedSummary,
+      comments: finalComments.map((comment) => ({
+        path: comment.path,
+        line: comment.line ?? undefined,
+        side: "RIGHT" as const,
+        position: comment.position ?? undefined,
+        body: formatter.formatInlineComment(comment),
+      })),
+    }));
 
   if (review.postedIndices && review.postedIndices.length > 0) {
     const postedFingerprints = review.postedIndices
@@ -228,9 +315,9 @@ export async function runFinalizePhase(
   // retried finalize does not duplicate it.
   if (finalComments.length === 0 && github.addIssueReaction) {
     try {
-      await github.addIssueReaction(job.owner, job.repo, job.prNumber, '+1');
+      await github.addIssueReaction(job.owner, job.repo, job.prNumber, "+1");
     } catch (error) {
-      logger.warn('Could not react to the pull request', {
+      logger.warn("Could not react to the pull request", {
         jobId: job.id,
         error: error instanceof Error ? error.message : String(error),
       });
@@ -238,8 +325,14 @@ export async function runFinalizePhase(
   }
 
   try {
-    const withReasons = new Map<string, { disposition: string | null; reason: string | null }>();
-    for (const fingerprint of new Set([...dispositions.keys(), ...verifyReasons.keys()])) {
+    const withReasons = new Map<
+      string,
+      { disposition: string | null; reason: string | null }
+    >();
+    for (const fingerprint of new Set([
+      ...dispositions.keys(),
+      ...verifyReasons.keys(),
+    ])) {
       withReasons.set(fingerprint, {
         disposition: dispositions.get(fingerprint) ?? null,
         reason: verifyReasons.get(fingerprint) ?? null,
@@ -247,18 +340,24 @@ export async function runFinalizePhase(
     }
     await env.fileReviews.markCommentDispositions(job.id, withReasons);
   } catch (error) {
-    logger.warn('Could not record finding dispositions', {
+    logger.warn("Could not record finding dispositions", {
       jobId: job.id,
       error: error instanceof Error ? error.message : String(error),
     });
   }
 
-  const fileInputTokens = reviews.reduce((sum, review) => sum + (review.input_tokens ?? 0), 0);
-  const fileOutputTokens = reviews.reduce((sum, review) => sum + (review.output_tokens ?? 0), 0);
+  const fileInputTokens = reviews.reduce(
+    (sum, review) => sum + (review.input_tokens ?? 0),
+    0,
+  );
+  const fileOutputTokens = reviews.reduce(
+    (sum, review) => sum + (review.output_tokens ?? 0),
+    0,
+  );
 
   const severityDistribution: Record<string, number> = {};
   for (const comment of finalComments) {
-    const sev = comment.severity || 'unknown';
+    const sev = comment.severity || "unknown";
     severityDistribution[sev] = (severityDistribution[sev] || 0) + 1;
   }
 
@@ -278,15 +377,25 @@ export async function runFinalizePhase(
     summaryModel: null,
     errorMessage: partialErrorMessage,
   });
-  logger.info(`Review job completed: ${job.owner}/${job.repo} PR #${job.prNumber}`);
+  logger.info(
+    `Review job completed: ${job.owner}/${job.repo} PR #${job.prNumber}`,
+  );
 
   try {
     if (job.checkRunId) {
       await github.updateCheckRun(job.owner, job.repo, job.checkRunId, {
-        status: 'completed',
-        conclusion: hasFailures ? 'failure' : (verdictSummary.verdict === 'approve' ? 'success' : 'neutral'),
-        title: hasFailures ? 'Review partially failed' : (verdictSummary.verdict === 'approve' ? 'LGTM' : 'Comments posted'),
-        summary: `${finalComments.length} inline comments across ${files.length} files.${hasFailures ? ` ${failedFileCount} file${failedFileCount === 1 ? '' : 's'} could not be reviewed.` : ''}`,
+        status: "completed",
+        conclusion: hasFailures
+          ? "failure"
+          : verdictSummary.verdict === "approve"
+            ? "success"
+            : "neutral",
+        title: hasFailures
+          ? "Review partially failed"
+          : verdictSummary.verdict === "approve"
+            ? "LGTM"
+            : "Comments posted",
+        summary: `${finalComments.length} inline comments across ${files.length} files.${hasFailures ? ` ${failedFileCount} file${failedFileCount === 1 ? "" : "s"} could not be reviewed.` : ""}`,
       });
       await env.jobs.markJobCheckRunCompleted(job.id);
     }
@@ -294,8 +403,8 @@ export async function runFinalizePhase(
     if (config.review.labels !== false) {
       const labels = config.review.labels;
       const labelMap = {
-        comment: { name: labels.p1, color: 'f79009' },
-        approve: { name: labels.p2, color: '027a48' },
+        comment: { name: labels.p1, color: "f79009" },
+        approve: { name: labels.p2, color: "027a48" },
       } as const;
       const label = labelMap[verdictSummary.verdict];
 
@@ -303,14 +412,21 @@ export async function runFinalizePhase(
         job.owner,
         job.repo,
         job.prNumber,
-        [labels.p1, labels.p2, labels.p3].filter(possibleLabel => possibleLabel !== label.name),
+        [labels.p1, labels.p2, labels.p3].filter(
+          (possibleLabel) => possibleLabel !== label.name,
+        ),
       );
 
       await github.ensureLabel(job.owner, job.repo, label.name, label.color);
-      await github.addIssueLabels(job.owner, job.repo, job.prNumber, [label.name]);
+      await github.addIssueLabels(job.owner, job.repo, job.prNumber, [
+        label.name,
+      ]);
     }
   } catch (error) {
-    logger.warn(`Post-review labels/check-run update failed for job ${job.id}; review is posted and job is completed, so leaving it best-effort`, error instanceof Error ? error : new Error(String(error)));
+    logger.warn(
+      `Post-review labels/check-run update failed for job ${job.id}; review is posted and job is completed, so leaving it best-effort`,
+      error instanceof Error ? error : new Error(String(error)),
+    );
   }
 
   await sendReviewTelemetry(
@@ -318,7 +434,11 @@ export async function runFinalizePhase(
     job,
     files,
     reviews,
-    { findingsReported: finalComments.length, verdict: verdictSummary.verdict, severityDistribution },
+    {
+      findingsReported: finalComments.length,
+      verdict: verdictSummary.verdict,
+      severityDistribution,
+    },
     { concurrencyLevel, retryCount },
   );
 }

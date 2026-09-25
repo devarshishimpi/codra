@@ -1,12 +1,12 @@
 export function readDollarQuoteTag(sqlText, index) {
-  if (sqlText[index] !== '$') return null;
+  if (sqlText[index] !== "$") return null;
 
   let cursor = index + 1;
   while (cursor < sqlText.length && /[A-Za-z0-9_]/.test(sqlText[cursor])) {
     cursor += 1;
   }
 
-  if (sqlText[cursor] !== '$') return null;
+  if (sqlText[cursor] !== "$") return null;
   return sqlText.slice(index, cursor + 1);
 }
 
@@ -25,13 +25,13 @@ export function splitSqlStatements(sqlText) {
     const next = sqlText[index + 1];
 
     if (lineComment) {
-      if (char === '\n') lineComment = false;
+      if (char === "\n") lineComment = false;
       index += 1;
       continue;
     }
 
     if (blockComment) {
-      if (char === '*' && next === '/') {
+      if (char === "*" && next === "/") {
         blockComment = false;
         index += 2;
         continue;
@@ -70,13 +70,13 @@ export function splitSqlStatements(sqlText) {
       continue;
     }
 
-    if (char === '-' && next === '-') {
+    if (char === "-" && next === "-") {
       lineComment = true;
       index += 2;
       continue;
     }
 
-    if (char === '/' && next === '*') {
+    if (char === "/" && next === "*") {
       blockComment = true;
       index += 2;
       continue;
@@ -101,7 +101,7 @@ export function splitSqlStatements(sqlText) {
       continue;
     }
 
-    if (char === ';') {
+    if (char === ";") {
       const statement = sqlText.slice(start, index).trim();
       if (statement) statements.push(statement);
       start = index + 1;

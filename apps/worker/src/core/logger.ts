@@ -1,1 +1,1 @@
-﻿export { logger } from '@codraoss/api/logger';
+﻿export { logger } from "@codraoss/api/logger";

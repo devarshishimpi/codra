@@ -1,8 +1,18 @@
-import { logger } from '@codraoss/core/logger';
+import { logger } from "@codraoss/core/logger";
 
-import { TimeoutError } from '@codraoss/core/timeout';
-import { ProviderRequestError, UnparseableModelResponseError, jsonOnlyPrompts, type ModelInput, type ModelResponse } from '../types';
-import { MODEL_TIMEOUT_MAX_MS, OUTPUT_TOKENS_FLOOR, resolveOutputTokenCeiling } from '../limits';
+import { TimeoutError } from "@codraoss/core/timeout";
+import {
+  ProviderRequestError,
+  UnparseableModelResponseError,
+  jsonOnlyPrompts,
+  type ModelInput,
+  type ModelResponse,
+} from "../types";
+import {
+  MODEL_TIMEOUT_MAX_MS,
+  OUTPUT_TOKENS_FLOOR,
+  resolveOutputTokenCeiling,
+} from "../limits";
 
 export interface CloudflareAiBinding {
   run(model: string, args: unknown, options?: unknown): Promise<unknown>;
@@ -17,11 +27,11 @@ const CLOUDFLARE_MAX_OUTPUT_TOKENS = 16_384;
 type UnknownRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 function isText(value: unknown): value is string {
-  return typeof value === 'string' && value.trim().length > 0;
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function getRecord(value: unknown, key: string): UnknownRecord | null {
@@ -33,17 +43,22 @@ function getRecord(value: unknown, key: string): UnknownRecord | null {
 function getNumber(value: unknown, key: string) {
   if (!isRecord(value)) return null;
   const child = value[key];
-  return typeof child === 'number' ? child : null;
+  return typeof child === "number" ? child : null;
 }
 
 function isLocalWorkersAiBindingError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   const normalized = message.toLowerCase();
-  return normalized.includes('binding ai') && normalized.includes('run remotely');
+  return (
+    normalized.includes("binding ai") && normalized.includes("run remotely")
+  );
 }
 
 function failUnparseable(model: string, reason: string): never {
-  logger.warn(`Cloudflare model ${model} returned no parseable review content; failing the file review`, { reason });
+  logger.warn(
+    `Cloudflare model ${model} returned no parseable review content; failing the file review`,
+    { reason },
+  );
   throw new UnparseableModelResponseError(model, reason);
 }
 
@@ -55,9 +70,9 @@ function extractMessageContent(content: unknown): string | null {
       .map((part) => {
         if (isText(part)) return part;
         if (isRecord(part) && isText(part.text)) return part.text;
-        return '';
+        return "";
       })
-      .join('')
+      .join("")
       .trim();
     return text || null;
   }
@@ -70,7 +85,7 @@ function extractResponseField(container: unknown): string | null {
   if (!isRecord(container)) return null;
   const value = container.response;
   if (isText(value)) return value.trim();
-  if (value && typeof value === 'object') {
+  if (value && typeof value === "object") {
     try {
       return JSON.stringify(value);
     } catch {
@@ -85,34 +100,46 @@ function extractCloudflareText(result: unknown, model: string): string {
   const response = extractResponseField(result);
   if (response) return response;
 
-  const nestedResult = getRecord(result, 'result');
+  const nestedResult = getRecord(result, "result");
   const nestedResponse = extractResponseField(nestedResult);
   if (nestedResponse) return nestedResponse;
 
-  const choices = isRecord(result) && Array.isArray(result.choices) ? result.choices : null;
+  const choices =
+    isRecord(result) && Array.isArray(result.choices) ? result.choices : null;
   const choice = choices?.[0];
-  const message = getRecord(choice, 'message');
+  const message = getRecord(choice, "message");
   const content = extractMessageContent(message?.content);
   if (content) return content;
 
-  const finishReason = isRecord(choice) ? choice.finish_reason ?? choice.stop_reason : null;
-  const reasoning = isText(message?.reasoning) ? message.reasoning : isText(message?.reasoning_content) ? message.reasoning_content : null;
+  const finishReason = isRecord(choice)
+    ? (choice.finish_reason ?? choice.stop_reason)
+    : null;
+  const reasoning = isText(message?.reasoning)
+    ? message.reasoning
+    : isText(message?.reasoning_content)
+      ? message.reasoning_content
+      : null;
   if (reasoning) {
-    return failUnparseable(model, `reasoning-only response${finishReason ? `, finish_reason=${String(finishReason)}` : ''}`);
+    return failUnparseable(
+      model,
+      `reasoning-only response${finishReason ? `, finish_reason=${String(finishReason)}` : ""}`,
+    );
   }
 
   if (finishReason) {
     return failUnparseable(model, `finish_reason=${String(finishReason)}`);
   }
 
-  return failUnparseable(model, 'empty response');
+  return failUnparseable(model, "empty response");
 }
 
 function extractCloudflareUsage(result: unknown) {
-  const usage = getRecord(result, 'usage') ?? getRecord(getRecord(result, 'result'), 'usage');
+  const usage =
+    getRecord(result, "usage") ??
+    getRecord(getRecord(result, "result"), "usage");
   return {
-    inputTokens: getNumber(usage, 'prompt_tokens') ?? 0,
-    outputTokens: getNumber(usage, 'completion_tokens') ?? 0,
+    inputTokens: getNumber(usage, "prompt_tokens") ?? 0,
+    outputTokens: getNumber(usage, "completion_tokens") ?? 0,
   };
 }
 
@@ -121,8 +148,8 @@ function buildCloudflareInferenceRequest(input: ModelInput) {
   const prompts = jsonOnlyPrompts(input);
   return {
     messages: [
-      { role: 'system', content: prompts.system },
-      { role: 'user', content: prompts.user },
+      { role: "system", content: prompts.system },
+      { role: "user", content: prompts.user },
     ],
     max_completion_tokens: resolveOutputTokenCeiling(
       input.outputBudgetTokens,
@@ -132,7 +159,7 @@ function buildCloudflareInferenceRequest(input: ModelInput) {
     ...(input.responseSchema
       ? {
           response_format: {
-            type: 'json_schema',
+            type: "json_schema",
             json_schema: {
               name: input.responseSchema.name,
               strict: true,
@@ -149,13 +176,12 @@ function buildCloudflareInferenceRequest(input: ModelInput) {
 
 // `pending` covers both queued and running.
 export type CloudflareBatchPollResult =
-  | { status: 'pending' }
-  | { status: 'done'; response: ModelResponse };
+  { status: "pending" } | { status: "done"; response: ModelResponse };
 
 function extractBatchStatus(result: unknown): string | null {
   if (!isRecord(result)) return null;
-  const status = result.status ?? getRecord(result, 'result')?.status;
-  return typeof status === 'string' ? status.toLowerCase() : null;
+  const status = result.status ?? getRecord(result, "result")?.status;
+  return typeof status === "string" ? status.toLowerCase() : null;
 }
 
 // Workers AI has returned several shapes here (`responses`, `result.responses`, or a bare result); probe defensively and fall back to the whole payload.
@@ -190,10 +216,12 @@ export async function submitCloudflareBatch(
   );
 
   const requestId = isRecord(result)
-    ? (result.request_id ?? getRecord(result, 'result')?.request_id)
+    ? (result.request_id ?? getRecord(result, "result")?.request_id)
     : undefined;
-  if (typeof requestId !== 'string' || !requestId) {
-    throw new Error(`Cloudflare model ${model} did not return an async batch request_id (async queueing unsupported).`);
+  if (typeof requestId !== "string" || !requestId) {
+    throw new Error(
+      `Cloudflare model ${model} did not return an async batch request_id (async queueing unsupported).`,
+    );
   }
   return requestId;
 }
@@ -203,21 +231,21 @@ export async function pollCloudflareBatch(
   model: string,
   requestId: string,
   tracker?: { incrementSubrequests(count?: number): void },
-  providerName = 'Cloudflare',
+  providerName = "Cloudflare",
 ): Promise<CloudflareBatchPollResult> {
   if (tracker) tracker.incrementSubrequests(1);
   const result = await aiBinding.run(model, { request_id: requestId });
 
   const status = extractBatchStatus(result);
-  if (status === 'queued' || status === 'running') {
-    return { status: 'pending' };
+  if (status === "queued" || status === "running") {
+    return { status: "pending" };
   }
 
   const inner = extractBatchInnerResult(result);
   const rawText = extractCloudflareText(inner, model);
   const usage = extractCloudflareUsage(inner);
   return {
-    status: 'done',
+    status: "done",
     response: {
       rawText,
       inputTokens: usage.inputTokens,
@@ -233,12 +261,12 @@ export async function reviewWithCloudflare(
   model: string,
   input: ModelInput,
   tracker?: { incrementSubrequests(count?: number): void },
-  providerName = 'Cloudflare',
+  providerName = "Cloudflare",
   options?: { timeoutMs?: number },
 ): Promise<ModelResponse> {
-// Single attempt: retries would waste subrequests on a failing model.
-const timeoutMs = options?.timeoutMs ?? CLOUDFLARE_TIMEOUT_MS;
-let timer: ReturnType<typeof setTimeout> | undefined;
+  // Single attempt: retries would waste subrequests on a failing model.
+  const timeoutMs = options?.timeoutMs ?? CLOUDFLARE_TIMEOUT_MS;
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
   // Promise.race only stops us awaiting; the binding's abort signal is what actually cancels the still-running subrequest.
   const controller = new AbortController();
@@ -254,7 +282,11 @@ let timer: ReturnType<typeof setTimeout> | undefined;
 
     logger.info(`Calling Cloudflare model: ${model}`);
     const startTime = Date.now();
-    const runPromise = aiBinding.run(model, buildCloudflareInferenceRequest(input), { signal: controller.signal });
+    const runPromise = aiBinding.run(
+      model,
+      buildCloudflareInferenceRequest(input),
+      { signal: controller.signal },
+    );
     // The aborted run still settles as a rejection; a no-op handler stops it surfacing as unhandled.
     runPromise.catch(() => {});
     const result = await Promise.race([runPromise, timeoutPromise]);
@@ -270,12 +302,16 @@ let timer: ReturnType<typeof setTimeout> | undefined;
     };
   } catch (error) {
     if (isLocalWorkersAiBindingError(error)) {
-      const message = 'Cloudflare Workers AI is not available in local Wrangler. Run with remote bindings or deploy the Worker to test Cloudflare models.';
+      const message =
+        "Cloudflare Workers AI is not available in local Wrangler. Run with remote bindings or deploy the Worker to test Cloudflare models.";
       logger.warn(message, { model });
       throw new ProviderRequestError(providerName, 400, message);
     }
 
-    logger.error('Cloudflare request failed', { model, error: error instanceof Error ? error.message : String(error) });
+    logger.error("Cloudflare request failed", {
+      model,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   } finally {
     clearTimeout(timer);

@@ -12,10 +12,10 @@ export const OPACITY_HOVER = 0.8;
 
 // Common chart/graph colors
 export const CHART_COLORS = {
-  hatchGray: 'url(#hatchGray)',
-  defaultGrid: '#333',
-  transparent: 'transparent',
-  tooltipBg: 'rgba(0,0,0,0.5)',
+  hatchGray: "url(#hatchGray)",
+  defaultGrid: "#333",
+  transparent: "transparent",
+  tooltipBg: "rgba(0,0,0,0.5)",
 } as const;
 
 // Layout thresholds

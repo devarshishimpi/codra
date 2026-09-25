@@ -1,4 +1,4 @@
-export type DiffLineKind = 'context' | 'add' | 'del';
+export type DiffLineKind = "context" | "add" | "del";
 
 export type DiffLine = {
   kind: DiffLineKind;
@@ -29,7 +29,7 @@ export function getValidNewLines(file: FileDiff) {
   const newLines = new Set<number>();
   for (const hunk of file.hunks) {
     for (const line of hunk.lines) {
-      if (line.kind !== 'del' && line.newLineNumber !== undefined) {
+      if (line.kind !== "del" && line.newLineNumber !== undefined) {
         newLines.add(line.newLineNumber);
       }
     }
@@ -42,7 +42,7 @@ export function getValidPositions(file: FileDiff) {
   const positions = new Set<number>();
   for (const hunk of file.hunks) {
     for (const line of hunk.lines) {
-      if (line.kind !== 'del') {
+      if (line.kind !== "del") {
         positions.add(line.position);
       }
     }
@@ -54,7 +54,7 @@ export function getValidPositions(file: FileDiff) {
 export function findPositionForLine(file: FileDiff, lineNumber: number) {
   for (const hunk of file.hunks) {
     for (const line of hunk.lines) {
-      if (line.newLineNumber === lineNumber && line.kind !== 'del') {
+      if (line.newLineNumber === lineNumber && line.kind !== "del") {
         return line.position;
       }
     }
@@ -62,7 +62,6 @@ export function findPositionForLine(file: FileDiff, lineNumber: number) {
 
   return undefined;
 }
-
 
 export function truncateFileDiff(file: FileDiff, maxLines: number): FileDiff {
   if (file.lineCount <= maxLines) {
@@ -101,7 +100,10 @@ export function truncateFileDiff(file: FileDiff, maxLines: number): FileDiff {
   };
 }
 
-export function chunkFileDiff(file: FileDiff, maxLinesPerChunk: number): FileDiff[] {
+export function chunkFileDiff(
+  file: FileDiff,
+  maxLinesPerChunk: number,
+): FileDiff[] {
   if (file.lineCount <= maxLinesPerChunk) {
     return [file];
   }

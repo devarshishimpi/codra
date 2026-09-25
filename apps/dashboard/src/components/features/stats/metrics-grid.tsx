@@ -1,7 +1,10 @@
-import { useEffect, useState } from 'react';
-import type { StatsPayload } from '@codraoss/schema';
-import { MetricsGridSkeleton } from './chart-primitives';
-import { loadMetricsCharts, metricsChartsIfLoaded } from './metrics-grid-prefetch';
+import { useEffect, useState } from "react";
+import type { StatsPayload } from "@codraoss/schema";
+import { MetricsGridSkeleton } from "./chart-primitives";
+import {
+  loadMetricsCharts,
+  metricsChartsIfLoaded,
+} from "./metrics-grid-prefetch";
 
 /**
  * Owns the whole loading state - the chart chunk *and* the data - so the skeleton is one element in
@@ -20,9 +23,9 @@ export function MetricsGrid({
   stats: StatsPayload | null;
   isDark: boolean;
 }) {
-  const [Charts, setCharts] = useState<ReturnType<typeof metricsChartsIfLoaded>>(
-    metricsChartsIfLoaded,
-  );
+  const [Charts, setCharts] = useState<
+    ReturnType<typeof metricsChartsIfLoaded>
+  >(metricsChartsIfLoaded);
 
   useEffect(() => {
     if (Charts) return;
@@ -42,7 +45,11 @@ export function MetricsGrid({
   // new direct child and replay the fade-up, which read as the page animating twice.
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      {!Charts || !stats ? <MetricsGridSkeleton /> : <Charts stats={stats} isDark={isDark} />}
+      {!Charts || !stats ? (
+        <MetricsGridSkeleton />
+      ) : (
+        <Charts stats={stats} isDark={isDark} />
+      )}
     </div>
   );
 }

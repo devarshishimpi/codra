@@ -8,7 +8,7 @@ import {
   useReducedMotion,
   useSpring,
   useTransform,
-} from 'motion/react';
+} from "motion/react";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -17,13 +17,18 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react';
+} from "react";
 
-import { cn } from '../../lib/utils';
-import { useIsDarkMode } from '../../hooks/use-is-dark-mode';
+import { cn } from "../../lib/utils";
+import { useIsDarkMode } from "../../hooks/use-is-dark-mode";
 
 const SPRING_GLIDE = { stiffness: 700, damping: 50, mass: 0.5 } as const;
-const SPRING_BOUNCY = { type: 'spring', stiffness: 500, damping: 14, mass: 0.7 } as const;
+const SPRING_BOUNCY = {
+  type: "spring",
+  stiffness: 500,
+  damping: 14,
+  mass: 0.7,
+} as const;
 
 function seedFromId(id: string | undefined) {
   if (!id) return 0;
@@ -51,11 +56,12 @@ export interface SteppedSliderProps {
   formatValue?: (value: number) => string;
   disabled?: boolean;
   className?: string;
-  'aria-label'?: string;
-  'aria-labelledby'?: string;
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.min(hi, Math.max(lo, v));
 
 export function SteppedSlider({
   id,
@@ -69,8 +75,8 @@ export function SteppedSlider({
   formatValue,
   disabled = false,
   className,
-  'aria-label': ariaLabel,
-  'aria-labelledby': ariaLabelledBy,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: SteppedSliderProps) {
   const reduce = useReducedMotion();
   const isDark = useIsDarkMode();
@@ -81,12 +87,19 @@ export function SteppedSlider({
   const [dragValue, setDragValue] = useState<number | null>(null);
   const dragValueRef = useRef<number | null>(null);
   const controlled = value !== undefined;
-  const committedValue = clamp(controlled ? (value as number) : internal, min, max);
-  const current = active && dragValue !== null ? clamp(dragValue, min, max) : committedValue;
+  const committedValue = clamp(
+    controlled ? (value as number) : internal,
+    min,
+    max,
+  );
+  const current =
+    active && dragValue !== null ? clamp(dragValue, min, max) : committedValue;
   const percent = ((current - min) / (max - min)) * 100;
   const isMaxed = current === max;
   const hue = 185 + (seed - 0.5) * 16;
-  const glowColor = isDark ? `oklch(68% 0.14 ${hue})` : `oklch(52% 0.13 ${hue})`;
+  const glowColor = isDark
+    ? `oklch(68% 0.14 ${hue})`
+    : `oklch(52% 0.13 ${hue})`;
   const fillGradient = isDark
     ? `linear-gradient(90deg, oklch(28% 0.08 ${hue}), oklch(62% 0.12 ${hue}))`
     : `linear-gradient(90deg, oklch(93% 0.03 ${hue}), oklch(56% 0.13 ${hue}))`;
@@ -103,7 +116,8 @@ export function SteppedSlider({
   const thumbX = useTransform(pos, (p) => `${-p}%`);
 
   const snapValue = useCallback(
-    (next: number) => clamp(Math.round((next - min) / step) * step + min, min, max),
+    (next: number) =>
+      clamp(Math.round((next - min) / step) * step + min, min, max),
     [min, max, step],
   );
 
@@ -183,9 +197,11 @@ export function SteppedSlider({
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className={cn('w-full', className)}>
+      <div className={cn("w-full", className)}>
         <div className="mb-1.5 flex justify-end">
-          <span className="text-xs font-medium text-foreground tabular-nums">{valueLabel}</span>
+          <span className="text-xs font-medium text-foreground tabular-nums">
+            {valueLabel}
+          </span>
         </div>
 
         <div
@@ -195,11 +211,16 @@ export function SteppedSlider({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
           className={cn(
-            'relative flex h-10 w-full select-none items-center overflow-hidden rounded-lg bg-muted',
-            disabled ? 'pointer-events-none opacity-50' : 'cursor-grab active:cursor-grabbing',
+            "relative flex h-10 w-full select-none items-center overflow-hidden rounded-lg bg-muted",
+            disabled
+              ? "pointer-events-none opacity-50"
+              : "cursor-grab active:cursor-grabbing",
           )}
         >
-          <m.div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: left }}>
+          <m.div
+            className="absolute inset-y-0 left-0 overflow-hidden"
+            style={{ width: left }}
+          >
             {isMaxed ? (
               <div
                 className="absolute inset-0"
@@ -208,11 +229,20 @@ export function SteppedSlider({
                 <m.div
                   className="absolute inset-0"
                   style={{
-                    backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.85) 1.3px, transparent 1.3px)',
-                    backgroundSize: '10px 10px',
+                    backgroundImage:
+                      "radial-gradient(circle, rgba(255,255,255,0.85) 1.3px, transparent 1.3px)",
+                    backgroundSize: "10px 10px",
                   }}
-                  animate={reduce ? undefined : { backgroundPositionX: ['0px', '10px'] }}
-                  transition={{ duration: dotDriftDuration, repeat: Infinity, ease: 'linear' }}
+                  animate={
+                    reduce
+                      ? undefined
+                      : { backgroundPositionX: ["0px", "10px"] }
+                  }
+                  transition={{
+                    duration: dotDriftDuration,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
                 />
               </div>
             ) : (
@@ -227,8 +257,10 @@ export function SteppedSlider({
                 <span
                   key={tick.value}
                   className={cn(
-                    'absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full',
-                    isMaxed ? 'size-1.5 bg-white shadow-[0_0_0_1.5px_rgba(0,0,0,0.35)]' : 'size-1 bg-foreground/25',
+                    "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full",
+                    isMaxed
+                      ? "size-1.5 bg-white shadow-[0_0_0_1.5px_rgba(0,0,0,0.35)]"
+                      : "size-1 bg-foreground/25",
                   )}
                   style={{ left: `${tp}%` }}
                 />
@@ -240,9 +272,19 @@ export function SteppedSlider({
             <m.div
               aria-hidden
               className="pointer-events-none absolute top-1/2 h-5 w-1.5 rounded-sm"
-              style={{ left, x: thumbX, y: '-50%', boxShadow: `0 0 9px 3px ${glowColor}` }}
+              style={{
+                left,
+                x: thumbX,
+                y: "-50%",
+                boxShadow: `0 0 9px 3px ${glowColor}`,
+              }}
               animate={{ opacity: [0.25, 0.9, 0.25], scale: [1, 1.15, 1] }}
-              transition={{ duration: glowDuration, repeat: Infinity, ease: 'easeInOut', delay: seed * 0.5 }}
+              transition={{
+                duration: glowDuration,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: seed * 0.5,
+              }}
             />
           )}
 
@@ -261,10 +303,10 @@ export function SteppedSlider({
             animate={reduce ? undefined : { scaleY: active ? 1.35 : 1 }}
             transition={SPRING_BOUNCY}
             className={cn(
-              'absolute top-1/2 h-5 w-1.5 rounded-sm bg-foreground shadow-sm outline-none ring-foreground/30 focus-visible:ring-4',
-              isMaxed && 'ring-2 ring-background',
+              "absolute top-1/2 h-5 w-1.5 rounded-sm bg-foreground shadow-sm outline-none ring-foreground/30 focus-visible:ring-4",
+              isMaxed && "ring-2 ring-background",
             )}
-            style={{ left, x: thumbX, y: '-50%' }}
+            style={{ left, x: thumbX, y: "-50%" }}
           />
         </div>
 
@@ -279,10 +321,10 @@ export function SteppedSlider({
                   <span
                     key={tick.value}
                     className={cn(
-                      'absolute text-[10px] font-medium text-muted-foreground',
-                      isFirst && 'left-0',
-                      isLast && 'right-0',
-                      !isFirst && !isLast && '-translate-x-1/2',
+                      "absolute text-[10px] font-medium text-muted-foreground",
+                      isFirst && "left-0",
+                      isLast && "right-0",
+                      !isFirst && !isLast && "-translate-x-1/2",
                     )}
                     style={!isFirst && !isLast ? { left: `${tp}%` } : undefined}
                   >

@@ -1,13 +1,17 @@
-import { createSharedApiDeps } from '@codraoss/api';
-import type { NodeAppBindings } from './env';
-import { logger } from '@codraoss/api/logger';
-import { createReviewRuntime } from './runtime';
+import { createSharedApiDeps } from "@codraoss/api";
+import type { NodeAppBindings } from "./env";
+import { logger } from "@codraoss/api/logger";
+import { createReviewRuntime } from "./runtime";
 
 export function createNodeApiDeps(env: NodeAppBindings) {
   return createSharedApiDeps({
     sessionStore: env.SESSION_STORE,
     kv: env.APP_KV,
-    db: { HYPERDRIVE: env.DATABASE_CONFIG, APP_KV: env.APP_KV, workerMode: false },
+    db: {
+      HYPERDRIVE: env.DATABASE_CONFIG,
+      APP_KV: env.APP_KV,
+      workerMode: false,
+    },
     identityProvider: env.IDENTITY_PROVIDER,
 
     enqueueReviewJob: async (input) => {
@@ -19,18 +23,20 @@ export function createNodeApiDeps(env: NodeAppBindings) {
           await env.REVIEW_QUEUE.deleteJob(job.id);
           logger.info(`[API Deps] Terminated job workflow for job ${job.id}`);
         } catch (error) {
-          logger.error(`[API Deps] Failed to terminate job workflow for job ${job.id}: ${error}`);
+          logger.error(
+            `[API Deps] Failed to terminate job workflow for job ${job.id}: ${error}`,
+          );
           throw error;
         }
       } else {
-        logger.warn(`[API Deps] QueueAdapter does not support deleteJob. Cannot terminate ${job.id}`);
+        logger.warn(
+          `[API Deps] QueueAdapter does not support deleteJob. Cannot terminate ${job.id}`,
+        );
       }
     },
-    scheduleBestEffortJobMaintenance: () => {
-
-    },
+    scheduleBestEffortJobMaintenance: () => {},
     createReviewRuntime: () => createReviewRuntime(env),
-    getOrFetchRawDiffForCompletedJob: async () => '',
+    getOrFetchRawDiffForCompletedJob: async () => "",
     logger,
     getSecret: async (key) => process.env[key] ?? null,
 

@@ -1,4 +1,4 @@
-import { logger } from './logger';
+import { logger } from "./logger";
 
 export interface TokenUsage {
   input: number;
@@ -10,7 +10,7 @@ export interface ModelUsage extends TokenUsage {
   calls: number;
 }
 
-export type WastedAttemptReason = 'rate-limited' | 'error';
+export type WastedAttemptReason = "rate-limited" | "error";
 
 export interface WastedUsage {
   attempts: number;
@@ -44,12 +44,20 @@ export class TokenTracker {
   }
 
   remainingSafeBudget() {
-    return Math.max(0, this.MAX_SUBREQUESTS - this.SAFE_MARGIN - this.subrequests);
+    return Math.max(
+      0,
+      this.MAX_SUBREQUESTS - this.SAFE_MARGIN - this.subrequests,
+    );
   }
 
   record(model: string, input: number, output: number) {
-    const existing = this.usage.get(model) || { model, input: 0, output: 0, calls: 0 };
-    
+    const existing = this.usage.get(model) || {
+      model,
+      input: 0,
+      output: 0,
+      calls: 0,
+    };
+
     this.usage.set(model, {
       model,
       input: existing.input + input,
@@ -57,20 +65,27 @@ export class TokenTracker {
       calls: existing.calls + 1,
     });
 
-    logger.debug(`Token usage recorded for ${model}`, { 
-      input, 
-      output, 
+    logger.debug(`Token usage recorded for ${model}`, {
+      input,
+      output,
       totalInput: existing.input + input,
-      totalOutput: existing.output + output
+      totalOutput: existing.output + output,
     });
   }
 
-  recordFailedAttempt(model: string, estimatedInputTokens: number, reason: WastedAttemptReason) {
+  recordFailedAttempt(
+    model: string,
+    estimatedInputTokens: number,
+    reason: WastedAttemptReason,
+  ) {
     this.wasted.attempts += 1;
     this.wasted.estimatedInput += estimatedInputTokens;
     this.wastedByReason.set(reason, (this.wastedByReason.get(reason) ?? 0) + 1);
 
-    logger.debug(`Wasted model attempt on ${model}`, { estimatedInput: estimatedInputTokens, reason });
+    logger.debug(`Wasted model attempt on ${model}`, {
+      estimatedInput: estimatedInputTokens,
+      reason,
+    });
   }
 
   recordSkippedCall(model: string, reason: string) {
@@ -80,7 +95,10 @@ export class TokenTracker {
   }
 
   getWasted(): WastedUsage {
-    return { ...this.wasted, byReason: Object.fromEntries(this.wastedByReason) };
+    return {
+      ...this.wasted,
+      byReason: Object.fromEntries(this.wastedByReason),
+    };
   }
 
   getTotalUsage(): TokenUsage {
@@ -107,7 +125,10 @@ export class TokenTracker {
     this.wasted.estimatedInput += otherWasted.estimatedInput;
     this.wasted.skips += otherWasted.skips;
     for (const [reason, count] of Object.entries(otherWasted.byReason)) {
-      this.wastedByReason.set(reason, (this.wastedByReason.get(reason) ?? 0) + count);
+      this.wastedByReason.set(
+        reason,
+        (this.wastedByReason.get(reason) ?? 0) + count,
+      );
     }
   }
 

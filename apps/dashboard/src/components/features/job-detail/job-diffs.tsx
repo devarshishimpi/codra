@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -7,24 +7,28 @@ import {
   FileDiff as FileDiffIcon,
   GitCommitHorizontal,
   Info,
-} from 'lucide-react';
-import { api } from '@client/lib/api';
-import { buildTree } from '@codraoss/ui/file-tree';
-import { diffStats } from '@codraoss/ui/prompt-diff';
-import { readDiffsCache, writeDiffsCache } from '@client/lib/diffs-cache';
-import type { FileReviewRecord, JobDetail } from '@codraoss/schema';
+} from "lucide-react";
+import { api } from "@client/lib/api";
+import { buildTree } from "@codraoss/ui/file-tree";
+import { diffStats } from "@codraoss/ui/prompt-diff";
+import { readDiffsCache, writeDiffsCache } from "@client/lib/diffs-cache";
+import type { FileReviewRecord, JobDetail } from "@codraoss/schema";
 
-import { FileDiff } from './diff-file-panel';
-import { panelCvStyle, fileAnchorId } from './diff-file-panel-utils';
-import { FileTree } from './diff-file-tree';
+import { FileDiff } from "./diff-file-panel";
+import { panelCvStyle, fileAnchorId } from "./diff-file-panel-utils";
+import { FileTree } from "./diff-file-tree";
 /** A file present in the PR diff with no review row yet (job still running or file skipped) - shown as pending, GitHub-style. */
-function syntheticFileReview(jobId: string, filePath: string, diffInput: string): FileReviewRecord {
+function syntheticFileReview(
+  jobId: string,
+  filePath: string,
+  diffInput: string,
+): FileReviewRecord {
   return {
     id: `diff-only:${filePath}`,
     jobId,
     filePath,
-    fileStatus: 'pending',
-    modelUsed: '',
+    fileStatus: "pending",
+    modelUsed: "",
     diffLineCount: null,
     diffInput,
     rawAiOutput: null,
@@ -47,13 +51,16 @@ interface JobDiffsProps {
 }
 
 export function JobDiffs({ job }: JobDiffsProps) {
-  const [diffsByPath, setDiffsByPath] = useState<Record<string, string> | null>(() => readDiffsCache(job.id));
+  const [diffsByPath, setDiffsByPath] = useState<Record<string, string> | null>(
+    () => readDiffsCache(job.id),
+  );
   const [diffsLoading, setDiffsLoading] = useState(diffsByPath === null);
 
   useEffect(() => {
     let cancelled = false;
     setDiffsLoading(true);
-    api.getJobDiffs(job.id)
+    api
+      .getJobDiffs(job.id)
       .then((res) => {
         if (cancelled) return;
         setDiffsByPath(res.diffs);
@@ -73,12 +80,15 @@ export function JobDiffs({ job }: JobDiffsProps) {
   // Every file in the PR diff merged with review rows where they exist, sorted by path like GitHub.
   const files = useMemo(() => {
     const merged = job.files.map((f) =>
-      diffsByPath?.[f.filePath] ? { ...f, diffInput: diffsByPath[f.filePath] } : f,
+      diffsByPath?.[f.filePath]
+        ? { ...f, diffInput: diffsByPath[f.filePath] }
+        : f,
     );
     if (diffsByPath) {
       const known = new Set(job.files.map((f) => f.filePath));
       for (const [path, diff] of Object.entries(diffsByPath)) {
-        if (!known.has(path)) merged.push(syntheticFileReview(job.id, path, diff));
+        if (!known.has(path))
+          merged.push(syntheticFileReview(job.id, path, diff));
       }
     }
     return merged.sort((a, b) => a.filePath.localeCompare(b.filePath));
@@ -93,12 +103,17 @@ export function JobDiffs({ job }: JobDiffsProps) {
 
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(() => new Set());
   // Open state is an override on top of a default rule, so late-arriving files still get sensible defaults.
-  const [openOverrides, setOpenOverrides] = useState<Map<string, boolean>>(() => new Map());
+  const [openOverrides, setOpenOverrides] = useState<Map<string, boolean>>(
+    () => new Map(),
+  );
   const isLargePr = files.length > AUTO_EXPAND_FILE_LIMIT;
   const isOpen = (file: FileReviewRecord) =>
-    openOverrides.get(file.id) ?? (!isLargePr || file.parsedComments.length > 0);
+    openOverrides.get(file.id) ??
+    (!isLargePr || file.parsedComments.length > 0);
 
-  const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(() => new Set());
+  const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   // Single-file mode: render one diff at a time - the fast path for huge PRs.
   const [singleFileMode, setSingleFileMode] = useState(false);
@@ -132,11 +147,16 @@ export function JobDiffs({ job }: JobDiffsProps) {
     setOpen(file.id, true);
     if (singleFileMode) return; // the single panel swaps in place, nothing to scroll to
     requestAnimationFrame(() => {
-      fileRefs.current.get(file.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      fileRefs.current
+        .get(file.id)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
 
-  const currentIndex = Math.max(0, files.findIndex((f) => f.id === selectedFileId));
+  const currentIndex = Math.max(
+    0,
+    files.findIndex((f) => f.id === selectedFileId),
+  );
   const currentFile = files[currentIndex];
   const stepFile = (delta: number) => {
     const next = files[currentIndex + delta];
@@ -160,7 +180,9 @@ export function JobDiffs({ job }: JobDiffsProps) {
       <div className="ui-panel flex flex-col items-center justify-center py-16 text-center">
         <FileDiffIcon size={32} className="mb-3 text-ui-subtle/30" />
         <p className="text-sm font-medium text-ui-default">No file diffs yet</p>
-        <p className="mt-1 text-xs text-ui-subtle">Diffs appear here as files are reviewed.</p>
+        <p className="mt-1 text-xs text-ui-subtle">
+          Diffs appear here as files are reviewed.
+        </p>
       </div>
     );
   }
@@ -171,7 +193,11 @@ export function JobDiffs({ job }: JobDiffsProps) {
     <div className="flex min-h-0 min-w-0 flex-1 gap-4">
       <aside className="ui-panel hidden h-full w-72 shrink-0 flex-col overflow-hidden lg:flex xl:w-80">
         <div className="flex items-center gap-2 border-b border-ui-line px-4 py-3">
-          <FileDiffIcon size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
+          <FileDiffIcon
+            size={15}
+            strokeWidth={2}
+            className="shrink-0 text-ui-default"
+          />
           <h2 className="text-[13px] font-medium text-ui-default">Files</h2>
           <span className="ui-font-mono ml-auto text-[11px] tabular-nums text-ui-subtle">
             {files.length}
@@ -195,15 +221,17 @@ export function JobDiffs({ job }: JobDiffsProps) {
             nodes={tree}
             collapsedDirs={collapsedDirs}
             viewedFiles={viewedFiles}
-            selectedFileId={singleFileMode ? currentFile?.id ?? null : selectedFileId}
+            selectedFileId={
+              singleFileMode ? (currentFile?.id ?? null) : selectedFileId
+            }
             onToggleDir={toggleDir}
             onSelectFile={jumpToFile}
           />
         </div>
         <div className="ui-well border-t border-ui-line px-4 py-2">
           <p className="ui-font-mono text-[10px] tabular-nums text-ui-subtle">
-            {files.length} {files.length === 1 ? 'file' : 'files'} ·{' '}
-            <span className="diff-add-fg">+{totals.adds}</span>{' '}
+            {files.length} {files.length === 1 ? "file" : "files"} ·{" "}
+            <span className="diff-add-fg">+{totals.adds}</span>{" "}
             <span className="diff-del-fg">-{totals.dels}</span>
           </p>
         </div>
@@ -215,15 +243,15 @@ export function JobDiffs({ job }: JobDiffsProps) {
           <div className="ui-panel flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
             <Info size={14} className="shrink-0 text-ui-subtle" />
             <p className="min-w-0 flex-1 text-xs text-ui-subtle">
-              This view has been optimized for large pull requests, files start collapsed and
-              offscreen diffs render lazily.
+              This view has been optimized for large pull requests, files start
+              collapsed and offscreen diffs render lazily.
             </p>
             <button
               type="button"
               onClick={() => setSingleFileMode((v) => !v)}
               className="shrink-0 text-xs font-medium text-primary transition-opacity hover:opacity-80"
             >
-              {singleFileMode ? 'Show all files' : 'Switch to single file mode'}
+              {singleFileMode ? "Show all files" : "Switch to single file mode"}
             </button>
           </div>
         )}
@@ -233,10 +261,10 @@ export function JobDiffs({ job }: JobDiffsProps) {
             <GitCommitHorizontal size={13} />
             {singleFileMode
               ? `File ${currentIndex + 1} of ${files.length}`
-              : `${files.length} ${files.length === 1 ? 'file' : 'files'}`}
+              : `${files.length} ${files.length === 1 ? "file" : "files"}`}
           </span>
           <span className="ui-font-mono text-xs tabular-nums">
-            <span className="diff-add-fg">+{totals.adds}</span>{' '}
+            <span className="diff-add-fg">+{totals.adds}</span>{" "}
             <span className="diff-del-fg">-{totals.dels}</span>
           </span>
           <span className="ml-auto text-xs tabular-nums text-ui-subtle">
@@ -269,8 +297,12 @@ export function JobDiffs({ job }: JobDiffsProps) {
               onClick={toggleAll}
               className="flex items-center gap-1.5 rounded-md border border-ui-line px-2 py-1 text-[11px] font-medium text-ui-subtle transition-colors hover:bg-ui-fill/60 hover:text-ui-default"
             >
-              {allOpen ? <ChevronsDownUp size={12} /> : <ChevronsUpDown size={12} />}
-              {allOpen ? 'Collapse all' : 'Expand all'}
+              {allOpen ? (
+                <ChevronsDownUp size={12} />
+              ) : (
+                <ChevronsUpDown size={12} />
+              )}
+              {allOpen ? "Collapse all" : "Expand all"}
             </button>
           )}
         </div>
@@ -295,7 +327,10 @@ export function JobDiffs({ job }: JobDiffsProps) {
             <div
               key={file.id}
               id={fileAnchorId(file.id)}
-              style={panelCvStyle(isOpen(file), statsByPath.get(file.filePath)?.total ?? 0)}
+              style={panelCvStyle(
+                isOpen(file),
+                statsByPath.get(file.filePath)?.total ?? 0,
+              )}
               ref={(el) => {
                 if (el) fileRefs.current.set(file.id, el);
                 else fileRefs.current.delete(file.id);

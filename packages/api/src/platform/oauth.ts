@@ -1,5 +1,5 @@
-import { randomHex } from '@codraoss/schema/hex';
-import type { KvCompat } from './kv';
+import { randomHex } from "@codraoss/schema/hex";
+import type { KvCompat } from "./kv";
 
 const OAUTH_STATE_TTL_SECONDS = 60 * 10;
 
@@ -10,7 +10,7 @@ function oauthStateKey(state: string) {
 export function parseAllowedUsers(input: string) {
   return new Set(
     input
-      .split(',')
+      .split(",")
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean),
   );

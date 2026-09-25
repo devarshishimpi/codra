@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 interface FitRowsOptions {
   /** Height of one desktop table row, in px. Matches the `h-12` cell in JobsTable. */
@@ -21,7 +21,7 @@ function scrollParent(el: HTMLElement): HTMLElement {
   let node = el.parentElement;
   while (node) {
     const { overflowY } = getComputedStyle(node);
-    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+    if (overflowY === "auto" || overflowY === "scroll") return node;
     node = node.parentElement;
   }
   return document.documentElement;
@@ -38,7 +38,11 @@ function elementsAbove(el: HTMLElement, scroller: HTMLElement): Element[] {
   let node: HTMLElement | null = el;
 
   while (node && node !== scroller) {
-    for (let sib = node.previousElementSibling; sib; sib = sib.previousElementSibling) {
+    for (
+      let sib = node.previousElementSibling;
+      sib;
+      sib = sib.previousElementSibling
+    ) {
       found.push(sib);
     }
     node = node.parentElement;
@@ -78,12 +82,16 @@ export function useFitRows({
     const scroller = scrollParent(el);
     // Offset from the scroll container's content top, not the viewport: stays put while the user
     // scrolls, so growing the table can't feed back into the row count.
-    const top = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    const top =
+      el.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop;
     const available = scroller.clientHeight - top - reserve;
 
-    const wide = typeof window.matchMedia === 'function'
-      ? window.matchMedia('(min-width: 640px)').matches
-      : true;
+    const wide =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(min-width: 640px)").matches
+        : true;
     const unit = wide ? rowHeight : mobileRowHeight;
     const fits = Math.max(min, Math.min(max, Math.floor(available / unit)));
 
@@ -94,7 +102,8 @@ export function useFitRows({
       if (Math.abs(fits - current) === 1) {
         const margin = unit * DEADBAND;
         const growing = fits > current;
-        if (growing && available < (current + 1) * unit + margin) return current;
+        if (growing && available < (current + 1) * unit + margin)
+          return current;
         if (!growing && available > current * unit - margin) return current;
       }
 
@@ -122,17 +131,20 @@ export function useFitRows({
     };
 
     const scroller = scrollParent(el);
-    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(schedule) : null;
+    const observer =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(schedule)
+        : null;
     observer?.observe(scroller);
     // Content above shifts the table's top edge: the stat cards settling, or a banner that only
     // appears once its own request resolves.
     for (const node of elementsAbove(el, scroller)) observer?.observe(node);
 
-    window.addEventListener('resize', schedule);
+    window.addEventListener("resize", schedule);
     return () => {
       if (frame) cancelAnimationFrame(frame);
       observer?.disconnect();
-      window.removeEventListener('resize', schedule);
+      window.removeEventListener("resize", schedule);
     };
   }, [measure]);
 

@@ -2,17 +2,19 @@
 
 While Codra is natively optimized for Cloudflare Workers, you can easily self-host the entire architecture on a dedicated server (like a VPS or EC2 instance) using Docker. This setup replaces Cloudflare infrastructure with standard open-source equivalents:
 
-* **Node.js** (Web Server and Job Runner)
-* **PostgreSQL** (Database)
-* **Redis** (Key-Value Store and Queues via BullMQ)
+- **Node.js** (Web Server and Job Runner)
+- **PostgreSQL** (Database)
+- **Redis** (Key-Value Store and Queues via BullMQ)
 
 ## Prerequisites
 
 Before deploying, ensure your server has the following installed:
+
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
 You will also need:
+
 - A GitHub App configured for your organization (See [GitHub App Setup](../setup/github-app.md)). You will need the **App ID**, **Client ID**, **Client Secret**, **Webhook Secret**, and **Private Key**.
 - An API Key for your chosen LLM provider (e.g., Anthropic, OpenAI, or Google).
 
@@ -57,11 +59,13 @@ docker compose up -d --build
 ```
 
 This command will:
+
 1. Compile the Codra Node app and its workspace dependencies.
 2. Boot Postgres and Redis containers.
 3. Start the Codra Node application container (which runs both the HTTP server and the background worker by default).
 
 To view logs:
+
 ```bash
 docker compose logs -f codra-app
 ```
@@ -70,19 +74,21 @@ The application should now be accessible at `http://localhost:3000` (or whatever
 
 ## Advanced Configuration: Scaling (Unified Process Model)
 
-By default, the `codra-app` service boots *both* the web server (Hono API) and the background worker (BullMQ) in a single Node process. 
+By default, the `codra-app` service boots _both_ the web server (Hono API) and the background worker (BullMQ) in a single Node process.
 
-For high-traffic environments, you may want to scale the API web nodes independently of the heavy AI review worker nodes. 
+For high-traffic environments, you may want to scale the API web nodes independently of the heavy AI review worker nodes.
 
 You can split these by overriding the `START_WORKER` and `START_API` environment variables across different containers.
 
 **API Node:**
+
 ```env
 START_WORKER=false
 # START_API=true (Default)
 ```
 
 **Worker Node:**
+
 ```env
 START_WORKER=true
 START_API=false # Disables the HTTP server

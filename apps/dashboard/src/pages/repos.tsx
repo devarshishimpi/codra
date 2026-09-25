@@ -1,25 +1,46 @@
-import { Button, EmptyState, Input, LinkButton, LoadError, Select, Skeleton } from '@codraoss/ui';
-import { useEffect, useMemo, useReducer, useState, Suspense, lazy  } from 'react';
-import { toast } from 'sonner';
-import { api } from '@client/lib/api';
-import { PageHeader } from '@client/components/layout/page-header';
-import { GitBranch, RefreshCw, ArrowUpRight, Search } from 'lucide-react';
-import { cn } from '@codraoss/ui/utils';
-import type { RepoConfigRecord } from '@codraoss/schema';
+import {
+  Button,
+  EmptyState,
+  Input,
+  LinkButton,
+  LoadError,
+  Select,
+  Skeleton,
+} from "@codraoss/ui";
+import {
+  useEffect,
+  useMemo,
+  useReducer,
+  useState,
+  Suspense,
+  lazy,
+} from "react";
+import { toast } from "sonner";
+import { api } from "@client/lib/api";
+import { PageHeader } from "@client/components/layout/page-header";
+import { GitBranch, RefreshCw, ArrowUpRight, Search } from "lucide-react";
+import { cn } from "@codraoss/ui/utils";
+import type { RepoConfigRecord } from "@codraoss/schema";
 import {
   EMPTY_MODEL_ROUTE,
   normalizeModelRoute,
   type ModelOption,
   type ModelRouteConfig,
   type ProviderOption,
-} from '@client/components/features/models/model-route';
+} from "@client/components/features/models/model-route";
 
-import { RepoRow } from '@client/components/features/repos/repo-row';
+import { RepoRow } from "@client/components/features/repos/repo-row";
 
-const RepoModelModal = lazy(() => import('@client/components/features/repos/repo-model-modal').then(m => ({ default: m.RepoModelModal })));
+const RepoModelModal = lazy(() =>
+  import("@client/components/features/repos/repo-model-modal").then((m) => ({
+    default: m.RepoModelModal,
+  })),
+);
 
-
-import { repoId, hasMeaningfulCustomStrategy } from '@client/components/features/repos/repo-route';
+import {
+  repoId,
+  hasMeaningfulCustomStrategy,
+} from "@client/components/features/repos/repo-route";
 
 type ReposState = {
   repos: RepoConfigRecord[];
@@ -31,18 +52,22 @@ type ReposState = {
 };
 
 type ReposAction =
-  | { type: 'load-started' }
+  | { type: "load-started" }
   | {
-      type: 'load-succeeded';
+      type: "load-succeeded";
       repos: RepoConfigRecord[];
       globalConfig: ModelRouteConfig;
       modelOptions: ModelOption[];
       providerOptions: ProviderOption[];
     }
-  | { type: 'load-failed'; message: string }
-  | { type: 'sync-started' }
-  | { type: 'sync-failed'; message: string }
-  | { type: 'repo-merged'; targetId: string; updates: Partial<RepoConfigRecord> };
+  | { type: "load-failed"; message: string }
+  | { type: "sync-started" }
+  | { type: "sync-failed"; message: string }
+  | {
+      type: "repo-merged";
+      targetId: string;
+      updates: Partial<RepoConfigRecord>;
+    };
 
 const INITIAL_REPOS_STATE: ReposState = {
   repos: [],
@@ -55,9 +80,9 @@ const INITIAL_REPOS_STATE: ReposState = {
 
 function reposReducer(state: ReposState, action: ReposAction): ReposState {
   switch (action.type) {
-    case 'load-started':
+    case "load-started":
       return { ...state, loading: true };
-    case 'load-succeeded':
+    case "load-succeeded":
       return {
         ...state,
         repos: action.repos,
@@ -66,32 +91,38 @@ function reposReducer(state: ReposState, action: ReposAction): ReposState {
         providerOptions: action.providerOptions,
         loading: false,
       };
-    case 'load-failed':
+    case "load-failed":
       return { ...state, error: action.message, loading: false };
-    case 'sync-started':
+    case "sync-started":
       return { ...state, error: null };
-    case 'sync-failed':
+    case "sync-failed":
       return { ...state, error: action.message };
-    case 'repo-merged':
+    case "repo-merged":
       return {
         ...state,
-        repos: state.repos.map(repo =>
-          repoId(repo) === action.targetId ? { ...repo, ...action.updates } : repo,
+        repos: state.repos.map((repo) =>
+          repoId(repo) === action.targetId
+            ? { ...repo, ...action.updates }
+            : repo,
         ),
       };
   }
 }
 
 export function ReposPage() {
-  const [{ repos, globalConfig, modelOptions, providerOptions, error, loading }, dispatch] =
-    useReducer(reposReducer, INITIAL_REPOS_STATE);
+  const [
+    { repos, globalConfig, modelOptions, providerOptions, error, loading },
+    dispatch,
+  ] = useReducer(reposReducer, INITIAL_REPOS_STATE);
   const [syncing, setSyncing] = useState(false);
   const [editingRepoId, setEditingRepoId] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [strategyFilter, setStrategyFilter] = useState('');
-  const [pendingToggles, setPendingToggles] = useState<Set<string>>(() => new Set());
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [strategyFilter, setStrategyFilter] = useState("");
+  const [pendingToggles, setPendingToggles] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -100,80 +131,97 @@ export function ReposPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const editingRepo = repos.find(repo => repoId(repo) === editingRepoId) ?? null;
+  const editingRepo =
+    repos.find((repo) => repoId(repo) === editingRepoId) ?? null;
 
   const filteredRepos = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
-    return repos.filter(repo => {
-      if (q && !`${repo.owner}/${repo.repo}`.toLowerCase().includes(q)) return false;
-      if (statusFilter === 'enabled' && !repo.enabled) return false;
-      if (statusFilter === 'paused' && repo.enabled) return false;
+    return repos.filter((repo) => {
+      if (q && !`${repo.owner}/${repo.repo}`.toLowerCase().includes(q))
+        return false;
+      if (statusFilter === "enabled" && !repo.enabled) return false;
+      if (statusFilter === "paused" && repo.enabled) return false;
       if (strategyFilter) {
         const custom = hasMeaningfulCustomStrategy(repo, globalConfig);
-        if (strategyFilter === 'custom' && !custom) return false;
-        if (strategyFilter === 'global' && custom) return false;
+        if (strategyFilter === "custom" && !custom) return false;
+        if (strategyFilter === "global" && custom) return false;
       }
       return true;
     });
   }, [repos, debouncedSearch, statusFilter, strategyFilter, globalConfig]);
-  const enabledCount = repos.filter(repo => repo.enabled).length;
+  const enabledCount = repos.filter((repo) => repo.enabled).length;
 
   const loadRepos = () => {
-    dispatch({ type: 'load-started' });
-    Promise.all([
-      api.getRepos(),
-      api.getGlobalConfig(),
-      api.getModelConfigs(),
-    ])
+    dispatch({ type: "load-started" });
+    Promise.all([api.getRepos(), api.getGlobalConfig(), api.getModelConfigs()])
       .then(([reposRes, globalRes, modelsRes]) => {
         const nextRepos = Array.isArray(reposRes?.repos) ? reposRes.repos : [];
-        const providers = Array.isArray(modelsRes?.providers) ? modelsRes.providers : [];
-        const configs = Array.isArray(modelsRes?.configs) ? modelsRes.configs : [];
+        const providers = Array.isArray(modelsRes?.providers)
+          ? modelsRes.providers
+          : [];
+        const configs = Array.isArray(modelsRes?.configs)
+          ? modelsRes.configs
+          : [];
 
         dispatch({
-          type: 'load-succeeded',
+          type: "load-succeeded",
           repos: nextRepos,
           globalConfig: normalizeModelRoute(globalRes?.config),
-          providerOptions: providers.map(provider => ({ value: provider.id, label: provider.name })),
-          modelOptions: configs.map(config => ({
+          providerOptions: providers.map((provider) => ({
+            value: provider.id,
+            label: provider.name,
+          })),
+          modelOptions: configs.map((config) => ({
             value: config.modelId,
             label: `${config.providerName} / ${config.modelName}`,
             providerId: config.providerId,
           })),
         });
       })
-      .catch(e => {
+      .catch((e) => {
         dispatch({
-          type: 'load-failed',
-          message: e instanceof Error ? e.message : 'Failed to load repositories.',
+          type: "load-failed",
+          message:
+            e instanceof Error ? e.message : "Failed to load repositories.",
         });
       });
   };
 
-  useEffect(() => { loadRepos(); }, []);
+  useEffect(() => {
+    loadRepos();
+  }, []);
 
   const mergeRepo = (targetId: string, updates: Partial<RepoConfigRecord>) => {
-    dispatch({ type: 'repo-merged', targetId, updates });
+    dispatch({ type: "repo-merged", targetId, updates });
   };
 
-  const handleToggleEnabled = async (repo: RepoConfigRecord, nextEnabled: boolean) => {
+  const handleToggleEnabled = async (
+    repo: RepoConfigRecord,
+    nextEnabled: boolean,
+  ) => {
     const targetId = repoId(repo);
-    setPendingToggles(current => new Set(current).add(targetId));
-    const tid = toast.loading(nextEnabled ? 'Enabling code reviews…' : 'Pausing code reviews…');
+    setPendingToggles((current) => new Set(current).add(targetId));
+    const tid = toast.loading(
+      nextEnabled ? "Enabling code reviews…" : "Pausing code reviews…",
+    );
     try {
-      await api.updateRepoConfig(repo.owner, repo.repo, { enabled: nextEnabled });
+      await api.updateRepoConfig(repo.owner, repo.repo, {
+        enabled: nextEnabled,
+      });
       mergeRepo(targetId, { enabled: nextEnabled });
-      toast.success(
-        nextEnabled ? 'Reviews active' : 'Reviews paused',
-        { id: tid, description: nextEnabled
+      toast.success(nextEnabled ? "Reviews active" : "Reviews paused", {
+        id: tid,
+        description: nextEnabled
           ? `${targetId} will receive automated review comments.`
-          : `${targetId} is now quiet - no new reviews will be posted.`
-        },
-      );
+          : `${targetId} is now quiet - no new reviews will be posted.`,
+      });
     } catch (err) {
-      toast.error('Could not update repository', { id: tid, description: 'The change did not go through. Please try again.' });
+      toast.error("Could not update repository", {
+        id: tid,
+        description: "The change did not go through. Please try again.",
+      });
     } finally {
-      setPendingToggles(current => {
+      setPendingToggles((current) => {
         const next = new Set(current);
         next.delete(targetId);
         return next;
@@ -181,7 +229,10 @@ export function ReposPage() {
     }
   };
 
-  const handleModelApplied = (repo: RepoConfigRecord, route: ModelRouteConfig) => {
+  const handleModelApplied = (
+    repo: RepoConfigRecord,
+    route: ModelRouteConfig,
+  ) => {
     mergeRepo(repoId(repo), {
       mainModel: route.main,
       fallbackModels: route.fallbacks,
@@ -200,22 +251,27 @@ export function ReposPage() {
   const handleSync = async () => {
     if (syncing) return;
     setSyncing(true);
-    dispatch({ type: 'sync-started' });
-    const tid = toast.loading('Syncing with GitHub…');
+    dispatch({ type: "sync-started" });
+    const tid = toast.loading("Syncing with GitHub…");
     try {
       const result = await api.syncRepos();
       const syncedCount = result?.synced?.length ?? 0;
-      toast.success('Repositories up to date', {
+      toast.success("Repositories up to date", {
         id: tid,
-        description: syncedCount > 0
-          ? `${syncedCount} ${syncedCount === 1 ? 'repository' : 'repositories'} refreshed from GitHub.`
-          : 'Everything is already in sync.',
+        description:
+          syncedCount > 0
+            ? `${syncedCount} ${syncedCount === 1 ? "repository" : "repositories"} refreshed from GitHub.`
+            : "Everything is already in sync.",
       });
       loadRepos();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Sync failed.';
-      dispatch({ type: 'sync-failed', message: msg });
-      toast.error('Sync failed', { id: tid, description: 'Could not reach GitHub. Check your connection and try again.' });
+      const msg = e instanceof Error ? e.message : "Sync failed.";
+      dispatch({ type: "sync-failed", message: msg });
+      toast.error("Sync failed", {
+        id: tid,
+        description:
+          "Could not reach GitHub. Check your connection and try again.",
+      });
     } finally {
       setSyncing(false);
     }
@@ -240,7 +296,10 @@ export function ReposPage() {
             </div>
           </div>
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="px-5 py-4 border-b border-ui-line/60 last:border-0">
+            <div
+              key={i}
+              className="px-5 py-4 border-b border-ui-line/60 last:border-0"
+            >
               <Skeleton height={20} />
             </div>
           ))}
@@ -256,7 +315,7 @@ export function ReposPage() {
         description={
           repos.length > 0 &&
           (filteredRepos.length === repos.length
-            ? `${repos.length} ${repos.length === 1 ? 'repository' : 'repositories'} · ${enabledCount} enabled`
+            ? `${repos.length} ${repos.length === 1 ? "repository" : "repositories"} · ${enabledCount} enabled`
             : `${filteredRepos.length} of ${repos.length} repositories · ${enabledCount} enabled`)
         }
         actions={
@@ -266,7 +325,12 @@ export function ReposPage() {
               size="sm"
               onClick={handleSync}
               disabled={syncing}
-              icon={<RefreshCw size={13} className={cn(syncing && 'animate-spin')} />}
+              icon={
+                <RefreshCw
+                  size={13}
+                  className={cn(syncing && "animate-spin")}
+                />
+              }
             >
               Sync Repositories
             </Button>
@@ -292,24 +356,24 @@ export function ReposPage() {
         />
       )}
 
-    {repos.length === 0 ? (
-      <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
-        <EmptyState
-          icon={<GitBranch />}
-          title="No Repositories Added"
-          description="Add your repositories to get started with Codra"
-          hints={[
-            'Add repositories here to automatically enable PR analysis',
-            'You can enable/disable PR analysis for each repo from its settings',
-          ]}
-          linkAction={{
-            label: 'See how to interact with Codra',
-            href: 'https://github.com/devarshishimpi/codra#readme',
-          }}
-          className="flex-1 rounded-none border-0"
-        />
-      </div>
-    ) : (
+      {repos.length === 0 ? (
+        <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+          <EmptyState
+            icon={<GitBranch />}
+            title="No Repositories Added"
+            description="Add your repositories to get started with Codra"
+            hints={[
+              "Add repositories here to automatically enable PR analysis",
+              "You can enable/disable PR analysis for each repo from its settings",
+            ]}
+            linkAction={{
+              label: "See how to interact with Codra",
+              href: "https://github.com/devarshishimpi/codra#readme",
+            }}
+            className="flex-1 rounded-none border-0"
+          />
+        </div>
+      ) : (
         <div className="ui-panel flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <div className="flex shrink-0 flex-col gap-2 border-b border-ui-line px-4 py-3 sm:flex-row sm:items-center">
             <div className="relative min-w-0 flex-1">
@@ -334,9 +398,9 @@ export function ReposPage() {
                   onValueChange={setStatusFilter}
                   placeholder="All statuses"
                   options={[
-                    { value: '', label: 'All statuses' },
-                    { value: 'enabled', label: 'Enabled' },
-                    { value: 'paused', label: 'Paused' },
+                    { value: "", label: "All statuses" },
+                    { value: "enabled", label: "Enabled" },
+                    { value: "paused", label: "Paused" },
                   ]}
                   triggerClassName="h-8 text-xs"
                 />
@@ -347,9 +411,9 @@ export function ReposPage() {
                   onValueChange={setStrategyFilter}
                   placeholder="All strategies"
                   options={[
-                    { value: '', label: 'All strategies' },
-                    { value: 'custom', label: 'Custom strategy' },
-                    { value: 'global', label: 'Global strategy' },
+                    { value: "", label: "All strategies" },
+                    { value: "custom", label: "Custom strategy" },
+                    { value: "global", label: "Global strategy" },
                   ]}
                   triggerClassName="h-8 text-xs"
                 />
@@ -366,7 +430,7 @@ export function ReposPage() {
                 className="flex-1 rounded-none border-0"
               />
             ) : (
-              filteredRepos.map(repo => {
+              filteredRepos.map((repo) => {
                 const id = repoId(repo);
                 return (
                   <RepoRow

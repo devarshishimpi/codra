@@ -1,4 +1,4 @@
-import { domAnimation, LazyMotion, useReducedMotion } from 'motion/react';
+import { domAnimation, LazyMotion, useReducedMotion } from "motion/react";
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -8,12 +8,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-} from 'react';
-import { createPortal } from 'react-dom';
-import { cn } from '../lib/utils';
-import { SelectPanel } from './select-panel';
-import type { Placement, SelectOption, TriggerRect } from './select-shared';
-import { SelectTrigger } from './select-trigger';
+} from "react";
+import { createPortal } from "react-dom";
+import { cn } from "../lib/utils";
+import { SelectPanel } from "./select-panel";
+import type { Placement, SelectOption, TriggerRect } from "./select-shared";
+import { SelectTrigger } from "./select-trigger";
 
 interface SelectProps {
   value: string;
@@ -25,20 +25,20 @@ interface SelectProps {
   triggerClassName?: string;
   triggerStyle?: CSSProperties;
   leadingIcon?: ReactNode;
-  variant?: 'page' | 'card';
+  variant?: "page" | "card";
 }
 
 export function Select({
   value,
   onValueChange,
   options,
-  placeholder = 'Select...',
+  placeholder = "Select...",
   label,
   className,
   triggerClassName,
   triggerStyle,
   leadingIcon,
-  variant = 'page',
+  variant = "page",
 }: SelectProps) {
   const reduce = useReducedMotion() ?? false;
   const baseId = useId();
@@ -50,31 +50,31 @@ export function Select({
   const panelRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLUListElement>(null);
   const [open, setOpen] = useState(false);
-  const [placement, setPlacement] = useState<Placement>('bottom');
+  const [placement, setPlacement] = useState<Placement>("bottom");
   const [height, setHeight] = useState(0);
   const [rect, setRect] = useState<TriggerRect | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const highlightSource = useRef<'keyboard' | 'pointer'>('keyboard');
+  const highlightSource = useRef<"keyboard" | "pointer">("keyboard");
 
   const selectedOption = options.find((opt) => opt.value === value);
 
   useEffect(() => {
     if (!open) return;
-    highlightSource.current = 'keyboard';
+    highlightSource.current = "keyboard";
     const idx = options.findIndex((opt) => opt.value === value);
     setHighlightedIndex(idx >= 0 ? idx : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
-    if (!open || highlightSource.current !== 'keyboard') return;
-    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+    if (!open || highlightSource.current !== "keyboard") return;
+    optionRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
   }, [open, highlightedIndex]);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
     const onPointer = (e: PointerEvent) => {
       const target = e.target as Node;
       if (triggerRef.current?.contains(target)) return;
@@ -82,11 +82,11 @@ export function Select({
       if (labelRef.current?.contains(target)) return;
       setOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('pointerdown', onPointer);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onPointer);
     return () => {
-      window.removeEventListener('keydown', onKey);
-      window.removeEventListener('pointerdown', onPointer);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onPointer);
     };
   }, [open]);
 
@@ -112,31 +112,37 @@ export function Select({
       const h = innerRef.current?.offsetHeight ?? 0;
       const below = window.innerHeight - r.bottom;
       const above = r.top;
-      setPlacement(below < h + 16 && above > below ? 'top' : 'bottom');
+      setPlacement(below < h + 16 && above > below ? "top" : "bottom");
     };
     const scheduleUpdate = (e?: Event) => {
-      if (e && e.target instanceof Node && panelRef.current?.contains(e.target)) return;
+      if (e && e.target instanceof Node && panelRef.current?.contains(e.target))
+        return;
       if (frame !== null) return;
       frame = requestAnimationFrame(update);
     };
     update();
-    window.addEventListener('scroll', scheduleUpdate, true);
-    window.addEventListener('resize', scheduleUpdate);
+    window.addEventListener("scroll", scheduleUpdate, true);
+    window.addEventListener("resize", scheduleUpdate);
     return () => {
       if (frame !== null) cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', scheduleUpdate, true);
-      window.removeEventListener('resize', scheduleUpdate);
+      window.removeEventListener("scroll", scheduleUpdate, true);
+      window.removeEventListener("resize", scheduleUpdate);
     };
   }, [open]);
 
   const moveHighlight = (next: number) => {
-    highlightSource.current = 'keyboard';
+    highlightSource.current = "keyboard";
     setHighlightedIndex(Math.min(Math.max(next, 0), options.length - 1));
   };
 
   const onTriggerKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (!open) {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+      if (
+        e.key === "ArrowDown" ||
+        e.key === "ArrowUp" ||
+        e.key === "Enter" ||
+        e.key === " "
+      ) {
         e.preventDefault();
         setOpen(true);
       }
@@ -144,29 +150,29 @@ export function Select({
     }
     if (options.length === 0) return;
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         moveHighlight(highlightedIndex + 1);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         moveHighlight(highlightedIndex - 1);
         break;
-      case 'Home':
+      case "Home":
         e.preventDefault();
         moveHighlight(0);
         break;
-      case 'End':
+      case "End":
         e.preventDefault();
         moveHighlight(options.length - 1);
         break;
-      case 'Enter':
-      case ' ':
+      case "Enter":
+      case " ":
         e.preventDefault();
         onValueChange(options[highlightedIndex].value);
         setOpen(false);
         break;
-      case 'Tab':
+      case "Tab":
         setOpen(false);
         break;
       default:
@@ -180,15 +186,15 @@ export function Select({
   };
 
   const highlightOption = (index: number) => {
-    highlightSource.current = 'pointer';
+    highlightSource.current = "pointer";
     setHighlightedIndex(index);
   };
 
-  const isTop = placement === 'top';
+  const isTop = placement === "top";
 
   return (
     <LazyMotion features={domAnimation}>
-      <div className={cn('flex flex-col gap-1.5', className)}>
+      <div className={cn("flex flex-col gap-1.5", className)}>
         {label && (
           <label
             ref={labelRef}
@@ -206,7 +212,9 @@ export function Select({
             listId={listId}
             labelId={label ? labelId : undefined}
             activeDescendantId={
-              open && options[highlightedIndex] ? `${listId}-option-${highlightedIndex}` : undefined
+              open && options[highlightedIndex]
+                ? `${listId}-option-${highlightedIndex}`
+                : undefined
             }
             open={open}
             isTop={isTop}

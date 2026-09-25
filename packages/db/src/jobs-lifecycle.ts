@@ -1,10 +1,13 @@
-import type { DbEnv } from './env';
-import { queryRows } from './client';
-import type { JobRow } from './jobs-mapping';
-import { markSystemActive } from './jobs-activity';
+import type { DbEnv } from "./env";
+import { queryRows } from "./client";
+import type { JobRow } from "./jobs-mapping";
+import { markSystemActive } from "./jobs-activity";
 
-
-export async function updateJobCheckRun(env: DbEnv, jobId: string, checkRunId: number) {
+export async function updateJobCheckRun(
+  env: DbEnv,
+  jobId: string,
+  checkRunId: number,
+) {
   await queryRows(
     env,
     `
@@ -20,7 +23,7 @@ export async function completeJob(
   env: DbEnv,
   jobId: string,
   input: {
-    verdict: 'approve' | 'comment';
+    verdict: "approve" | "comment";
     fileCount: number;
     commentCount: number;
     totalInputTokens: number;
@@ -87,12 +90,16 @@ export async function completeJob(
       input.summaryModel,
       input.overallConfidenceScore ?? null,
       input.errorMessage ?? null,
-      now
+      now,
     ],
   );
 }
 
-export async function failJob(env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>, jobId: string, errorMessage: string) {
+export async function failJob(
+  env: Pick<DbEnv, "HYPERDRIVE" | "APP_KV">,
+  jobId: string,
+  errorMessage: string,
+) {
   await queryRows(
     env,
     `
@@ -122,7 +129,10 @@ export async function failJob(env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>, jobId: 
 }
 
 // Clears lease. Returns false if terminal (caller must terminate Workflow).
-export async function cancelJob(env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>, jobId: string): Promise<boolean> {
+export async function cancelJob(
+  env: Pick<DbEnv, "HYPERDRIVE" | "APP_KV">,
+  jobId: string,
+): Promise<boolean> {
   const rows = await queryRows<{ id: string }>(
     env,
     `
@@ -176,7 +186,11 @@ export async function markJobCheckRunCompleted(env: DbEnv, jobId: string) {
   );
 }
 
-export async function updateJobFileCount(env: DbEnv, jobId: string, fileCount: number) {
+export async function updateJobFileCount(
+  env: DbEnv,
+  jobId: string,
+  fileCount: number,
+) {
   await queryRows(
     env,
     `
@@ -188,7 +202,11 @@ export async function updateJobFileCount(env: DbEnv, jobId: string, fileCount: n
   );
 }
 
-export async function completePreparationStep(env: DbEnv, jobId: string, fileCount: number) {
+export async function completePreparationStep(
+  env: DbEnv,
+  jobId: string,
+  fileCount: number,
+) {
   const now = new Date().toISOString();
   await queryRows(
     env,
@@ -215,15 +233,19 @@ export async function updateJobStep(
   jobId: string,
   stepName: string,
   update: {
-    status: 'pending' | 'running' | 'done' | 'failed';
+    status: "pending" | "running" | "done" | "failed";
     startedAt?: string | null;
     finishedAt?: string | null;
     error?: string | null;
   },
 ) {
   const now = new Date().toISOString();
-  const startedAt = update.status === 'running' ? now : (update.startedAt ?? null);
-  const finishedAt = update.status === 'done' || update.status === 'failed' ? now : (update.finishedAt ?? null);
+  const startedAt =
+    update.status === "running" ? now : (update.startedAt ?? null);
+  const finishedAt =
+    update.status === "done" || update.status === "failed"
+      ? now
+      : (update.finishedAt ?? null);
   const error = update.error ?? null;
 
   await queryRows(
@@ -314,7 +336,13 @@ export async function supersedeOlderJobs(
         AND j.status IN ('queued', 'running')
       RETURNING j.id
     `,
-    [input.installationId, input.owner, input.repo, input.prNumber, input.newJobId],
+    [
+      input.installationId,
+      input.owner,
+      input.repo,
+      input.prNumber,
+      input.newJobId,
+    ],
   );
 
   return rows.length;

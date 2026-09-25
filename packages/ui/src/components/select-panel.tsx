@@ -1,25 +1,46 @@
-import { Check } from 'lucide-react';
-import { m, type Transition } from 'motion/react';
-import type { RefObject } from 'react';
-import { cn } from '../lib/utils';
-import { EASE_OUT } from '../lib/ease';
+import { Check } from "lucide-react";
+import { m, type Transition } from "motion/react";
+import type { RefObject } from "react";
+import { cn } from "../lib/utils";
+import { EASE_OUT } from "../lib/ease";
 import {
   INSTANT_TRANSITION,
   ITEM_VARIANTS,
   LIST_VARIANTS,
   type SelectOption,
   type TriggerRect,
-} from './select-shared';
+} from "./select-shared";
 
 const REDUCED_TRANSITION: Transition = { duration: 0.12 };
-const GAP_TRANSITION_OPEN: Transition = { type: 'spring', duration: 0.44, bounce: 0.45, delay: 0.09 };
-const GAP_TRANSITION_CLOSED: Transition = { type: 'spring', duration: 0.26, bounce: 0.1 };
-const RADIUS_TRANSITION_OPEN: Transition = { duration: 0.26, ease: EASE_OUT, delay: 0.1 };
+const GAP_TRANSITION_OPEN: Transition = {
+  type: "spring",
+  duration: 0.44,
+  bounce: 0.45,
+  delay: 0.09,
+};
+const GAP_TRANSITION_CLOSED: Transition = {
+  type: "spring",
+  duration: 0.26,
+  bounce: 0.1,
+};
+const RADIUS_TRANSITION_OPEN: Transition = {
+  duration: 0.26,
+  ease: EASE_OUT,
+  delay: 0.1,
+};
 const RADIUS_TRANSITION_CLOSED: Transition = { duration: 0.15, ease: EASE_OUT };
 const OPACITY_TRANSITION_OPEN: Transition = { duration: 0.18 };
 const OPACITY_TRANSITION_CLOSED: Transition = { duration: 0.16, delay: 0.1 };
-const HEIGHT_TRANSITION_OPEN: Transition = { type: 'spring', duration: 0.4, bounce: 0.14 };
-const HEIGHT_TRANSITION_CLOSED: Transition = { duration: 0.24, ease: EASE_OUT, delay: 0.1 };
+const HEIGHT_TRANSITION_OPEN: Transition = {
+  type: "spring",
+  duration: 0.4,
+  bounce: 0.14,
+};
+const HEIGHT_TRANSITION_CLOSED: Transition = {
+  duration: 0.24,
+  ease: EASE_OUT,
+  delay: 0.1,
+};
 
 interface SelectPanelProps {
   panelRef: RefObject<HTMLDivElement | null>;
@@ -89,7 +110,9 @@ export function SelectPanel({
         reduce
           ? REDUCED_TRANSITION
           : {
-              opacity: open ? OPACITY_TRANSITION_OPEN : OPACITY_TRANSITION_CLOSED,
+              opacity: open
+                ? OPACITY_TRANSITION_OPEN
+                : OPACITY_TRANSITION_CLOSED,
               height: open ? HEIGHT_TRANSITION_OPEN : HEIGHT_TRANSITION_CLOSED,
               marginTop: isTop ? INSTANT_TRANSITION : gapT,
               marginBottom: isTop ? gapT : INSTANT_TRANSITION,
@@ -100,14 +123,14 @@ export function SelectPanel({
             }
       }
       style={{
-        position: 'fixed',
+        position: "fixed",
         left: rect?.left ?? 0,
         width: rect?.width ?? 0,
         top: isTop ? undefined : (rect?.bottom ?? 0),
         bottom: isTop ? window.innerHeight - (rect?.top ?? 0) : undefined,
-        transformOrigin: isTop ? 'bottom' : 'top',
-        overflow: 'hidden',
-        pointerEvents: open ? 'auto' : 'none',
+        transformOrigin: isTop ? "bottom" : "top",
+        overflow: "hidden",
+        pointerEvents: open ? "auto" : "none",
       }}
       className="z-50 border border-ui-line bg-ui-base shadow-lg shadow-black/[0.04] dark:shadow-black/40"
     >
@@ -115,14 +138,17 @@ export function SelectPanel({
         ref={innerRef}
         variants={reduce ? undefined : LIST_VARIANTS}
         initial={false}
-        animate={open ? 'show' : 'hidden'}
+        animate={open ? "show" : "hidden"}
         className="max-h-[min(28rem,60vh)] overflow-y-auto p-1"
       >
         {options.map((option, index) => {
           const selected = option.value === value;
           const highlighted = index === highlightedIndex;
           return (
-            <m.li key={option.value} variants={reduce ? undefined : ITEM_VARIANTS}>
+            <m.li
+              key={option.value}
+              variants={reduce ? undefined : ITEM_VARIANTS}
+            >
               <button
                 ref={(node) => {
                   optionRefs.current[index] = node;
@@ -134,12 +160,12 @@ export function SelectPanel({
                 tabIndex={-1}
                 onMouseEnter={() => onHighlight(index)}
                 onClick={() => onSelect(option.value)}
-                  className={cn(
-                    'flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-sm outline-none transition-colors',
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 whitespace-nowrap rounded-md px-2.5 py-1.5 text-left text-sm outline-none transition-colors",
                   selected
-                    ? 'bg-ui-brand/10 font-medium text-ui-brand'
-                    : 'text-ui-default hover:bg-ui-fill hover:text-ui-strong focus-visible:bg-ui-fill',
-                  highlighted && !selected && 'bg-ui-fill text-ui-strong',
+                    ? "bg-ui-brand/10 font-medium text-ui-brand"
+                    : "text-ui-default hover:bg-ui-fill hover:text-ui-strong focus-visible:bg-ui-fill",
+                  highlighted && !selected && "bg-ui-fill text-ui-strong",
                 )}
               >
                 <span className="min-w-0 truncate">{option.label}</span>

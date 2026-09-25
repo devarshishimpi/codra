@@ -1,6 +1,6 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
-import { Button } from '../components/button';
-import { cn } from '../lib/utils';
+import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Button } from "../components/button";
+import { cn } from "../lib/utils";
 
 interface LoadErrorProps {
   title?: string;
@@ -14,7 +14,7 @@ interface LoadErrorProps {
 export function LoadError({
   title = "Couldn't load data",
   detail,
-  hint = 'Check your connection, then try again. If this keeps happening, the server may be unreachable.',
+  hint = "Check your connection, then try again. If this keeps happening, the server may be unreachable.",
   onRetry,
   retrying,
   className,
@@ -23,7 +23,7 @@ export function LoadError({
     <section
       role="alert"
       className={cn(
-        'ui-font-sans rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black sm:p-4',
+        "ui-font-sans rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black sm:p-4",
         className,
       )}
     >
@@ -51,7 +51,9 @@ export function LoadError({
             size="sm"
             onClick={onRetry}
             disabled={retrying}
-            icon={<RefreshCw size={13} className={retrying ? 'animate-spin' : ''} />}
+            icon={
+              <RefreshCw size={13} className={retrying ? "animate-spin" : ""} />
+            }
             className="w-full shrink-0 sm:w-auto"
           >
             Retry

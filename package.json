@@ -105,6 +105,7 @@
     "esbuild": true,
     "unrs-resolver@1.12.2": true,
     "workerd@1.20260918.1": true,
+    "workerd@1.20260921.1": true,
     "msgpackr-extract@3.0.4": true
   }
 }

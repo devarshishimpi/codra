@@ -1,7 +1,11 @@
 // beui.dev/components/motion/scroll-animation
-import type Lenis from 'lenis';
-import { ReactLenis, useLenis } from 'lenis/react';
-import { type MotionValue, useMotionValue, useReducedMotion } from 'motion/react';
+import type Lenis from "lenis";
+import { ReactLenis, useLenis } from "lenis/react";
+import {
+  type MotionValue,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
 import {
   createContext,
   type ReactNode,
@@ -9,7 +13,7 @@ import {
   useEffect,
   useMemo,
   useRef,
-} from 'react';
+} from "react";
 
 const EASE_SCROLL = (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t));
 
@@ -36,7 +40,7 @@ export interface SmoothScrollProps {
   root?: boolean;
   lerp?: number;
   duration?: number;
-  orientation?: 'vertical' | 'horizontal';
+  orientation?: "vertical" | "horizontal";
   wheelMultiplier?: number;
   touch?: boolean;
   className?: string;
@@ -63,15 +67,14 @@ function resolveTop(
   source: ScrollSource,
   offset = 0,
 ): number {
-  if (typeof target === 'number') return target + offset;
+  if (typeof target === "number") return target + offset;
   if (source instanceof Window) {
     const el =
-      typeof target === 'string' ? document.querySelector(target) : target;
+      typeof target === "string" ? document.querySelector(target) : target;
     if (!el) return window.scrollY;
     return el.getBoundingClientRect().top + window.scrollY + offset;
   }
-  const el =
-    typeof target === 'string' ? source.querySelector(target) : target;
+  const el = typeof target === "string" ? source.querySelector(target) : target;
   if (!(el instanceof HTMLElement)) return source.scrollTop;
   return el.offsetTop + offset;
 }
@@ -125,8 +128,8 @@ function useNativeScrollSync(
       lastT = now;
     };
     onScroll();
-    target.addEventListener('scroll', onScroll, { passive: true });
-    return () => target.removeEventListener('scroll', onScroll);
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
   }, [enabled, getTarget, scrollY, progress, velocity]);
 }
 
@@ -135,7 +138,7 @@ export function SmoothScroll({
   root = true,
   lerp = 0.1,
   duration = 1.2,
-  orientation = 'vertical',
+  orientation = "vertical",
   wheelMultiplier = 1,
   touch = false,
   className,
@@ -164,7 +167,7 @@ export function SmoothScroll({
         return;
       }
       const source = nativeSource();
-      const behavior = reduce || options?.immediate ? 'auto' : 'smooth';
+      const behavior = reduce || options?.immediate ? "auto" : "smooth";
       const top = resolveTop(target, source ?? window, options?.offset);
       (source ?? window).scrollTo({ top, behavior });
     },

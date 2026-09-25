@@ -1,4 +1,9 @@
-import type { JobDetail, JobSummary, RepoConfigRecord, StatsPayload } from './schema';
+import type {
+  JobDetail,
+  JobSummary,
+  RepoConfigRecord,
+  StatsPayload,
+} from "./schema";
 
 export type AuthSessionUser = {
   githubUserId: number;
@@ -15,30 +20,30 @@ export type JobsResponse = {
 };
 
 export const apiActions = [
-  'jobs.read',
-  'jobs.retry',
-  'jobs.rerun',
-  'jobs.stop',
-  'jobs.delete',
-  'jobs.label',
-  'repos.read',
-  'repos.install',
-  'repos.sync',
-  'repos.config.write',
-  'models.read',
-  'models.sync',
-  'models.test',
-  'models.provider.create',
-  'models.provider.update',
-  'models.provider.delete',
-  'models.mapping.write',
-  'models.global.write',
-  'settings.read',
-  'settings.write',
-  'stats.read',
-  'account.write',
-  'account.updatesEmail.write',
-  'reviews.enqueue',
+  "jobs.read",
+  "jobs.retry",
+  "jobs.rerun",
+  "jobs.stop",
+  "jobs.delete",
+  "jobs.label",
+  "repos.read",
+  "repos.install",
+  "repos.sync",
+  "repos.config.write",
+  "models.read",
+  "models.sync",
+  "models.test",
+  "models.provider.create",
+  "models.provider.update",
+  "models.provider.delete",
+  "models.mapping.write",
+  "models.global.write",
+  "settings.read",
+  "settings.write",
+  "stats.read",
+  "account.write",
+  "account.updatesEmail.write",
+  "reviews.enqueue",
 ] as const;
 
 export type KnownApiAction = (typeof apiActions)[number];
@@ -63,7 +68,7 @@ export type AccountResponse = {
   account: AccountSettings;
 };
 
-export type UpdatesEmailStatus = 'pending' | 'subscribed';
+export type UpdatesEmailStatus = "pending" | "subscribed";
 
 export type UpdatesEmailResponse = {
   status: UpdatesEmailStatus;
@@ -100,9 +105,12 @@ export type SyncReposResponse = {
   synced: string[];
 };
 
-
 export type ModelConfigsResponse = {
-  providers: import('./schema').LlmProvider[];
-  configs: import('./schema').ModelConfig[];
-  syncErrors?: Array<{ providerId: string; providerName: string; error: string }>;
+  providers: import("./schema").LlmProvider[];
+  configs: import("./schema").ModelConfig[];
+  syncErrors?: Array<{
+    providerId: string;
+    providerName: string;
+    error: string;
+  }>;
 };

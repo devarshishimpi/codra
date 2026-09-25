@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Skeleton, OnboardingCard, type OnboardingStep } from '@codraoss/ui';
-import { api } from '@client/lib/api';
-import type { AuthSessionUser } from '@codraoss/schema/api';
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Skeleton, OnboardingCard, type OnboardingStep } from "@codraoss/ui";
+import { api } from "@client/lib/api";
+import type { AuthSessionUser } from "@codraoss/schema/api";
 
-const STORAGE_KEY = 'codra_onboarding_dismissed';
+const STORAGE_KEY = "codra_onboarding_dismissed";
 
 interface SidebarOnboardingProps {
   user: AuthSessionUser;
   onVisibleChange?: (visible: boolean) => void;
 }
 
-export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingProps) {
+export function SidebarOnboarding({
+  user,
+  onVisibleChange,
+}: SidebarOnboardingProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(true);
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
@@ -21,7 +24,7 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Do not show if previously dismissed permanently
     if (localStorage.getItem(STORAGE_KEY)) {
       setVisible(false);
@@ -29,50 +32,53 @@ export function SidebarOnboarding({ user, onVisibleChange }: SidebarOnboardingPr
       return;
     }
 
-    Promise.all([
-      api.getRepos(),
-      api.getModelConfigs(),
-    ]).then(([reposRes, modelsRes]) => {
-      const hasRepos = Array.isArray(reposRes?.repos) && reposRes.repos.length > 0;
-      const enabledRepos = reposRes?.repos?.filter((r) => r.enabled) ?? [];
-      const hasEnabledRepo = enabledRepos.length > 0;
-      const hasProvider = Array.isArray(modelsRes?.providers) && modelsRes.providers.length > 0;
-      const hasModel = Array.isArray(modelsRes?.configs) && modelsRes.configs.length > 0;
-      const hasAI = hasProvider && hasModel;
+    Promise.all([api.getRepos(), api.getModelConfigs()])
+      .then(([reposRes, modelsRes]) => {
+        const hasRepos =
+          Array.isArray(reposRes?.repos) && reposRes.repos.length > 0;
+        const enabledRepos = reposRes?.repos?.filter((r) => r.enabled) ?? [];
+        const hasEnabledRepo = enabledRepos.length > 0;
+        const hasProvider =
+          Array.isArray(modelsRes?.providers) && modelsRes.providers.length > 0;
+        const hasModel =
+          Array.isArray(modelsRes?.configs) && modelsRes.configs.length > 0;
+        const hasAI = hasProvider && hasModel;
 
-      const loadedSteps: OnboardingStep[] = [
-        {
-          id: 'repos-install',
-          label: 'Install the GitHub App',
-          done: hasRepos,
-          onClick: () => window.open('/api/repos/install', '_blank'),
-        },
-        {
-          id: 'repos-enable',
-          label: 'Enable a repository',
-          done: hasEnabledRepo,
-          onClick: () => navigate('/repos'),
-        },
-        {
-          id: 'ai-models',
-          label: 'Configure AI models',
-          done: hasAI,
-          onClick: () => navigate('/settings'),
-        },
-      ];
+        const loadedSteps: OnboardingStep[] = [
+          {
+            id: "repos-install",
+            label: "Install the GitHub App",
+            done: hasRepos,
+            onClick: () => window.open("/api/repos/install", "_blank"),
+          },
+          {
+            id: "repos-enable",
+            label: "Enable a repository",
+            done: hasEnabledRepo,
+            onClick: () => navigate("/repos"),
+          },
+          {
+            id: "ai-models",
+            label: "Configure AI models",
+            done: hasAI,
+            onClick: () => navigate("/settings"),
+          },
+        ];
 
-      setSteps(loadedSteps);
-      onVisibleChange?.(true);
-    }).catch(() => {
-      setError(true);
-      onVisibleChange?.(false);
-    }).finally(() => {
-      setLoading(false);
-    });
+        setSteps(loadedSteps);
+        onVisibleChange?.(true);
+      })
+      .catch(() => {
+        setError(true);
+        onVisibleChange?.(false);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [user, onVisibleChange, navigate]);
 
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    localStorage.setItem(STORAGE_KEY, "true");
     setVisible(false);
     onVisibleChange?.(false);
   };

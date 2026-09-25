@@ -1,9 +1,9 @@
-import { createSharedApiDeps } from '@codraoss/api';
-import type { AppBindings } from './env';
-import { CloudflareSessionStore } from './sessions';
-import { createReviewRuntime } from './adapters';
-import { logger } from './core/logger';
-import { getOrFetchRawDiffForCompletedJob } from './core/review';
+import { createSharedApiDeps } from "@codraoss/api";
+import type { AppBindings } from "./env";
+import { CloudflareSessionStore } from "./sessions";
+import { createReviewRuntime } from "./adapters";
+import { logger } from "./core/logger";
+import { getOrFetchRawDiffForCompletedJob } from "./core/review";
 
 export function createApiRouterDeps(env: AppBindings, _ctx: ExecutionContext) {
   return createSharedApiDeps({
@@ -15,20 +15,31 @@ export function createApiRouterDeps(env: AppBindings, _ctx: ExecutionContext) {
     terminateJobWorkflow: async (job) => {
       if (job.workflowInstanceId) {
         try {
-          const instance = await env.REVIEW_WORKFLOW.get(job.workflowInstanceId);
+          const instance = await env.REVIEW_WORKFLOW.get(
+            job.workflowInstanceId,
+          );
           await instance.terminate();
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }
     },
     scheduleBestEffortJobMaintenance: (execCtx) => {
       try {
-        execCtx?.waitUntil(import('./core/job-recovery').then(m => m.runBestEffortJobMaintenance(env)));
-      } catch { /* ignore */ }
+        execCtx?.waitUntil(
+          import("./core/job-recovery").then((m) =>
+            m.runBestEffortJobMaintenance(env),
+          ),
+        );
+      } catch {
+        /* ignore */
+      }
     },
     createReviewRuntime: () => createReviewRuntime(env),
     getOrFetchRawDiffForCompletedJob,
     logger,
-    getSecret: async (key) => (env[key as keyof AppBindings] as string | undefined) ?? null,
+    getSecret: async (key) =>
+      (env[key as keyof AppBindings] as string | undefined) ?? null,
     aiBinding: env.AI,
     appUrl: env.APP_URL,
     botUsername: env.BOT_USERNAME,

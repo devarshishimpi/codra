@@ -1,8 +1,11 @@
-import type { DashboardSessionUser, SessionStore } from '@codraoss/core/ports';
-import type Redis from 'ioredis';
-import { customAlphabet } from 'nanoid';
+import type { DashboardSessionUser, SessionStore } from "@codraoss/core/ports";
+import type Redis from "ioredis";
+import { customAlphabet } from "nanoid";
 
-const nanoid = customAlphabet('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 21);
+const nanoid = customAlphabet(
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+  21,
+);
 
 export class RedisSessionStore implements SessionStore {
   constructor(private readonly redis: Redis) {}
@@ -13,7 +16,11 @@ export class RedisSessionStore implements SessionStore {
 
   async createSession(session: DashboardSessionUser): Promise<string> {
     const id = nanoid();
-    await this.redis.setex(this.sessionKey(id), 60 * 60 * 24 * 7, JSON.stringify(session)); // 7 days expiration
+    await this.redis.setex(
+      this.sessionKey(id),
+      60 * 60 * 24 * 7,
+      JSON.stringify(session),
+    ); // 7 days expiration
     return id;
   }
 

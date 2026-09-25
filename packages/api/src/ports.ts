@@ -1,17 +1,21 @@
-import type { DashboardSessionUser, SessionStore, ReviewRuntime } from '@codraoss/core/ports';
-import type { ApiAction } from '@codraoss/schema/api';
+import type {
+  DashboardSessionUser,
+  SessionStore,
+  ReviewRuntime,
+} from "@codraoss/core/ports";
+import type { ApiAction } from "@codraoss/schema/api";
 
 // Type stubs that represent what the API layer requires.
 // By importing types from @codraoss/db, we avoid a runtime dependency while retaining type safety.
-import type * as dbAccounts from '@codraoss/db/accounts';
-import type * as dbJobs from '@codraoss/db/jobs';
-import type * as dbFileReviews from '@codraoss/db/file-reviews';
-import type * as dbCommentFeedback from '@codraoss/db/comment-feedback';
-import type * as dbModelConfigs from '@codraoss/db/model-configs';
-import type * as dbRepoConfigs from '@codraoss/db/repo-configs';
-import type * as dbAppSettings from '@codraoss/db/app-settings';
-import type * as dbStats from '@codraoss/db/stats';
-import type * as dbWebhookDeliveries from '@codraoss/db/webhook-deliveries';
+import type * as dbAccounts from "@codraoss/db/accounts";
+import type * as dbJobs from "@codraoss/db/jobs";
+import type * as dbFileReviews from "@codraoss/db/file-reviews";
+import type * as dbCommentFeedback from "@codraoss/db/comment-feedback";
+import type * as dbModelConfigs from "@codraoss/db/model-configs";
+import type * as dbRepoConfigs from "@codraoss/db/repo-configs";
+import type * as dbAppSettings from "@codraoss/db/app-settings";
+import type * as dbStats from "@codraoss/db/stats";
+import type * as dbWebhookDeliveries from "@codraoss/db/webhook-deliveries";
 
 export interface RepositoriesPort {
   accounts: typeof dbAccounts;
@@ -25,11 +29,14 @@ export interface RepositoriesPort {
   webhookDeliveries: typeof dbWebhookDeliveries;
 }
 
-
 export interface ConfigPort {
   getGlobalConfig: () => Promise<any>;
   updateGlobalConfig: (config: any) => Promise<void>;
-  loadRepoConfig: (input: { installationId: string; owner: string; repo: string }) => Promise<any>;
+  loadRepoConfig: (input: {
+    installationId: string;
+    owner: string;
+    repo: string;
+  }) => Promise<any>;
   invalidateRepoConfigCache: (owner: string, repo: string) => Promise<void>;
 }
 
@@ -43,19 +50,52 @@ export interface ModelRunnerPort {
     degraded?: string;
     warning?: string;
   }>;
-  syncProviderModelCatalog: () => Promise<Array<{ providerId: string; providerName: string; error: string }>>;
-  createProviderWithSecret: (input: { name: string, apiFormat: string, baseUrl?: string | null, apiKey?: string, enabled: boolean }) => Promise<any>;
-  updateProviderWithSecret: (id: string, input: { name: string, apiFormat: string, baseUrl?: string | null, apiKey?: string, clearApiKey?: boolean, enabled: boolean }) => Promise<any>;
+  syncProviderModelCatalog: () => Promise<
+    Array<{ providerId: string; providerName: string; error: string }>
+  >;
+  createProviderWithSecret: (input: {
+    name: string;
+    apiFormat: string;
+    baseUrl?: string | null;
+    apiKey?: string;
+    enabled: boolean;
+  }) => Promise<any>;
+  updateProviderWithSecret: (
+    id: string,
+    input: {
+      name: string;
+      apiFormat: string;
+      baseUrl?: string | null;
+      apiKey?: string;
+      clearApiKey?: boolean;
+      enabled: boolean;
+    },
+  ) => Promise<any>;
 }
 
 export interface PlatformPort {
   scheduleBestEffortJobMaintenance: (executionContext?: any) => void;
   createReviewRuntime: () => ReviewRuntime;
   getUpdatesEmailPreference: (githubUserId: number) => Promise<any>;
-  syncUpdatesEmail: (githubUserId: number, email: string | null | undefined) => Promise<boolean>;
-  terminateJobWorkflow: (job: { id: string; workflowInstanceId?: string | null }) => Promise<void>;
-  enqueueReviewJob: (input: { jobId: string; deliveryId: string; phase: string; requestId?: string }) => Promise<void>;
-  getOrFetchRawDiffForCompletedJob: (runtime: ReviewRuntime, job: any, github: any) => Promise<string>;
+  syncUpdatesEmail: (
+    githubUserId: number,
+    email: string | null | undefined,
+  ) => Promise<boolean>;
+  terminateJobWorkflow: (job: {
+    id: string;
+    workflowInstanceId?: string | null;
+  }) => Promise<void>;
+  enqueueReviewJob: (input: {
+    jobId: string;
+    deliveryId: string;
+    phase: string;
+    requestId?: string;
+  }) => Promise<void>;
+  getOrFetchRawDiffForCompletedJob: (
+    runtime: ReviewRuntime,
+    job: any,
+    github: any,
+  ) => Promise<string>;
   logger: {
     info(message: string, data?: unknown): void;
     warn(message: string, data?: unknown): void;
@@ -67,8 +107,15 @@ export interface PlatformPort {
 export interface AuthProviderPort {
   createOAuthState: () => Promise<string>;
   consumeOAuthState: (state: string) => Promise<boolean>;
-  beginAuthorization: (callbackUrl: string, state: string) => Promise<{ url: string }>;
-  completeAuthorization: (code: string, state: string, expectedState: string) => Promise<{ identity: any }>;
+  beginAuthorization: (
+    callbackUrl: string,
+    state: string,
+  ) => Promise<{ url: string }>;
+  completeAuthorization: (
+    code: string,
+    state: string,
+    expectedState: string,
+  ) => Promise<{ identity: any }>;
 }
 
 export interface WebhookPort {
@@ -83,7 +130,8 @@ export interface AuthorizeContext {
   resource?: { type: string; id?: string };
 }
 
-export type AuthorizeResult = { allowed: true } | { allowed: false; reason?: string };
+export type AuthorizeResult =
+  { allowed: true } | { allowed: false; reason?: string };
 
 export interface AuthzPort {
   authorize(ctx: AuthorizeContext): Promise<AuthorizeResult>;

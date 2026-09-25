@@ -1,11 +1,14 @@
 // Adapts for `responseJsonSchema`, not `responseSchema` -- an OpenAPI subset that rejects the `additionalProperties` our grammars need.
 
 function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function stringArray(value: unknown): string[] | null {
-  return Array.isArray(value) && value.every((entry) => typeof entry === 'string') ? (value as string[]) : null;
+  return Array.isArray(value) &&
+    value.every((entry) => typeof entry === "string")
+    ? (value as string[])
+    : null;
 }
 
 // `{required: [...]}` and nothing else.
@@ -24,12 +27,14 @@ function adapt(node: unknown): unknown {
 
   // Collapse a union of bare-`required` branches onto its first branch: read as complete
   // alternatives, the sibling `properties` are silently dropped at a 200 and no 400 fires.
-  for (const keyword of ['anyOf', 'oneOf'] as const) {
+  for (const keyword of ["anyOf", "oneOf"] as const) {
     const union = out[keyword];
     const branches = Array.isArray(union) ? union.map(requiredOnly) : [];
     if (branches.length > 0 && branches.every((keys) => keys !== null)) {
       delete out[keyword];
-      out.required = [...new Set([...(stringArray(out.required) ?? []), ...branches[0]!])];
+      out.required = [
+        ...new Set([...(stringArray(out.required) ?? []), ...branches[0]!]),
+      ];
     }
   }
 
@@ -41,6 +46,8 @@ function adapt(node: unknown): unknown {
 }
 
 // Returns a copy: the caller's schema may be a shared module singleton.
-export function toGeminiResponseJsonSchema(schema: Record<string, unknown>): Record<string, unknown> {
+export function toGeminiResponseJsonSchema(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
   return adapt(schema) as Record<string, unknown>;
 }

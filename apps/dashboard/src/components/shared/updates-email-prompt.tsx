@@ -1,18 +1,19 @@
-import { Button, Input } from '@codraoss/ui';
-import { useEffect, useState, type FormEvent } from 'react';
-import { toast } from 'sonner';
-import { Check, Mail } from 'lucide-react';
-import { api } from '@client/lib/api';
-import type { UpdatesEmailResponse } from '@codraoss/schema/api';
+import { Button, Input } from "@codraoss/ui";
+import { useEffect, useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { Check, Mail } from "lucide-react";
+import { api } from "@client/lib/api";
+import type { UpdatesEmailResponse } from "@codraoss/schema/api";
 
 export function UpdatesEmailPrompt() {
   const [status, setStatus] = useState<UpdatesEmailResponse | null>(null);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    api.getUpdatesEmailStatus()
+    api
+      .getUpdatesEmailStatus()
       .then((response) => {
         if (!cancelled) setStatus(response);
       })
@@ -25,7 +26,7 @@ export function UpdatesEmailPrompt() {
     };
   }, []);
 
-  if (status?.status !== 'pending') return null;
+  if (status?.status !== "pending") return null;
 
   const subscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -34,12 +35,14 @@ export function UpdatesEmailPrompt() {
     try {
       const response = await api.subscribeUpdates(email);
       setStatus(response);
-      toast.success('You’re subscribed', {
-        description: 'We’ll only reach out for important releases and security notices.',
+      toast.success("You’re subscribed", {
+        description:
+          "We’ll only reach out for important releases and security notices.",
       });
     } catch (error) {
-      toast.error('Subscription failed', {
-        description: 'We couldn’t save your email. Please check it and try again.',
+      toast.error("Subscription failed", {
+        description:
+          "We couldn’t save your email. Please check it and try again.",
       });
     } finally {
       setSubmitting(false);
@@ -54,17 +57,22 @@ export function UpdatesEmailPrompt() {
             <Mail size={15} strokeWidth={2} />
           </span>
           <div className="min-w-0">
-            <h2 className="text-[13px] font-medium text-ui-default">Get important Codra updates</h2>
+            <h2 className="text-[13px] font-medium text-ui-default">
+              Get important Codra updates
+            </h2>
             <p className="mt-0.5 text-xs leading-relaxed text-ui-subtle">
               Get release notes, security fixes, and upgrade heads-ups by email.
             </p>
             <p className="mt-0.5 text-xs leading-relaxed text-ui-subtle">
-              Opt out anytime. No{'\u00A0'}spam.
+              Opt out anytime. No{"\u00A0"}spam.
             </p>
           </div>
         </div>
 
-        <form onSubmit={subscribe} className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center md:w-auto md:shrink-0 md:basis-[26rem]">
+        <form
+          onSubmit={subscribe}
+          className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center md:w-auto md:shrink-0 md:basis-[26rem]"
+        >
           <Input
             type="email"
             required

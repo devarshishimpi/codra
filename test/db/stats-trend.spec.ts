@@ -1,14 +1,14 @@
-import { expect, it } from 'vitest';
-import { getStats, trendBucketDays } from '@codraoss/db/stats';
-import { createTestEnv, dbDescribe } from '../helpers';
+import { expect, it } from "vitest";
+import { getStats, trendBucketDays } from "@codraoss/db/stats";
+import { createTestEnv, dbDescribe } from "../helpers";
 
 const env = createTestEnv();
 
-dbDescribe('stats trend bucketing', () => {
-  it('collapses long ranges into evenly spaced buckets with no gaps', async () => {
+dbDescribe("stats trend bucketing", () => {
+  it("collapses long ranges into evenly spaced buckets with no gaps", async () => {
     for (const days of [7, 14, 30, 90]) {
       const width = trendBucketDays(days);
-      const stats = await getStats(env, days, 'Asia/Kolkata');
+      const stats = await getStats(env, days, "Asia/Kolkata");
 
       expect(stats.trendBucketDays).toBe(width);
       // Range spans `days + 1` calendar days (the rolling window starts mid-day), split by width.

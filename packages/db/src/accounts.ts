@@ -1,6 +1,6 @@
-import type { DbEnv } from './env';
-import { queryRows } from './client';
-import { ACCOUNT_COLUMNS } from './constants';
+import type { DbEnv } from "./env";
+import { queryRows } from "./client";
+import { ACCOUNT_COLUMNS } from "./constants";
 
 // Durable account record (see db/migrations/004_account_settings.sql).
 export type AccountSettingsRecord = {
@@ -30,8 +30,6 @@ type Row = {
   timezone: string | null;
 };
 
-
-
 function mapRow(row: Row): AccountSettingsRecord {
   return {
     id: row.id,
@@ -59,7 +57,12 @@ export async function upsertAccountSettings(
        account_email   = EXCLUDED.account_email,
        updated_at      = now()
      RETURNING ${ACCOUNT_COLUMNS}`,
-    [input.githubUserId, input.githubUsername, input.accountName, input.accountEmail],
+    [
+      input.githubUserId,
+      input.githubUsername,
+      input.accountName,
+      input.accountEmail,
+    ],
   );
   return mapRow(rows[0]);
 }
@@ -98,7 +101,7 @@ export async function updateAccountSettings(
   const rows = await queryRows<Row>(
     env,
     `UPDATE account_settings
-     SET ${assignments.join(', ')}, updated_at = now()
+     SET ${assignments.join(", ")}, updated_at = now()
      WHERE github_user_id = $1
      RETURNING ${ACCOUNT_COLUMNS}`,
     params,

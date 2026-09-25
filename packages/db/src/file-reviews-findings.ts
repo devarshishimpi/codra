@@ -1,8 +1,8 @@
-import type { DbEnv } from './env';
-import type { SuppressedFinding } from '@codraoss/core/ports';
-import { queryRows } from './client';
+import type { DbEnv } from "./env";
+import type { SuppressedFinding } from "@codraoss/core/ports";
+import { queryRows } from "./client";
 
-export type { SuppressedFinding } from '@codraoss/core/ports';
+export type { SuppressedFinding } from "@codraoss/core/ports";
 
 // Findings already posted on an EARLIER commit with the anchored line unchanged, or rejected by a human anywhere in this repository.
 // `j.commit_sha <> me.commit_sha` is load-bearing: retries and mention-triggered re-reviews reuse the SAME head commit.
@@ -49,8 +49,18 @@ export async function getFindingLabelTarget(
   env: DbEnv,
   jobId: string,
   fingerprint: string,
-): Promise<{ repository_id: number; pr_number: number | null; anchor_hash: string | null; fingerprint_v2: string | null } | null> {
-  const rows = await queryRows<{ repository_id: number; pr_number: number | null; anchor_hash: string | null; fingerprint_v2: string | null }>(
+): Promise<{
+  repository_id: number;
+  pr_number: number | null;
+  anchor_hash: string | null;
+  fingerprint_v2: string | null;
+} | null> {
+  const rows = await queryRows<{
+    repository_id: number;
+    pr_number: number | null;
+    anchor_hash: string | null;
+    fingerprint_v2: string | null;
+  }>(
     env,
     `
       SELECT j.repository_id, j.pr_number, rc.anchor_hash, rc.fingerprint_v2
@@ -90,11 +100,16 @@ export async function markCommentsPosted(
 export async function markCommentDispositions(
   env: DbEnv,
   jobId: string,
-  byFingerprint: Map<string, { disposition: string | null; reason: string | null }>,
+  byFingerprint: Map<
+    string,
+    { disposition: string | null; reason: string | null }
+  >,
 ): Promise<void> {
   if (byFingerprint.size === 0) return;
   const fingerprints = [...byFingerprint.keys()];
-  const dispositions = fingerprints.map((fp) => byFingerprint.get(fp)!.disposition);
+  const dispositions = fingerprints.map(
+    (fp) => byFingerprint.get(fp)!.disposition,
+  );
   const reasons = fingerprints.map((fp) => byFingerprint.get(fp)!.reason);
 
   // A posted finding's disposition is never rewritten: fingerprint collisions on same-titled findings once overwrote a real P0's 'posted' with 'suppression'. `posted` is GitHub's fact; disposition is our inference, so the fact wins.

@@ -1,6 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
-export function usePolling(callback: () => Promise<void> | void, delay = 10_000, deps: any[] = []) {
+export function usePolling(
+  callback: () => Promise<void> | void,
+  delay = 10_000,
+  deps: any[] = [],
+) {
   const savedCallback = useRef(callback);
 
   useEffect(() => {
@@ -28,12 +32,12 @@ export function usePolling(callback: () => Promise<void> | void, delay = 10_000,
       }
     };
 
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === "visible") {
       start();
     }
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         savedCallback.current();
         start();
       } else {
@@ -41,11 +45,11 @@ export function usePolling(callback: () => Promise<void> | void, delay = 10_000,
       }
     };
 
-    document.addEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       stop();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
     };
     // The caller owns `deps`, so the array is a spread the lint rule can't statically verify; the
     // callback itself is read through a ref, so nothing here can go stale.

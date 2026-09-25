@@ -1,4 +1,4 @@
-import type { Clock, IdGenerator, KvStore } from '@codraoss/core/ports';
+import type { Clock, IdGenerator, KvStore } from "@codraoss/core/ports";
 
 export function makeKvStore(appKv: KvStore): KvStore {
   return appKv;

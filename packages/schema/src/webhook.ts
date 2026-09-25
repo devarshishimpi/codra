@@ -1,7 +1,7 @@
-export type WebhookEventName = 'change_request' | 'comment';
+export type WebhookEventName = "change_request" | "comment";
 
 export type ChangeRequestWebhookPayload = {
-  action: 'opened' | 'synchronize' | 'ready_for_review' | 'reopened' | 'closed';
+  action: "opened" | "synchronize" | "ready_for_review" | "reopened" | "closed";
   installationId: string;
   repository: { owner: string; name: string };
   changeRequest: {
@@ -16,11 +16,12 @@ export type ChangeRequestWebhookPayload = {
 };
 
 export type CommentWebhookPayload = {
-  action: 'created';
+  action: "created";
   installationId: string;
   repository: { owner: string; name: string };
   issue: { number: number; isChangeRequest: boolean };
   comment: { body: string };
 };
 
-export type WebhookPayload = ChangeRequestWebhookPayload | CommentWebhookPayload;
+export type WebhookPayload =
+  ChangeRequestWebhookPayload | CommentWebhookPayload;

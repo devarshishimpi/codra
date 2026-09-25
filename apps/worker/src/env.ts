@@ -1,10 +1,18 @@
-import type { ReviewJobMessage } from '@codraoss/schema';
-import type { DashboardSessionUser, SessionStore, IdentityProvider } from '@codraoss/core';
+import type { ReviewJobMessage } from "@codraoss/schema";
+import type {
+  DashboardSessionUser,
+  SessionStore,
+  IdentityProvider,
+} from "@codraoss/core";
 
 export type { DashboardSessionUser };
 
 export interface WorkersAiBinding {
-  run(model: string, input: Record<string, unknown>, options?: { signal?: AbortSignal }): Promise<any>;
+  run(
+    model: string,
+    input: Record<string, unknown>,
+    options?: { signal?: AbortSignal },
+  ): Promise<any>;
 }
 
 export interface QueueProducer<T> {

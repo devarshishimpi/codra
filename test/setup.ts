@@ -1,31 +1,37 @@
-import { vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
+import { vi } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 
 // Disable telemetry during unit/integration tests to prevent polluting production metrics
-process.env.TELEMETRY_DISABLED = 'true';
+process.env.TELEMETRY_DISABLED = "true";
 
-const TEST_ENV_FILES = ['.env.test', '.env.local', '.env', '.dev.vars', '.env.test.example'];
+const TEST_ENV_FILES = [
+  ".env.test",
+  ".env.local",
+  ".env",
+  ".dev.vars",
+  ".env.test.example",
+];
 const REQUIRED_TEST_ENV_KEYS = [
-  'GITHUB_APP_SLUG',
-  'GITHUB_APP_WEBHOOK_SECRET',
-  'GITHUB_CLIENT_ID',
-  'GITHUB_CLIENT_SECRET',
-  'AUTH_CALLBACK_URL',
-  'APP_URL',
-  'DASHBOARD_ALLOWED_USERS',
-  'BOT_USERNAME',
-  'TEST_DATABASE_URL',
+  "GITHUB_APP_SLUG",
+  "GITHUB_APP_WEBHOOK_SECRET",
+  "GITHUB_CLIENT_ID",
+  "GITHUB_CLIENT_SECRET",
+  "AUTH_CALLBACK_URL",
+  "APP_URL",
+  "DASHBOARD_ALLOWED_USERS",
+  "BOT_USERNAME",
+  "TEST_DATABASE_URL",
 ];
 
 // Global mocks for Cloudflare environment
-vi.stubGlobal('QUEUE', {
+vi.stubGlobal("QUEUE", {
   send: async (msg: any) => {
-    console.log('Mock Queue Send:', msg);
+    console.log("Mock Queue Send:", msg);
   },
 });
 
-vi.mock('cloudflare:workers', () => {
+vi.mock("cloudflare:workers", () => {
   return {
     WorkflowEntrypoint: class {},
   };
@@ -40,11 +46,11 @@ function parseEnvValue(value: string) {
     trimmed = trimmed.slice(1, -1);
   }
 
-  return trimmed.replace(/\\n/g, '\n');
+  return trimmed.replace(/\\n/g, "\n");
 }
 
 function usableEnvValue(value: string | undefined) {
-  return value && value !== 'undefined' && value !== 'null' ? value : null;
+  return value && value !== "undefined" && value !== "null" ? value : null;
 }
 
 function loadTestEnvFromFiles() {
@@ -52,12 +58,12 @@ function loadTestEnvFromFiles() {
 
   for (const file of TEST_ENV_FILES) {
     try {
-      const content = readFileSync(path.join(process.cwd(), file), 'utf8');
+      const content = readFileSync(path.join(process.cwd(), file), "utf8");
       for (const line of content.split(/\r?\n/)) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
+        if (!trimmed || trimmed.startsWith("#")) continue;
 
-        const separatorIndex = trimmed.indexOf('=');
+        const separatorIndex = trimmed.indexOf("=");
         if (separatorIndex === -1) continue;
 
         const key = trimmed.slice(0, separatorIndex).trim();
@@ -66,7 +72,7 @@ function loadTestEnvFromFiles() {
         }
       }
     } catch (error) {
-      if ((error as { code?: string }).code !== 'ENOENT') {
+      if ((error as { code?: string }).code !== "ENOENT") {
         throw error;
       }
     }
@@ -74,14 +80,18 @@ function loadTestEnvFromFiles() {
 }
 
 function assertRequiredTestEnv() {
-  const missing = REQUIRED_TEST_ENV_KEYS.filter((key) => !usableEnvValue(process.env[key]));
+  const missing = REQUIRED_TEST_ENV_KEYS.filter(
+    (key) => !usableEnvValue(process.env[key]),
+  );
   if (missing.length === 0) return;
 
-  throw new Error([
-    `Missing required test environment variables: ${missing.join(', ')}.`,
-    'Set these values in .env.test, .env.local, .env, .dev.vars, .env.test.example, or CI.',
-    'TEST_DATABASE_URL must point to a disposable Postgres database so the full test suite can run.',
-  ].join('\n'));
+  throw new Error(
+    [
+      `Missing required test environment variables: ${missing.join(", ")}.`,
+      "Set these values in .env.test, .env.local, .env, .dev.vars, .env.test.example, or CI.",
+      "TEST_DATABASE_URL must point to a disposable Postgres database so the full test suite can run.",
+    ].join("\n"),
+  );
 }
 
 loadTestEnvFromFiles();
@@ -90,11 +100,11 @@ assertRequiredTestEnv();
 // Database-backed review flow tests can be slow on local Postgres and CI.
 vi.setConfig({ testTimeout: 300000 });
 
-if (typeof window !== 'undefined' && !window.matchMedia) {
-  Object.defineProperty(window, 'matchMedia', {
+if (typeof window !== "undefined" && !window.matchMedia) {
+  Object.defineProperty(window, "matchMedia", {
     writable: true,
     value: (query: string) => ({
-      matches: query.includes('dark'),
+      matches: query.includes("dark"),
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -106,7 +116,7 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   });
 }
 
-if (typeof window !== 'undefined' && !window.ResizeObserver) {
+if (typeof window !== "undefined" && !window.ResizeObserver) {
   window.ResizeObserver = class ResizeObserver {
     observe() {}
     unobserve() {}
@@ -116,14 +126,24 @@ if (typeof window !== 'undefined' && !window.ResizeObserver) {
 
 const originalConsoleWarn = console.warn;
 console.warn = (...args: any[]) => {
-  if (typeof args[0] === 'string' && args[0].includes('The width(-1) and height(-1) of chart should be greater than 0')) {
+  if (
+    typeof args[0] === "string" &&
+    args[0].includes(
+      "The width(-1) and height(-1) of chart should be greater than 0",
+    )
+  ) {
     return;
   }
   originalConsoleWarn(...args);
 };
 
 const isJsonLog = (args: any[]) => {
-  if (typeof args[0] === 'string' && args[0].includes('"timestamp"') && args[0].includes('"level"')) return true;
+  if (
+    typeof args[0] === "string" &&
+    args[0].includes('"timestamp"') &&
+    args[0].includes('"level"')
+  )
+    return true;
   return false;
 };
 

@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { cn } from '../lib/utils';
+import { useMemo } from "react";
+import { cn } from "../lib/utils";
 
 interface BarSparklineProps {
   data: number[];
@@ -30,12 +30,20 @@ function bucketize(data: number[], bars: number): number[] {
 
 const BASELINE_PCT = 32;
 
-export function BarSparkline({ data, color, bars = 8, className }: BarSparklineProps) {
+export function BarSparkline({
+  data,
+  color,
+  bars = 8,
+  className,
+}: BarSparklineProps) {
   const buckets = useMemo(() => bucketize(data, bars), [data, bars]);
   const max = Math.max(...buckets, 1);
 
   return (
-    <div className={cn('flex h-12 items-end justify-end gap-[3px]', className)} aria-hidden="true">
+    <div
+      className={cn("flex h-12 items-end justify-end gap-[3px]", className)}
+      aria-hidden="true"
+    >
       {buckets.map((value, i) => (
         <div
           key={i}

@@ -1,30 +1,43 @@
-import type { GitProviderFactory, ModelErrorClassifier, ReviewFormatter, ReviewGitProvider, ReviewModel } from '@codraoss/core/ports';
-import type { TokenTracker } from '@codraoss/core/token-tracker';
-import type { AppBindings } from '../env';
-import { GitHubService } from '@codraoss/provider-github';
-import { isRetryableModelError, ModelRunner, nextChainIndexOf } from '@codraoss/models';
-import { FormatterService } from '@codraoss/core/formatter';
-import { getResolvedModelConfig } from '@codraoss/db/model-configs';
+import type {
+  GitProviderFactory,
+  ModelErrorClassifier,
+  ReviewFormatter,
+  ReviewGitProvider,
+  ReviewModel,
+} from "@codraoss/core/ports";
+import type { TokenTracker } from "@codraoss/core/token-tracker";
+import type { AppBindings } from "../env";
+import { GitHubService } from "@codraoss/provider-github";
+import {
+  isRetryableModelError,
+  ModelRunner,
+  nextChainIndexOf,
+} from "@codraoss/models";
+import { FormatterService } from "@codraoss/core/formatter";
+import { getResolvedModelConfig } from "@codraoss/db/model-configs";
 
 // The only place the four job-scoped collaborators are constructed. Every specifier above is the
 // barrel form on purpose: nine specs vi.mock '@server/services/github' and '@codraoss/models',
 // and reaching for a sibling here would bypass those mocks while the tests kept passing.
 
 export function makeGitHubFactory(env: AppBindings) {
-  return (installationId: string, tracker: TokenTracker): ReviewGitProvider => new GitHubService(env, installationId, tracker);
+  return (installationId: string, tracker: TokenTracker): ReviewGitProvider =>
+    new GitHubService(env, installationId, tracker);
 }
 
 export function makeModelFactory(env: AppBindings) {
-  return (jobId: string, tracker: TokenTracker): ReviewModel => new ModelRunner({
-    kv: env.APP_KV as any, // APP_KV matches KvStore interface
-    secretStore: {
-      getSecret: async (key) => env[key as keyof AppBindings] as string || null,
-    },
-    getConfig: (modelId) => getResolvedModelConfig(env, modelId),
-    aiBinding: env.AI,
-    tracker,
-    jobId,
-  });
+  return (jobId: string, tracker: TokenTracker): ReviewModel =>
+    new ModelRunner({
+      kv: env.APP_KV as any, // APP_KV matches KvStore interface
+      secretStore: {
+        getSecret: async (key) =>
+          (env[key as keyof AppBindings] as string) || null,
+      },
+      getConfig: (modelId) => getResolvedModelConfig(env, modelId),
+      aiBinding: env.AI,
+      tracker,
+      jobId,
+    });
 }
 
 export function makeFormatterFactory(env: AppBindings) {

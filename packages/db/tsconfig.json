@@ -10,8 +10,5 @@
     "emitDeclarationOnly": false,
     "noEmit": true
   },
-  "include": [
-    "src/**/*",
-    "test/**/*"
-  ]
+  "include": ["src/**/*", "test/**/*"]
 }

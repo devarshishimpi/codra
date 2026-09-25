@@ -1,8 +1,14 @@
-import type { DbEnv } from './env';
+import type { DbEnv } from "./env";
 
-import { parseJsonColumn, queryRows } from './client';
-import { defaultRepoConfig, normalizeRepoConfig, repoConfigRecordSchema, repoConfigSchema, type RepoConfig } from '@codraoss/schema';
-import { getOrCreateRepository } from './repositories';
+import { parseJsonColumn, queryRows } from "./client";
+import {
+  defaultRepoConfig,
+  normalizeRepoConfig,
+  repoConfigRecordSchema,
+  repoConfigSchema,
+  type RepoConfig,
+} from "@codraoss/schema";
+import { getOrCreateRepository } from "./repositories";
 
 type RepoConfigRow = {
   installation_id: string;
@@ -15,11 +21,13 @@ type RepoConfigRow = {
   size_overrides: any | string | null;
   enabled: boolean;
   last_job_created_at: string | null;
-  last_job_verdict: 'approve' | 'comment' | null;
+  last_job_verdict: "approve" | "comment" | null;
 };
 
 function mapRepo(row: RepoConfigRow) {
-  const parsedJson = normalizeRepoConfig(repoConfigSchema.parse(parseJsonColumn(row.parsed_json, defaultRepoConfig)));
+  const parsedJson = normalizeRepoConfig(
+    repoConfigSchema.parse(parseJsonColumn(row.parsed_json, defaultRepoConfig)),
+  );
   return repoConfigRecordSchema.parse({
     installationId: row.installation_id,
     owner: row.owner,
@@ -73,7 +81,7 @@ export async function upsertRepoConfig(
       model?.main ?? null,
       model?.fallbacks ? JSON.stringify(model.fallbacks) : null,
       model?.size_overrides ? JSON.stringify(model.size_overrides) : null,
-      input.enabled ?? null
+      input.enabled ?? null,
     ],
   );
 }
@@ -107,7 +115,7 @@ export async function syncRepoConfig(
 export async function deleteStaleRepoConfigs(
   env: DbEnv,
   installationId: string,
-  activeRepoFullNames: string[]
+  activeRepoFullNames: string[],
 ) {
   if (activeRepoFullNames.length === 0) {
     await queryRows(
@@ -118,7 +126,7 @@ export async function deleteStaleRepoConfigs(
           SELECT id FROM repositories WHERE installation_id = $1
         )
       `,
-      [installationId]
+      [installationId],
     );
     return;
   }
@@ -133,7 +141,7 @@ export async function deleteStaleRepoConfigs(
           AND owner || '/' || repo != ALL($2::text[])
       )
     `,
-    [installationId, activeRepoFullNames]
+    [installationId, activeRepoFullNames],
   );
 }
 
@@ -197,7 +205,11 @@ export async function listRepoConfigs(env: DbEnv) {
   return rows.map(mapRepo);
 }
 
-export async function getRepoConfigRecord(env: DbEnv, owner: string, repo: string) {
+export async function getRepoConfigRecord(
+  env: DbEnv,
+  owner: string,
+  repo: string,
+) {
   const [row] = await queryRows<RepoConfigRow>(
     env,
     `

@@ -1,44 +1,54 @@
-import { isSupportedTimeZone } from '@codraoss/schema/timezone';
-import { Hono } from 'hono';
-import { z } from 'zod';
-import { jsonError } from '../../http';
-import type { ApiEnv } from '../../ports';
-import { requirePermission } from '../../middleware/authorize';
+import { isSupportedTimeZone } from "@codraoss/schema/timezone";
+import { Hono } from "hono";
+import { z } from "zod";
+import { jsonError } from "../../http";
+import type { ApiEnv } from "../../ports";
+import { requirePermission } from "../../middleware/authorize";
 
 const emailSchema = z.strictObject({
   email: z.string().trim().email().max(254),
 });
 
 // Fields are independently optional (at least one required); timezone null means "follow the browser", else must be an Intl-known zone.
-const accountUpdateSchema = z.strictObject({
-  name: z.string().trim().min(1).max(120).optional(),
-  timezone: z.string().trim().min(1).max(64).refine(isSupportedTimeZone, {
-    message: 'Unknown time zone.',
-  }).nullable().optional(),
-}).refine(
-  (body) => body.name !== undefined || body.timezone !== undefined,
-  { message: 'Nothing to update.' },
-);
+const accountUpdateSchema = z
+  .strictObject({
+    name: z.string().trim().min(1).max(120).optional(),
+    timezone: z
+      .string()
+      .trim()
+      .min(1)
+      .max(64)
+      .refine(isSupportedTimeZone, {
+        message: "Unknown time zone.",
+      })
+      .nullable()
+      .optional(),
+  })
+  .refine((body) => body.name !== undefined || body.timezone !== undefined, {
+    message: "Nothing to update.",
+  });
 
 export function createAuthApiRouter() {
   const app = new Hono<ApiEnv>();
 
-  app.get('/session', async (c) => {
-    const sessionUser = c.get('sessionUser');
+  app.get("/session", async (c) => {
+    const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Omitted when nothing is restricted, which the dashboard reads as "every action allowed".
     const permissions = await c.env.deps.authz?.listPermissions?.(sessionUser);
 
-    return c.json(permissions ? { user: sessionUser, permissions } : { user: sessionUser });
+    return c.json(
+      permissions ? { user: sessionUser, permissions } : { user: sessionUser },
+    );
   });
 
-  app.get('/account', async (c) => {
-    const sessionUser = c.get('sessionUser');
+  app.get("/account", async (c) => {
+    const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const accounts = c.env.deps.repositories.accounts;
@@ -58,12 +68,12 @@ export function createAuthApiRouter() {
     return c.json({ account });
   });
 
-  app.patch('/account', async (c) => {
-    const denied = await requirePermission(c, 'account.write');
+  app.patch("/account", async (c) => {
+    const denied = await requirePermission(c, "account.write");
     if (denied) return denied;
-    const sessionUser = c.get('sessionUser');
+    const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await c.req.json().catch(() => null);
@@ -71,7 +81,9 @@ export function createAuthApiRouter() {
     if (!parsed.success) {
       const issue = parsed.error.issues[0]?.message;
       return jsonError(
-        issue && issue !== 'Invalid input' ? issue : 'Enter a name (1-120 characters).',
+        issue && issue !== "Invalid input"
+          ? issue
+          : "Enter a name (1-120 characters).",
         400,
       );
     }
@@ -80,7 +92,10 @@ export function createAuthApiRouter() {
     const githubUserId = Number(sessionUser.providerUserId);
 
     // Ensure a row exists first (self-heal for pre-existing sessions), then update.
-    const existing = await accounts.getAccountSettings(c.env as any, githubUserId);
+    const existing = await accounts.getAccountSettings(
+      c.env as any,
+      githubUserId,
+    );
     if (!existing) {
       await accounts.upsertAccountSettings(c.env as any, {
         githubUserId,
@@ -90,46 +105,52 @@ export function createAuthApiRouter() {
       });
     }
 
-    const account = await accounts.updateAccountSettings(c.env as any, githubUserId, {
-      accountName: parsed.data.name,
-      timezone: parsed.data.timezone,
-    });
+    const account = await accounts.updateAccountSettings(
+      c.env as any,
+      githubUserId,
+      {
+        accountName: parsed.data.name,
+        timezone: parsed.data.timezone,
+      },
+    );
     return c.json({ account });
   });
 
-  app.get('/updates-email', async (c) => {
-    const sessionUser = c.get('sessionUser');
+  app.get("/updates-email", async (c) => {
+    const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const githubUserId = Number(sessionUser.providerUserId);
-    const preference = await c.env.deps.platform.getUpdatesEmailPreference(githubUserId);
+    const preference =
+      await c.env.deps.platform.getUpdatesEmailPreference(githubUserId);
     return c.json({
-      status: preference?.status ?? 'pending',
+      status: preference?.status ?? "pending",
       email: preference?.email ?? null,
       updatedAt: preference?.updatedAt ?? null,
     });
   });
 
-  app.post('/updates-email', async (c) => {
-    const denied = await requirePermission(c, 'account.updatesEmail.write');
+  app.post("/updates-email", async (c) => {
+    const denied = await requirePermission(c, "account.updatesEmail.write");
     if (denied) return denied;
-    const sessionUser = c.get('sessionUser');
+    const sessionUser = c.get("sessionUser");
     if (!sessionUser) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await c.req.json().catch(() => null);
     const parsed = emailSchema.safeParse(body);
     if (!parsed.success) {
-      return jsonError('Enter a valid email address.', 400);
+      return jsonError("Enter a valid email address.", 400);
     }
 
     const platform = c.env.deps.platform;
     const githubUserId = Number(sessionUser.providerUserId);
 
-    const existingPreference = await platform.getUpdatesEmailPreference(githubUserId);
+    const existingPreference =
+      await platform.getUpdatesEmailPreference(githubUserId);
     if (existingPreference) {
       return c.json({
         status: existingPreference.status,
@@ -138,15 +159,18 @@ export function createAuthApiRouter() {
       });
     }
 
-    const synced = await platform.syncUpdatesEmail(githubUserId, parsed.data.email);
+    const synced = await platform.syncUpdatesEmail(
+      githubUserId,
+      parsed.data.email,
+    );
     if (!synced) {
-      return jsonError('Could not save updates email right now.', 502);
+      return jsonError("Could not save updates email right now.", 502);
     }
 
     const preference = await platform.getUpdatesEmailPreference(githubUserId);
 
     return c.json({
-      status: preference?.status ?? 'pending',
+      status: preference?.status ?? "pending",
       email: preference?.email ?? null,
       updatedAt: preference?.updatedAt ?? null,
     });

@@ -1,10 +1,13 @@
-import { parseFileReviewResponse, dedupeFindings } from '@codraoss/core/model-output';
-import type { FileDiff } from '@codraoss/core/diff';
-import type { ParsedReviewComment } from '@codraoss/schema';
+import {
+  parseFileReviewResponse,
+  dedupeFindings,
+} from "@codraoss/core/model-output";
+import type { FileDiff } from "@codraoss/core/diff";
+import type { ParsedReviewComment } from "@codraoss/schema";
 
-describe('Model Output Parsing Deep Dive', () => {
+describe("Model Output Parsing Deep Dive", () => {
   const mockFile: FileDiff = {
-    path: 'test.ts',
+    path: "test.ts",
     previousPath: null,
     isNew: false,
     isDeleted: false,
@@ -12,17 +15,17 @@ describe('Model Output Parsing Deep Dive', () => {
     lineCount: 10,
     hunks: [
       {
-        header: '@@ -1,5 +1,5 @@',
+        header: "@@ -1,5 +1,5 @@",
         lines: [
-          { kind: 'context', content: 'older', newLineNumber: 1, position: 1 },
-          { kind: 'add', content: 'new line', newLineNumber: 2, position: 2 },
-          { kind: 'context', content: 'older', newLineNumber: 3, position: 3 },
+          { kind: "context", content: "older", newLineNumber: 1, position: 1 },
+          { kind: "add", content: "new line", newLineNumber: 2, position: 2 },
+          { kind: "context", content: "older", newLineNumber: 3, position: 3 },
         ],
       },
     ],
   };
 
-  it('extracts JSON from markdown code blocks with surrounding text', () => {
+  it("extracts JSON from markdown code blocks with surrounding text", () => {
     const rawOutput = `
 Here is my review:
 \`\`\`json
@@ -42,10 +45,10 @@ Hope this helps!`;
 
     const result = parseFileReviewResponse(rawOutput, mockFile);
     expect(result.comments).toHaveLength(1);
-    expect(result.verdict).toBe('comment');
+    expect(result.verdict).toBe("comment");
   });
 
-  it('salvages malformed JSON with unescaped newlines using jsonrepair', () => {
+  it("salvages malformed JSON with unescaped newlines using jsonrepair", () => {
     const rawOutput = `
 {
   "findings": [{
@@ -63,10 +66,10 @@ unescaped newlines",
 
     const result = parseFileReviewResponse(rawOutput, mockFile);
     // our cleanText flattens newlines in titles to spaces
-    expect(result.comments[0].title).toBe('Multiline Issue');
+    expect(result.comments[0].title).toBe("Multiline Issue");
   });
 
-  it('removes conversational tags and emojis from titles and bodies', () => {
+  it("removes conversational tags and emojis from titles and bodies", () => {
     const rawOutput = `
 {
   "findings": [{
@@ -81,11 +84,11 @@ unescaped newlines",
 }`;
 
     const result = parseFileReviewResponse(rawOutput, mockFile);
-    expect(result.comments[0].title).toBe('Optimization needed');
+    expect(result.comments[0].title).toBe("Optimization needed");
   });
 
   // The matched quote is the anchor, so a wrong reported line must not move the comment.
-  it('anchors on the quoted line and ignores a wrong reported line number', () => {
+  it("anchors on the quoted line and ignores a wrong reported line number", () => {
     const rawOutput = `
 {
   "findings": [{
@@ -103,7 +106,7 @@ unescaped newlines",
     expect(result.comments[0].line).toBe(2);
   });
 
-  it('drops a finding whose line is far outside the diff instead of relocating it', () => {
+  it("drops a finding whose line is far outside the diff instead of relocating it", () => {
     const rawOutput = `
 {
   "findings": [{
@@ -119,40 +122,40 @@ unescaped newlines",
     // A line this far out means the model was reasoning about code that isn't here.
     const result = parseFileReviewResponse(rawOutput, mockFile);
     expect(result.comments).toHaveLength(0);
-    expect(result.fileSummary).toContain('Additional Comments (Off-diff)');
+    expect(result.fileSummary).toContain("Additional Comments (Off-diff)");
   });
 
   // `z.string().max(100)` on `title` rejects the whole file's review, not the one finding.
-  it('clips an over-long or non-string title instead of failing the whole file', () => {
+  it("clips an over-long or non-string title instead of failing the whole file", () => {
     const rawOutput = JSON.stringify({
       findings: [
         {
-          evidence: 'new line',
-          code_location: { absolute_file_path: 'test.ts', line: 2 },
-          claim_type: 'other',
-          title: 'T'.repeat(150),
-          body: 'Long title finding.',
+          evidence: "new line",
+          code_location: { absolute_file_path: "test.ts", line: 2 },
+          claim_type: "other",
+          title: "T".repeat(150),
+          body: "Long title finding.",
           priority: 1,
         },
         {
-          evidence: 'new line',
-          code_location: { absolute_file_path: 'test.ts', line: 2 },
-          claim_type: 'other',
+          evidence: "new line",
+          code_location: { absolute_file_path: "test.ts", line: 2 },
+          claim_type: "other",
           title: 42,
-          body: 'Non-string title finding.',
+          body: "Non-string title finding.",
           priority: 1,
         },
         {
-          evidence: 'new line',
-          code_location: { absolute_file_path: 'test.ts', line: 2 },
-          claim_type: 'other',
-          title: 'Healthy sibling',
-          body: 'This one is well formed.',
+          evidence: "new line",
+          code_location: { absolute_file_path: "test.ts", line: 2 },
+          claim_type: "other",
+          title: "Healthy sibling",
+          body: "This one is well formed.",
           priority: 1,
         },
       ],
-      overall_correctness: 'patch is correct',
-      overall_explanation: 'ok',
+      overall_correctness: "patch is correct",
+      overall_explanation: "ok",
       overall_confidence_score: 0.9,
     });
 
@@ -163,11 +166,11 @@ unescaped newlines",
     for (const comment of result.comments) {
       expect(comment.title.length).toBeLessThanOrEqual(100);
     }
-    expect(result.comments[1].title).toBe('42');
-    expect(result.comments[2].title).toBe('Healthy sibling');
+    expect(result.comments[1].title).toBe("42");
+    expect(result.comments[2].title).toBe("Healthy sibling");
   });
 
-  it('drops placeholder schema findings instead of failing validation', () => {
+  it("drops placeholder schema findings instead of failing validation", () => {
     const rawOutput = `
 {
   "findings": [{
@@ -187,45 +190,43 @@ unescaped newlines",
 
     const result = parseFileReviewResponse(rawOutput, mockFile);
     expect(result.comments).toHaveLength(0);
-    expect(result.verdict).toBe('approve');
+    expect(result.verdict).toBe("approve");
   });
-
 });
 
-describe('dedupeFindings', () => {
+describe("dedupeFindings", () => {
   const make = (over: Partial<ParsedReviewComment>): ParsedReviewComment => ({
-    path: 'a.ts',
+    path: "a.ts",
     line: 1,
     position: 1,
-    severity: 'P2',
-    category: 'quality',
-    title: 'Use of any',
-    body: 'body',
+    severity: "P2",
+    category: "quality",
+    title: "Use of any",
+    body: "body",
     ...over,
   });
 
   // This used to assert the opposite, and the opposite was a bug: the key was the normalized title
   // alone, so "Use of any" in three files became one comment and two real findings were dropped.
   // Dedupe is a union over locations, not a merge of everything that happens to share a name.
-  it('keeps same-titled findings that are in different files', () => {
+  it("keeps same-titled findings that are in different files", () => {
     const result = dedupeFindings([
-      make({ path: 'a.ts', severity: 'P3', confidenceScore: 0.4 }),
-      make({ path: 'b.ts', severity: 'P1', confidenceScore: 0.5 }),
-      make({ path: 'c.ts', severity: 'P3', confidenceScore: 0.9 }),
+      make({ path: "a.ts", severity: "P3", confidenceScore: 0.4 }),
+      make({ path: "b.ts", severity: "P1", confidenceScore: 0.5 }),
+      make({ path: "c.ts", severity: "P3", confidenceScore: 0.9 }),
     ]);
 
-    expect(result.map((c) => c.path)).toEqual(['a.ts', 'b.ts', 'c.ts']);
+    expect(result.map((c) => c.path)).toEqual(["a.ts", "b.ts", "c.ts"]);
   });
 
-  it('collapses the same finding at the same place, keeping the strongest', () => {
+  it("collapses the same finding at the same place, keeping the strongest", () => {
     const result = dedupeFindings([
-      make({ severity: 'P3', confidenceScore: 0.4, anchorHash: 'aaaa' }),
-      make({ severity: 'P1', confidenceScore: 0.5, anchorHash: 'aaaa' }),
-      make({ severity: 'P3', confidenceScore: 0.9, anchorHash: 'aaaa' }),
+      make({ severity: "P3", confidenceScore: 0.4, anchorHash: "aaaa" }),
+      make({ severity: "P1", confidenceScore: 0.5, anchorHash: "aaaa" }),
+      make({ severity: "P3", confidenceScore: 0.9, anchorHash: "aaaa" }),
     ]);
 
     expect(result).toHaveLength(1);
-    expect(result[0].severity).toBe('P1');
+    expect(result[0].severity).toBe("P1");
   });
-
 });

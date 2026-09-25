@@ -1,32 +1,42 @@
-import postgres from 'postgres';
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { readDatabaseUrlFromEnvFiles } from './migrate-env.mjs';
-import { splitSqlStatements } from './migrate-sql-split.mjs';
+import postgres from "postgres";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { readDatabaseUrlFromEnvFiles } from "./migrate-env.mjs";
+import { splitSqlStatements } from "./migrate-sql-split.mjs";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const migrationsDir = path.join(rootDir, 'migrations');
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const migrationsDir = path.join(rootDir, "migrations");
 const migrationLockId = 93741624;
 
 // An extra migrations directory can be layered on top of the core set: resolved against cwd so it works from anywhere, and tracked with an `extra:` prefix so its 002_x.sql cannot collide with a core 002_y.sql.
 const extraDirInput =
-  process.argv.find((arg) => arg.startsWith('--extra-dir='))?.slice('--extra-dir='.length)
-  ?? process.env.CODRA_EXTRA_MIGRATIONS_DIR
-  ?? null;
-const extraMigrationsDir = extraDirInput ? path.resolve(process.cwd(), extraDirInput) : null;
-const extraTrackingPrefix = 'extra:';
-const kimiK25Model = '@cf/moonshotai/kimi-k2.5';
-const kimiK26Model = '@cf/moonshotai/kimi-k2.6';
+  process.argv
+    .find((arg) => arg.startsWith("--extra-dir="))
+    ?.slice("--extra-dir=".length) ??
+  process.env.CODRA_EXTRA_MIGRATIONS_DIR ??
+  null;
+const extraMigrationsDir = extraDirInput
+  ? path.resolve(process.cwd(), extraDirInput)
+  : null;
+const extraTrackingPrefix = "extra:";
+const kimiK25Model = "@cf/moonshotai/kimi-k2.5";
+const kimiK26Model = "@cf/moonshotai/kimi-k2.6";
 
-const databaseUrl = process.env.DATABASE_URL ?? await readDatabaseUrlFromEnvFiles();
+const databaseUrl =
+  process.env.DATABASE_URL ?? (await readDatabaseUrlFromEnvFiles());
 
 if (!databaseUrl) {
-  console.error([
-    'DATABASE_URL is required to run database migrations.',
-    'Cloudflare Worker secrets are not readable by this local Node script.',
-    'Set DATABASE_URL in your shell/CI environment or add it to .dev.vars, .env.local, or .env.',
-  ].join('\n'));
+  console.error(
+    [
+      "DATABASE_URL is required to run database migrations.",
+      "Cloudflare Worker secrets are not readable by this local Node script.",
+      "Set DATABASE_URL in your shell/CI environment or add it to .dev.vars, .env.local, or .env.",
+    ].join("\n"),
+  );
   process.exit(1);
 }
 
@@ -42,17 +52,21 @@ function query(sqlText, params = []) {
 }
 
 async function tableExists(tableName) {
-  const rows = await query('SELECT to_regclass($1) AS name', [`public.${tableName}`]);
+  const rows = await query("SELECT to_regclass($1) AS name", [
+    `public.${tableName}`,
+  ]);
   return rows[0]?.name !== null;
 }
 
 async function appliedMigrations() {
-  const rows = await query('SELECT name FROM schema_migrations ORDER BY name ASC');
+  const rows = await query(
+    "SELECT name FROM schema_migrations ORDER BY name ASC",
+  );
   return new Set(rows.map((row) => row.name));
 }
 
 async function ensureMigrationTable() {
-  if (await tableExists('schema_migrations')) {
+  if (await tableExists("schema_migrations")) {
     return;
   }
 
@@ -66,13 +80,15 @@ async function ensureMigrationTable() {
 
 async function runMigration(dir, fileName, trackedName) {
   const filePath = path.join(dir, fileName);
-  const migrationSql = await readFile(filePath, 'utf8');
+  const migrationSql = await readFile(filePath, "utf8");
 
   console.log(`Applying ${trackedName}...`);
   for (const statement of splitSqlStatements(migrationSql)) {
     await query(statement);
   }
-  await query('INSERT INTO schema_migrations (name) VALUES ($1)', [trackedName]);
+  await query("INSERT INTO schema_migrations (name) VALUES ($1)", [
+    trackedName,
+  ]);
   console.log(`Applied ${trackedName}.`);
 }
 
@@ -83,7 +99,7 @@ async function listMigrationFiles(dir) {
 }
 
 async function ensureModelCatalog() {
-  if (!(await tableExists('model_configs'))) {
+  if (!(await tableExists("model_configs"))) {
     return;
   }
 
@@ -129,8 +145,12 @@ async function ensureModelCatalog() {
       updated_at = now()
   `);
 
-  await query('ALTER TABLE model_configs ADD COLUMN IF NOT EXISTS provider_id UUID');
-  await query('ALTER TABLE model_configs ADD COLUMN IF NOT EXISTS model_name TEXT');
+  await query(
+    "ALTER TABLE model_configs ADD COLUMN IF NOT EXISTS provider_id UUID",
+  );
+  await query(
+    "ALTER TABLE model_configs ADD COLUMN IF NOT EXISTS model_name TEXT",
+  );
 
   await query(
     `
@@ -165,7 +185,9 @@ async function ensureModelCatalog() {
     `,
   );
 
-  await query('UPDATE model_configs SET model_name = model_id WHERE model_name IS NULL');
+  await query(
+    "UPDATE model_configs SET model_name = model_id WHERE model_name IS NULL",
+  );
 
   await query(
     `
@@ -196,10 +218,12 @@ async function ensureModelCatalog() {
     `,
   );
 
-  await query('DELETE FROM model_configs WHERE model_id = $1', [kimiK25Model]);
+  await query("DELETE FROM model_configs WHERE model_id = $1", [kimiK25Model]);
 
-  await query('ALTER TABLE model_configs ALTER COLUMN provider_id SET NOT NULL');
-  await query('ALTER TABLE model_configs ALTER COLUMN model_name SET NOT NULL');
+  await query(
+    "ALTER TABLE model_configs ALTER COLUMN provider_id SET NOT NULL",
+  );
+  await query("ALTER TABLE model_configs ALTER COLUMN model_name SET NOT NULL");
   await query(`
     DO $$
     BEGIN
@@ -212,17 +236,19 @@ async function ensureModelCatalog() {
       END IF;
     END $$
   `);
-  await query('CREATE INDEX IF NOT EXISTS model_configs_provider_id_idx ON model_configs (provider_id)');
+  await query(
+    "CREATE INDEX IF NOT EXISTS model_configs_provider_id_idx ON model_configs (provider_id)",
+  );
 }
 
 async function normalizeRepoConfigs() {
-  if (!(await tableExists('repo_configs'))) {
+  if (!(await tableExists("repo_configs"))) {
     return;
   }
 
-  console.log('Normalizing repo configs...');
-  const functionName = 'codra_replace_deprecated_model';
-  
+  console.log("Normalizing repo configs...");
+  const functionName = "codra_replace_deprecated_model";
+
   console.log(`Creating function: pg_temp.${functionName}`);
   await query(`
     CREATE FUNCTION pg_temp.${functionName}(input jsonb, old_value text, new_value text)
@@ -251,7 +277,7 @@ async function normalizeRepoConfigs() {
     $$
   `);
 
-  console.log('Updating repo configs...');
+  console.log("Updating repo configs...");
   await query(
     `
       UPDATE repo_configs
@@ -279,19 +305,21 @@ async function normalizeRepoConfigs() {
   );
 
   console.log(`Dropping function: pg_temp.${functionName}`);
-  await query(`DROP FUNCTION IF EXISTS pg_temp.${functionName}(jsonb, text, text)`);
-  console.log('Repo configs normalized.');
+  await query(
+    `DROP FUNCTION IF EXISTS pg_temp.${functionName}(jsonb, text, text)`,
+  );
+  console.log("Repo configs normalized.");
 }
 
 async function main() {
   try {
-    console.log('Starting database migrations...');
-    await query('BEGIN');
+    console.log("Starting database migrations...");
+    await query("BEGIN");
     try {
       // Transaction-scoped on purpose: a session-scoped lock survives a process that dies before unlocking and blocks every later migrate, while these release on COMMIT/ROLLBACK/disconnect.
-      console.log('Acquiring advisory lock...');
+      console.log("Acquiring advisory lock...");
       await query("SET LOCAL lock_timeout = '30s'");
-      await query('SELECT pg_advisory_xact_lock($1)', [migrationLockId]);
+      await query("SELECT pg_advisory_xact_lock($1)", [migrationLockId]);
 
       await ensureMigrationTable();
 
@@ -310,7 +338,10 @@ async function main() {
         try {
           extraFiles = await listMigrationFiles(extraMigrationsDir);
         } catch (error) {
-          throw new Error(`Extra migrations directory not readable: ${extraMigrationsDir}`, { cause: error });
+          throw new Error(
+            `Extra migrations directory not readable: ${extraMigrationsDir}`,
+            { cause: error },
+          );
         }
 
         for (const migration of extraFiles) {
@@ -321,19 +352,21 @@ async function main() {
         }
       }
 
-      console.log('Running catalog and config normalizations...');
-      await query('DROP INDEX IF EXISTS repositories_owner_idx');
-      await query('CREATE INDEX IF NOT EXISTS repositories_owner_idx ON repositories (owner)');
+      console.log("Running catalog and config normalizations...");
+      await query("DROP INDEX IF EXISTS repositories_owner_idx");
+      await query(
+        "CREATE INDEX IF NOT EXISTS repositories_owner_idx ON repositories (owner)",
+      );
       await ensureModelCatalog();
       await normalizeRepoConfigs();
 
-      await query('COMMIT');
+      await query("COMMIT");
     } catch (error) {
-      await query('ROLLBACK');
+      await query("ROLLBACK");
       throw error;
     }
 
-    console.log('Database migrations are up to date.');
+    console.log("Database migrations are up to date.");
   } finally {
     await sql.end();
   }

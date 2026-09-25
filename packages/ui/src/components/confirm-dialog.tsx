@@ -1,6 +1,6 @@
-import { Dialog } from '@base-ui/react/dialog';
-import { AlertTriangle } from 'lucide-react';
-import { Button, type ButtonProps } from '../components/button';
+import { Dialog } from "@base-ui/react/dialog";
+import { AlertTriangle } from "lucide-react";
+import { Button, type ButtonProps } from "../components/button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -9,7 +9,7 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel?: string;
   cancelLabel?: string;
-  confirmVariant?: ButtonProps['variant'];
+  confirmVariant?: ButtonProps["variant"];
   onConfirm: () => void;
 }
 
@@ -18,9 +18,9 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Continue',
-  cancelLabel = 'Cancel',
-  confirmVariant = 'default',
+  confirmLabel = "Continue",
+  cancelLabel = "Cancel",
+  confirmVariant = "default",
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -33,7 +33,9 @@ export function ConfirmDialog({
               <AlertTriangle size={18} />
             </span>
             <div className="min-w-0">
-              <Dialog.Title className="text-sm font-semibold text-foreground">{title}</Dialog.Title>
+              <Dialog.Title className="text-sm font-semibold text-foreground">
+                {title}
+              </Dialog.Title>
               <Dialog.Description className="mt-1 text-sm text-muted-foreground">
                 {description}
               </Dialog.Description>
@@ -41,7 +43,9 @@ export function ConfirmDialog({
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Dialog.Close render={<Button variant="outline" />}>{cancelLabel}</Dialog.Close>
+            <Dialog.Close render={<Button variant="outline" />}>
+              {cancelLabel}
+            </Dialog.Close>
             <Button
               variant={confirmVariant}
               onClick={() => {

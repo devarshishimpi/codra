@@ -1,7 +1,7 @@
-import { logger } from '@codraoss/core/logger';
-import type { KvStore } from '@codraoss/core/ports';
-import type { TokenTracker } from '@codraoss/core/token-tracker';
-import { isPlausibleTokenBucket } from './model-support';
+import { logger } from "@codraoss/core/logger";
+import type { KvStore } from "@codraoss/core/ports";
+import type { TokenTracker } from "@codraoss/core/token-tracker";
+import { isPlausibleTokenBucket } from "./model-support";
 
 // One KV value per job to limit subrequests.
 const CHAIN_PROGRESS_TTL_SECONDS = 24 * 60 * 60;
@@ -27,27 +27,36 @@ type StoredShape = {
   cooldowns?: Record<string, StoredCooldown>;
 };
 
-function positiveInts(source: Record<string, unknown> | undefined): Map<string, number> {
+function positiveInts(
+  source: Record<string, unknown> | undefined,
+): Map<string, number> {
   const kept = new Map<string, number>();
-  if (!source || typeof source !== 'object') return kept;
+  if (!source || typeof source !== "object") return kept;
   for (const [key, value] of Object.entries(source)) {
-    if (typeof value === 'number' && Number.isInteger(value) && value > 0) kept.set(key, value);
+    if (typeof value === "number" && Number.isInteger(value) && value > 0)
+      kept.set(key, value);
   }
   return kept;
 }
 
 // Absolute deadline caps stale reads over-suppressing models.
-function parseCooldowns(source: Record<string, StoredCooldown> | undefined): Map<string, ModelCooldown> {
+function parseCooldowns(
+  source: Record<string, StoredCooldown> | undefined,
+): Map<string, ModelCooldown> {
   const kept = new Map<string, ModelCooldown>();
-  if (!source || typeof source !== 'object') return kept;
+  if (!source || typeof source !== "object") return kept;
 
   const ceiling = Date.now() + MAX_PERSISTED_COOLDOWN_MS;
   for (const [model, value] of Object.entries(source)) {
-    if (!value || typeof value !== 'object') continue;
-    const until = typeof value.until === 'number' && Number.isFinite(value.until) ? value.until : 0;
+    if (!value || typeof value !== "object") continue;
+    const until =
+      typeof value.until === "number" && Number.isFinite(value.until)
+        ? value.until
+        : 0;
     // Drop implausible limits; avoids indefinite suppression.
     const limitTokens =
-      typeof value.limitTokens === 'number' && isPlausibleTokenBucket(value.limitTokens)
+      typeof value.limitTokens === "number" &&
+      isPlausibleTokenBucket(value.limitTokens)
         ? value.limitTokens
         : undefined;
     if (until <= 0 && limitTokens === undefined) continue;
@@ -56,7 +65,10 @@ function parseCooldowns(source: Record<string, StoredCooldown> | undefined): Map
   return kept;
 }
 
-function mergeCooldown(a: ModelCooldown | undefined, b: ModelCooldown): ModelCooldown {
+function mergeCooldown(
+  a: ModelCooldown | undefined,
+  b: ModelCooldown,
+): ModelCooldown {
   return {
     cooldownUntil: Math.max(a?.cooldownUntil ?? 0, b.cooldownUntil),
     // Sticky across repeated 429s.
@@ -96,23 +108,35 @@ export class ModelChainProgressStore {
         this.tracker?.incrementSubrequests(1);
         const rawString = await this.kv.get(key);
         const raw = rawString ? JSON.parse(rawString) : null;
-        if (!raw || typeof raw !== 'object') return new Map<string, number>();
+        if (!raw || typeof raw !== "object") return new Map<string, number>();
 
         // Legacy: bare label->index maps read as files.
         const stored = raw as StoredShape;
         const isNewShape =
-          stored.files !== undefined || stored.timeouts !== undefined || stored.cooldowns !== undefined;
+          stored.files !== undefined ||
+          stored.timeouts !== undefined ||
+          stored.cooldowns !== undefined;
         this.timeouts = positiveInts(isNewShape ? stored.timeouts : undefined);
-        for (const [model, value] of parseCooldowns(isNewShape ? stored.cooldowns : undefined)) {
-          this.cooldowns.set(model, mergeCooldown(this.cooldowns.get(model), value));
+        for (const [model, value] of parseCooldowns(
+          isNewShape ? stored.cooldowns : undefined,
+        )) {
+          this.cooldowns.set(
+            model,
+            mergeCooldown(this.cooldowns.get(model), value),
+          );
         }
-        return positiveInts(isNewShape ? stored.files : (raw as Record<string, unknown>));
+        return positiveInts(
+          isNewShape ? stored.files : (raw as Record<string, unknown>),
+        );
       } catch (error) {
         // Missing memo costs retries, not correctness.
-        logger.warn('Failed to read model chain progress; resuming from the primary model', {
-          jobId: this.jobId,
-          error: error instanceof Error ? error.message : String(error),
-        });
+        logger.warn(
+          "Failed to read model chain progress; resuming from the primary model",
+          {
+            jobId: this.jobId,
+            error: error instanceof Error ? error.message : String(error),
+          },
+        );
         return new Map<string, number>();
       }
     })();
@@ -161,20 +185,32 @@ export class ModelChainProgressStore {
       this.tracker?.incrementSubrequests(1);
       const rawString = await this.kv.get(key);
       const raw = rawString ? JSON.parse(rawString) : null;
-      if (raw && typeof raw === 'object') {
+      if (raw && typeof raw === "object") {
         const stored = raw as StoredShape;
         const isNewShape =
-          stored.files !== undefined || stored.timeouts !== undefined || stored.cooldowns !== undefined;
-        for (const [label, value] of positiveInts(isNewShape ? stored.files : (raw as Record<string, unknown>))) {
+          stored.files !== undefined ||
+          stored.timeouts !== undefined ||
+          stored.cooldowns !== undefined;
+        for (const [label, value] of positiveInts(
+          isNewShape ? stored.files : (raw as Record<string, unknown>),
+        )) {
           if (value > (progress.get(label) ?? 0)) progress.set(label, value);
         }
-        for (const [model, value] of positiveInts(isNewShape ? stored.timeouts : undefined)) {
+        for (const [model, value] of positiveInts(
+          isNewShape ? stored.timeouts : undefined,
+        )) {
           // Success outranks stored tally.
           if (this.clearedTimeouts.has(model)) continue;
-          if (value > (this.timeouts.get(model) ?? 0)) this.timeouts.set(model, value);
+          if (value > (this.timeouts.get(model) ?? 0))
+            this.timeouts.set(model, value);
         }
-        for (const [model, value] of parseCooldowns(isNewShape ? stored.cooldowns : undefined)) {
-          this.cooldowns.set(model, mergeCooldown(this.cooldowns.get(model), value));
+        for (const [model, value] of parseCooldowns(
+          isNewShape ? stored.cooldowns : undefined,
+        )) {
+          this.cooldowns.set(
+            model,
+            mergeCooldown(this.cooldowns.get(model), value),
+          );
         }
       }
 
@@ -194,10 +230,13 @@ export class ModelChainProgressStore {
         { expirationTtl: CHAIN_PROGRESS_TTL_SECONDS },
       );
     } catch (error) {
-      logger.warn('Failed to persist model chain progress; the next attempt will retry from the same model', {
-        jobId: this.jobId,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.warn(
+        "Failed to persist model chain progress; the next attempt will retry from the same model",
+        {
+          jobId: this.jobId,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
     }
   }
 
@@ -243,7 +282,10 @@ export class ModelChainProgressStore {
   // Sync; flushPending() coalesces writes.
   noteRateLimit(modelId: string, entry: ModelCooldown): void {
     if (!this.key) return;
-    this.cooldowns.set(modelId, mergeCooldown(this.cooldowns.get(modelId), entry));
+    this.cooldowns.set(
+      modelId,
+      mergeCooldown(this.cooldowns.get(modelId), entry),
+    );
     this.dirty = true;
   }
 

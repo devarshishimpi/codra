@@ -1,12 +1,16 @@
-import { Badge } from '@codraoss/ui';
-import { useMemo, useState } from 'react';
-import { Check, ChevronDown } from 'lucide-react';
-import { StatusBadge } from './status-badge';
-import { parsePromptDiff, diffStats, type DiffRow } from '@codraoss/ui/prompt-diff';
-import { highlightLine, langForPath } from '@codraoss/ui/highlight';
-import { cn } from '@codraoss/ui/utils';
-import type { FileReviewRecord, ParsedReviewComment } from '@codraoss/schema';
-import { CommentCard } from './comment-card';
+import { Badge } from "@codraoss/ui";
+import { useMemo, useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
+import { StatusBadge } from "./status-badge";
+import {
+  parsePromptDiff,
+  diffStats,
+  type DiffRow,
+} from "@codraoss/ui/prompt-diff";
+import { highlightLine, langForPath } from "@codraoss/ui/highlight";
+import { cn } from "@codraoss/ui/utils";
+import type { FileReviewRecord, ParsedReviewComment } from "@codraoss/schema";
+import { CommentCard } from "./comment-card";
 import {
   LARGE_DIFF_ROWS,
   NO_ROWS,
@@ -14,12 +18,18 @@ import {
   ROW_TONES,
   commentKey,
   rowKey,
-} from './diff-file-panel-utils';
+} from "./diff-file-panel-utils";
 
-function DiffLine({ row, lang }: { row: DiffRow; lang: ReturnType<typeof langForPath> }) {
+function DiffLine({
+  row,
+  lang,
+}: {
+  row: DiffRow;
+  lang: ReturnType<typeof langForPath>;
+}) {
   const tone = ROW_TONES[row.kind];
 
-  if (row.kind === 'hunk') {
+  if (row.kind === "hunk") {
     return (
       <div className="ui-well flex">
         <span className="w-[52px] shrink-0" />
@@ -34,12 +44,22 @@ function DiffLine({ row, lang }: { row: DiffRow; lang: ReturnType<typeof langFor
   const num = row.newNo ?? row.oldNo;
 
   return (
-    <div className={cn('flex', tone.row)}>
-      <span className={cn('ui-font-mono w-[52px] shrink-0 select-none px-2 text-right text-[11px] leading-5 tabular-nums', tone.gutter)}>
-        {num ?? ''}
+    <div className={cn("flex", tone.row)}>
+      <span
+        className={cn(
+          "ui-font-mono w-[52px] shrink-0 select-none px-2 text-right text-[11px] leading-5 tabular-nums",
+          tone.gutter,
+        )}
+      >
+        {num ?? ""}
       </span>
-      <span className={cn('ui-font-mono w-4 shrink-0 select-none text-center text-[11px] leading-5', tone.marker)}>
-        {row.kind === 'add' ? '+' : row.kind === 'del' ? '-' : ' '}
+      <span
+        className={cn(
+          "ui-font-mono w-4 shrink-0 select-none text-center text-[11px] leading-5",
+          tone.marker,
+        )}
+      >
+        {row.kind === "add" ? "+" : row.kind === "del" ? "-" : " "}
       </span>
       <span className="ui-font-mono whitespace-pre pr-4 text-[11px] leading-5 text-ui-default">
         {highlightLine(row.text, lang)}
@@ -58,17 +78,28 @@ export interface FileDiffProps {
   onToggleViewed: (viewed: boolean) => void;
 }
 
-export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChange, onToggleViewed }: FileDiffProps) {
+export function FileDiff({
+  file,
+  open,
+  viewed,
+  diffsLoading = false,
+  onOpenChange,
+  onToggleViewed,
+}: FileDiffProps) {
   const lang = useMemo(() => langForPath(file.filePath), [file.filePath]);
   // Header stats come from a cheap line scan; the full row parse only happens once the panel opens.
-  const { adds, dels } = useMemo(() => diffStats(file.diffInput), [file.diffInput]);
+  const { adds, dels } = useMemo(
+    () => diffStats(file.diffInput),
+    [file.diffInput],
+  );
   const rows = useMemo(
     () => (open && file.diffInput ? parsePromptDiff(file.diffInput) : NO_ROWS),
     [open, file.diffInput],
   );
 
   // Files with review comments always render fully, since their anchors must stay visible.
-  const truncatable = rows.length > LARGE_DIFF_ROWS && file.parsedComments.length === 0;
+  const truncatable =
+    rows.length > LARGE_DIFF_ROWS && file.parsedComments.length === 0;
   const [showFull, setShowFull] = useState(false);
   const visibleRows = useMemo(
     () => (truncatable && !showFull ? rows.slice(0, PREVIEW_ROWS) : rows),
@@ -80,7 +111,9 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
   const { segments, unanchored } = useMemo(() => {
     const byLine = new Map<number, ParsedReviewComment[]>();
     const rest: ParsedReviewComment[] = [];
-    const anchorable = new Set(visibleRows.filter((r) => r.newNo !== null).map((r) => r.newNo));
+    const anchorable = new Set(
+      visibleRows.filter((r) => r.newNo !== null).map((r) => r.newNo),
+    );
     for (const comment of file.parsedComments) {
       if (comment.line != null && anchorable.has(comment.line)) {
         const list = byLine.get(comment.line) ?? [];
@@ -94,20 +127,21 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
     // Each segment is keyed off its first row / anchor line, so keys survive a re-slice when the
     // panel expands from preview to full.
     const segs: Array<
-      | { type: 'rows'; key: string; rows: DiffRow[] }
-      | { type: 'comments'; key: string; comments: ParsedReviewComment[] }
+      | { type: "rows"; key: string; rows: DiffRow[] }
+      | { type: "comments"; key: string; comments: ParsedReviewComment[] }
     > = [];
     let run: DiffRow[] = [];
     for (const row of visibleRows) {
       run.push(row);
       const comments = row.newNo !== null ? byLine.get(row.newNo) : undefined;
       if (comments) {
-        segs.push({ type: 'rows', key: `rows:${rowKey(run[0])}`, rows: run });
-        segs.push({ type: 'comments', key: `comments:${row.newNo}`, comments });
+        segs.push({ type: "rows", key: `rows:${rowKey(run[0])}`, rows: run });
+        segs.push({ type: "comments", key: `comments:${row.newNo}`, comments });
         run = [];
       }
     }
-    if (run.length > 0) segs.push({ type: 'rows', key: `rows:${rowKey(run[0])}`, rows: run });
+    if (run.length > 0)
+      segs.push({ type: "rows", key: `rows:${rowKey(run[0])}`, rows: run });
 
     return { segments: segs, unanchored: rest };
   }, [visibleRows, file.parsedComments]);
@@ -128,8 +162,8 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
     >
       <summary
         className={cn(
-          'flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 sm:px-4 [&::-webkit-details-marker]:hidden',
-          open && 'border-b border-ui-line'
+          "flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 sm:px-4 [&::-webkit-details-marker]:hidden",
+          open && "border-b border-ui-line",
         )}
         onClick={(e) => {
           e.preventDefault();
@@ -138,10 +172,16 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
       >
         <div
           aria-expanded={open}
-          aria-label={`${open ? 'Collapse' : 'Expand'} diff for ${file.filePath}`}
+          aria-label={`${open ? "Collapse" : "Expand"} diff for ${file.filePath}`}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ui-subtle transition-colors hover:bg-ui-fill hover:text-ui-default"
         >
-          <ChevronDown size={14} className={cn('transition-transform duration-200', !open && '-rotate-90')} />
+          <ChevronDown
+            size={14}
+            className={cn(
+              "transition-transform duration-200",
+              !open && "-rotate-90",
+            )}
+          />
         </div>
 
         <div
@@ -152,12 +192,14 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
         </div>
 
         <span className="ui-font-mono hidden shrink-0 text-[11px] tabular-nums sm:inline">
-          <span className="diff-add-fg">+{adds}</span>{' '}
+          <span className="diff-add-fg">+{adds}</span>{" "}
           <span className="diff-del-fg">-{dels}</span>
         </span>
 
         {file.parsedComments.length > 0 && (
-          <Badge variant="neutral" className="shrink-0">{file.parsedComments.length}</Badge>
+          <Badge variant="neutral" className="shrink-0">
+            {file.parsedComments.length}
+          </Badge>
         )}
         <span className="hidden shrink-0 md:inline-flex">
           <StatusBadge label={file.fileStatus} />
@@ -173,10 +215,10 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
           <span
             aria-hidden
             className={cn(
-              'flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border transition-colors',
+              "flex h-3.5 w-3.5 items-center justify-center rounded-[4px] border transition-colors",
               viewed
-                ? 'border-transparent bg-[var(--btn-primary-bg)] text-[oklch(20%_0.04_115)]'
-                : 'border-ui-line bg-transparent',
+                ? "border-transparent bg-[var(--btn-primary-bg)] text-[oklch(20%_0.04_115)]"
+                : "border-ui-line bg-transparent",
             )}
           >
             {viewed && <Check size={10} strokeWidth={3} />}
@@ -188,13 +230,13 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
       <div className="min-w-0">
         {rows.length === 0 ? (
           <p className="px-4 py-8 text-center text-xs text-ui-subtle">
-            {diffsLoading ? 'Loading diff…' : 'Diff unavailable for this file.'}
+            {diffsLoading ? "Loading diff…" : "Diff unavailable for this file."}
           </p>
         ) : (
           // Each segment scrolls independently, so comment cards stay at panel width instead of
           // stretching to the widest code line in a shared scroller.
           segments.map((segment) =>
-            segment.type === 'rows' ? (
+            segment.type === "rows" ? (
               <div key={segment.key} className="thin-scroll overflow-x-auto">
                 <div className="min-w-fit py-1">
                   {segment.rows.map((row) => (
@@ -203,10 +245,17 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
                 </div>
               </div>
             ) : (
-              <div key={segment.key} className="space-y-3 border-y border-ui-line/60 px-3 py-3 sm:px-4">
+              <div
+                key={segment.key}
+                className="space-y-3 border-y border-ui-line/60 px-3 py-3 sm:px-4"
+              >
                 <div className="max-w-3xl space-y-3">
                   {segment.comments.map((comment, i) => (
-                    <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
+                    <CommentCard
+                      key={commentKey(comment, i)}
+                      comment={comment}
+                      filePath={file.filePath}
+                    />
                   ))}
                 </div>
               </div>
@@ -217,7 +266,8 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
         {hiddenLines > 0 && (
           <div className="ui-well flex items-center justify-center gap-3 border-t border-ui-line px-4 py-2.5">
             <p className="text-xs text-ui-subtle">
-              {hiddenLines.toLocaleString()} more {hiddenLines === 1 ? 'line' : 'lines'} not shown.
+              {hiddenLines.toLocaleString()} more{" "}
+              {hiddenLines === 1 ? "line" : "lines"} not shown.
             </p>
             <button
               type="button"
@@ -240,13 +290,26 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
           </div>
         )}
 
-        {file.fileStatus === 'failed' && file.errorMessage && (
+        {file.fileStatus === "failed" && file.errorMessage && (
           <div
             className="mx-3 mb-3 rounded-md border p-3 sm:mx-4"
-            style={{ background: 'var(--danger-bg)', borderColor: 'var(--danger-border)' }}
+            style={{
+              background: "var(--danger-bg)",
+              borderColor: "var(--danger-border)",
+            }}
           >
-            <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: 'var(--danger)' }}>Review error</p>
-            <p className="ui-font-mono break-all text-xs" style={{ color: 'var(--danger)' }}>{file.errorMessage}</p>
+            <p
+              className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em]"
+              style={{ color: "var(--danger)" }}
+            >
+              Review error
+            </p>
+            <p
+              className="ui-font-mono break-all text-xs"
+              style={{ color: "var(--danger)" }}
+            >
+              {file.errorMessage}
+            </p>
           </div>
         )}
         {unanchored.length > 0 && (
@@ -256,7 +319,11 @@ export function FileDiff({ file, open, viewed, diffsLoading = false, onOpenChang
             </p>
             <div className="max-w-3xl space-y-3">
               {unanchored.map((comment, i) => (
-                <CommentCard key={commentKey(comment, i)} comment={comment} filePath={file.filePath} />
+                <CommentCard
+                  key={commentKey(comment, i)}
+                  comment={comment}
+                  filePath={file.filePath}
+                />
               ))}
             </div>
           </div>

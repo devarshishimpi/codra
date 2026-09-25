@@ -1,6 +1,6 @@
-﻿import * as React from 'react';
-import { cn } from '@codraoss/ui/utils';
-import { UpdatesEmailPrompt } from '@client/components/shared/updates-email-prompt';
+﻿import * as React from "react";
+import { cn } from "@codraoss/ui/utils";
+import { UpdatesEmailPrompt } from "@client/components/shared/updates-email-prompt";
 
 interface PageHeaderProps extends React.HTMLAttributes<HTMLElement> {
   title: string;
@@ -11,21 +11,24 @@ interface PageHeaderProps extends React.HTMLAttributes<HTMLElement> {
 
 export function PageHeader({
   title,
-  description, 
-  actions, 
-  className, 
-  ...props 
+  description,
+  actions,
+  className,
+  ...props
 }: PageHeaderProps) {
   return (
     <>
       <header
-        className={cn('flex flex-col sm:flex-row sm:items-center justify-between gap-3', className)}
+        className={cn(
+          "flex flex-col sm:flex-row sm:items-center justify-between gap-3",
+          className,
+        )}
         {...props}
       >
         <div>
           <h1
             className="flex items-center gap-3 text-xl font-bold text-foreground"
-            style={{ letterSpacing: '-0.02em' }}
+            style={{ letterSpacing: "-0.02em" }}
           >
             {title}
             {props.versionBadge && (

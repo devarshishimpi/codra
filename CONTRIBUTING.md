@@ -40,11 +40,13 @@ apps/
 Codra is a monorepo-style project built with **Hono** (Worker), **React** (Vite), and **Cloudflare Workers**.
 
 ### 1. Prerequisites
+
 - [Node.js](https://nodejs.org/) (Latest LTS)
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-upgrading/) (`npm install -g wrangler`)
 - A Postgres-compatible database and a Cloudflare Hyperdrive config.
 
 ### 2. Installation
+
 ```bash
 git clone https://github.com/devarshishimpi/codra.git
 cd codra
@@ -52,11 +54,15 @@ npm install
 ```
 
 ### 3. Environment Variables
+
 Copy `.dev.vars.example` to `.dev.vars` and fill in your secrets:
+
 ```bash
 cp .dev.vars.example .dev.vars
 ```
+
 You will need to set up:
+
 - A GitHub App (for webhooks/checks).
 - A GitHub OAuth App (for dashboard authentication).
 - `LLM_CONFIG_ENCRYPTION_KEY` for encrypting dashboard-managed provider API keys.
@@ -65,10 +71,13 @@ You will need to set up:
 - A direct `DATABASE_URL` for migrations.
 
 ### 4. Running Locally
+
 Codra uses `concurrently` to run the Vite frontend and the Wrangler worker simultaneously:
+
 ```bash
 npm run dev
 ```
+
 - Frontend: `http://localhost:5173` (proxied via Worker)
 - Worker: `http://localhost:8787`
 
@@ -103,7 +112,7 @@ retarget to `dev`.
 2.  **Atomic Commits**: Keep your commits focused and descriptive.
 3.  **Sync**: Ensure your branch is up to date with `dev`.
 4.  **Target Branch**: Open pull requests against `dev`.
-5.  **PR Description**: Use the provided template (if available) or clearly explain the *what* and *why* of your changes.
+5.  **PR Description**: Use the provided template (if available) or clearly explain the _what_ and _why_ of your changes.
 6.  **CLA Check**: Once you open the PR, an automated check will verify your CLA status. If you haven't signed yet, follow the link in the check output.
 
 ---

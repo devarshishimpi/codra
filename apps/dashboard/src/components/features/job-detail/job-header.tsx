@@ -1,13 +1,20 @@
-﻿import { Button, ConfirmDialog } from '@codraoss/ui';
-import { useState } from 'react';
-import type { ComponentType } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronRight, ExternalLink, Loader2, RotateCcw, Terminal, Trash2 } from 'lucide-react';
-import type { ButtonProps } from '@codraoss/ui';
-import { UpdatesEmailPrompt } from '@client/components/shared/updates-email-prompt';
-import { AuthorChip, VerdictPill } from './job-chips';
-import { formatAbsoluteDate, formatRelativeDate } from './job-chip-utils';
-import type { JobDetail } from '@codraoss/schema';
+﻿import { Button, ConfirmDialog } from "@codraoss/ui";
+import { useState } from "react";
+import type { ComponentType } from "react";
+import { Link } from "react-router-dom";
+import {
+  ChevronRight,
+  ExternalLink,
+  Loader2,
+  RotateCcw,
+  Terminal,
+  Trash2,
+} from "lucide-react";
+import type { ButtonProps } from "@codraoss/ui";
+import { UpdatesEmailPrompt } from "@client/components/shared/updates-email-prompt";
+import { AuthorChip, VerdictPill } from "./job-chips";
+import { formatAbsoluteDate, formatRelativeDate } from "./job-chip-utils";
+import type { JobDetail } from "@codraoss/schema";
 
 // Lucide's CircleStop strokes the inner square too, which reads as a blob at 14px; filling it
 // instead keeps the stop symbol legible.
@@ -25,7 +32,15 @@ function StopIcon({ size = 14 }: { size?: number }) {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
-      <rect x="8.5" y="8.5" width="7" height="7" rx="1" fill="currentColor" stroke="none" />
+      <rect
+        x="8.5"
+        y="8.5"
+        width="7"
+        height="7"
+        rx="1"
+        fill="currentColor"
+        stroke="none"
+      />
     </svg>
   );
 }
@@ -36,7 +51,7 @@ interface JobActionButtonProps {
   /** In-flight: swaps the icon for a spinner. Also disables unless `disabled` says otherwise. */
   busy: boolean;
   disabled?: boolean;
-  variant?: ButtonProps['variant'];
+  variant?: ButtonProps["variant"];
   className?: string;
   onClick: () => void;
 }
@@ -48,8 +63,8 @@ function JobActionButton({
   label,
   busy,
   disabled,
-  variant = 'secondary',
-  className = 'rounded-[7px]',
+  variant = "secondary",
+  className = "rounded-[7px]",
   onClick,
 }: JobActionButtonProps) {
   return (
@@ -63,7 +78,11 @@ function JobActionButton({
       title={label}
       aria-label={label}
     >
-      {busy ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} />}
+      {busy ? (
+        <Loader2 size={13} className="animate-spin" />
+      ) : (
+        <Icon size={13} />
+      )}
     </Button>
   );
 }
@@ -99,7 +118,7 @@ export function JobHeader({
   const [stopOpen, setStopOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const canStop = job.status === 'running' || job.status === 'queued';
+  const canStop = job.status === "running" || job.status === "queued";
 
   return (
     <>
@@ -109,10 +128,16 @@ export function JobHeader({
       <header className="ui-font-sans min-w-0">
         <div className="flex min-w-0 items-center justify-between gap-4 border-b border-ui-line pb-3">
           <div className="flex min-w-0 items-center gap-1.5 text-[13px]">
-            <Link to="/jobs" className="shrink-0 text-ui-subtle transition-colors hover:text-ui-strong">
+            <Link
+              to="/jobs"
+              className="shrink-0 text-ui-subtle transition-colors hover:text-ui-strong"
+            >
               Jobs
             </Link>
-            <ChevronRight size={13} className="shrink-0 text-ui-subtle opacity-60" />
+            <ChevronRight
+              size={13}
+              className="shrink-0 text-ui-subtle opacity-60"
+            />
             <span
               className="ui-font-mono cursor-default truncate font-medium text-ui-strong"
               title={job.id}
@@ -122,7 +147,12 @@ export function JobHeader({
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button variant="secondary" size="sm" asChild className="gap-1.5 rounded-[7px]">
+            <Button
+              variant="secondary"
+              size="sm"
+              asChild
+              className="gap-1.5 rounded-[7px]"
+            >
               <Link to={`/jobs/${job.id}/logs`}>
                 <Terminal size={13} />
                 <span className="hidden sm:inline">Raw Logs</span>
@@ -140,7 +170,7 @@ export function JobHeader({
             {/* Always restarts the review from the beginning (every file), regardless of the job's current status. */}
             <JobActionButton
               icon={RotateCcw}
-              label={job.status === 'failed' ? 'Retry job' : 'Re-run job'}
+              label={job.status === "failed" ? "Retry job" : "Re-run job"}
               busy={isRerunning}
               onClick={onRerun}
             />
@@ -159,7 +189,7 @@ export function JobHeader({
         <div className="mt-4 min-w-0">
           <h1
             className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-[1.35rem] font-bold leading-tight text-foreground"
-            style={{ letterSpacing: '-0.02em' }}
+            style={{ letterSpacing: "-0.02em" }}
           >
             <a
               href={`https://github.com/${job.owner}/${job.repo}/pull/${job.prNumber}`}
@@ -167,8 +197,13 @@ export function JobHeader({
               rel="noopener noreferrer"
               className="inline-flex min-w-0 max-w-full items-center gap-2 transition-colors hover:text-primary"
             >
-              <span className="min-w-0 break-words">{job.prTitle ?? 'Untitled pull request'}</span>
-              <ExternalLink size={14} className="mt-0.5 shrink-0 text-ui-subtle" />
+              <span className="min-w-0 break-words">
+                {job.prTitle ?? "Untitled pull request"}
+              </span>
+              <ExternalLink
+                size={14}
+                className="mt-0.5 shrink-0 text-ui-subtle"
+              />
             </a>
             {job.verdict && <VerdictPill verdict={job.verdict} />}
           </h1>
@@ -179,7 +214,9 @@ export function JobHeader({
               {job.owner}/{job.repo}
             </span>
             <Dot />
-            <span className="ui-font-mono shrink-0 tabular-nums">#{job.prNumber}</span>
+            <span className="ui-font-mono shrink-0 tabular-nums">
+              #{job.prNumber}
+            </span>
             {job.commitSha && (
               <>
                 <Dot />
@@ -204,7 +241,10 @@ export function JobHeader({
             <Pipe />
             <AuthorChip login={job.prAuthor} />
             <Dot />
-            <span className="shrink-0" title={formatAbsoluteDate(job.createdAt)}>
+            <span
+              className="shrink-0"
+              title={formatAbsoluteDate(job.createdAt)}
+            >
               {formatRelativeDate(job.createdAt)}
             </span>
           </div>

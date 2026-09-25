@@ -1,1 +1,4 @@
-﻿export { getUpdatesEmailPreference, syncUpdatesEmail } from '@codraoss/api/platform';
+﻿export {
+  getUpdatesEmailPreference,
+  syncUpdatesEmail,
+} from "@codraoss/api/platform";

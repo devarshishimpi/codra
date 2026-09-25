@@ -1,28 +1,35 @@
-import * as React from 'react';
-import { useRender } from '@base-ui/react/use-render';
-import { type VariantProps } from 'class-variance-authority';
-import { Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { buttonVariants } from '../components/button-variants';
+import * as React from "react";
+import { useRender } from "@base-ui/react/use-render";
+import { type VariantProps } from "class-variance-authority";
+import { Loader2 } from "lucide-react";
+import { cn } from "../lib/utils";
+import { buttonVariants } from "../components/button-variants";
 
-type Shape = 'base' | 'square' | 'circle';
+type Shape = "base" | "square" | "circle";
 
 const SQUARE_WIDTH: Record<string, string> = {
-  xs: 'w-6 p-0',
-  sm: 'w-8 p-0',
-  base: 'w-9 p-0',
-  default: 'w-9 p-0',
-  lg: 'w-11 p-0',
-  icon: 'p-0',
+  xs: "w-6 p-0",
+  sm: "w-8 p-0",
+  base: "w-9 p-0",
+  default: "w-9 p-0",
+  lg: "w-11 p-0",
+  icon: "p-0",
 };
 
-function shapeClass(shape: Shape, size: VariantProps<typeof buttonVariants>['size']) {
-  if (shape === 'base') return '';
-  return cn(SQUARE_WIDTH[size ?? 'default'], shape === 'circle' && 'rounded-full');
+function shapeClass(
+  shape: Shape,
+  size: VariantProps<typeof buttonVariants>["size"],
+) {
+  if (shape === "base") return "";
+  return cn(
+    SQUARE_WIDTH[size ?? "default"],
+    shape === "circle" && "rounded-full",
+  );
 }
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   shape?: Shape;
@@ -31,12 +38,29 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, shape = 'base', asChild = false, icon, loading, children, ...props }, ref) => {
-    const classes = cn(buttonVariants({ variant, size }), shapeClass(shape, size), className);
+  (
+    {
+      className,
+      variant,
+      size,
+      shape = "base",
+      asChild = false,
+      icon,
+      loading,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const classes = cn(
+      buttonVariants({ variant, size }),
+      shapeClass(shape, size),
+      className,
+    );
 
     return useRender({
       render: asChild && React.isValidElement(children) ? children : undefined,
-      defaultTagName: 'button',
+      defaultTagName: "button",
       ref,
       props: {
         className: classes,
@@ -56,10 +80,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     });
   },
 );
-Button.displayName = 'Button';
+Button.displayName = "Button";
 
 export interface LinkButtonProps
-  extends React.AnchorHTMLAttributes<HTMLAnchorElement>,
+  extends
+    React.AnchorHTMLAttributes<HTMLAnchorElement>,
     VariantProps<typeof buttonVariants> {
   shape?: Shape;
   icon?: React.ReactNode;
@@ -67,11 +92,27 @@ export interface LinkButtonProps
 }
 
 const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
-  ({ className, variant, size, shape = 'base', icon, external, children, ...props }, ref) => (
+  (
+    {
+      className,
+      variant,
+      size,
+      shape = "base",
+      icon,
+      external,
+      children,
+      ...props
+    },
+    ref,
+  ) => (
     <a
       ref={ref}
-      className={cn(buttonVariants({ variant, size }), shapeClass(shape, size), className)}
-      {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      className={cn(
+        buttonVariants({ variant, size }),
+        shapeClass(shape, size),
+        className,
+      )}
+      {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       {...props}
     >
       {icon}
@@ -79,6 +120,6 @@ const LinkButton = React.forwardRef<HTMLAnchorElement, LinkButtonProps>(
     </a>
   ),
 );
-LinkButton.displayName = 'LinkButton';
+LinkButton.displayName = "LinkButton";
 
 export { Button, LinkButton };

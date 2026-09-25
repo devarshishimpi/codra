@@ -1,6 +1,11 @@
-import type { Clock, IdGenerator, KvStore, TelemetrySink } from '@codraoss/core/ports';
-import type { AppBindings } from '../env';
-import { sendTelemetryEvent } from '../core/telemetry';
+import type {
+  Clock,
+  IdGenerator,
+  KvStore,
+  TelemetrySink,
+} from "@codraoss/core/ports";
+import type { AppBindings } from "../env";
+import { sendTelemetryEvent } from "../core/telemetry";
 
 // env.APP_KV already satisfies KvStore structurally; the wrapper narrows it to the two methods the
 // engine may use, so a future reach for `list` or `delete` fails here rather than in the engine.

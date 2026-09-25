@@ -1,6 +1,6 @@
-import { createApiRouter } from '@codraoss/api';
-import { createApiRouterDeps } from '../../apps/worker/src/api-deps';
-import { createTestEnv } from '../helpers';
+import { createApiRouter } from "@codraoss/api";
+import { createApiRouterDeps } from "../../apps/worker/src/api-deps";
+import { createTestEnv } from "../helpers";
 
 // `IDENTITY_PROVIDER` is a test seam: only `createTestEnv` ever sets it. The Aug-16 auth refactor read
 // it unconditionally, so in production -- where the binding does not exist -- `/auth/github`
@@ -8,7 +8,7 @@ import { createTestEnv } from '../helpers';
 // test had the fake injected.
 //
 // This file is the one place that runs the wiring the way production does: with no injected provider.
-describe('identity provider default', () => {
+describe("identity provider default", () => {
   const app = createApiRouter();
 
   function productionLikeEnv() {
@@ -19,22 +19,24 @@ describe('identity provider default', () => {
     return env;
   }
 
-  it('starts GitHub sign-in against the real OAuth endpoint when no fake is injected', async () => {
-    const response = await app.request('/auth/github', {}, productionLikeEnv());
+  it("starts GitHub sign-in against the real OAuth endpoint when no fake is injected", async () => {
+    const response = await app.request("/auth/github", {}, productionLikeEnv());
 
     expect(response.status).toBe(302);
-    const location = new URL(response.headers.get('location') ?? '');
-    expect(location.origin + location.pathname).toBe('https://github.com/login/oauth/authorize');
-    expect(location.searchParams.get('state')).toBeTruthy();
-    expect(location.searchParams.get('redirect_uri')).toBeTruthy();
+    const location = new URL(response.headers.get("location") ?? "");
+    expect(location.origin + location.pathname).toBe(
+      "https://github.com/login/oauth/authorize",
+    );
+    expect(location.searchParams.get("state")).toBeTruthy();
+    expect(location.searchParams.get("redirect_uri")).toBeTruthy();
   });
 
-  it('still prefers an injected provider when one exists', async () => {
+  it("still prefers an injected provider when one exists", async () => {
     // The seam itself must keep working, or the rest of the auth suite is quietly testing production.
     const env = createTestEnv();
-    const response = await app.request('/auth/github', {}, env);
+    const response = await app.request("/auth/github", {}, env);
 
     expect(response.status).toBe(302);
-    expect(response.headers.get('location') ?? '').not.toContain('github.com');
+    expect(response.headers.get("location") ?? "").not.toContain("github.com");
   });
 });

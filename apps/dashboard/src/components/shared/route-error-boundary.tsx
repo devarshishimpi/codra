@@ -1,6 +1,11 @@
-import { Button } from '@codraoss/ui';
-import { isRouteErrorResponse, Link, useRouteError } from 'react-router-dom';
-import { AlertTriangle, Compass, LayoutDashboard, RefreshCw } from 'lucide-react';
+import { Button } from "@codraoss/ui";
+import { isRouteErrorResponse, Link, useRouteError } from "react-router-dom";
+import {
+  AlertTriangle,
+  Compass,
+  LayoutDashboard,
+  RefreshCw,
+} from "lucide-react";
 
 interface Presentation {
   code: string;
@@ -18,21 +23,26 @@ function present(error: unknown): Presentation {
     const notFound = error.status === 404;
     return {
       code: `ERR_ROUTE_${error.status}`,
-      title: notFound ? 'Resource not found' : error.statusText || 'Request failed',
+      title: notFound
+        ? "Resource not found"
+        : error.statusText || "Request failed",
       hint: notFound
         ? "That address isn't part of Codra. It may have been moved, or the record it pointed at was deleted."
-        : 'The server refused this request. Try again, or head back and pick a different route.',
-      detail: typeof error.data === 'string' ? error.data : undefined,
+        : "The server refused this request. Try again, or head back and pick a different route.",
+      detail: typeof error.data === "string" ? error.data : undefined,
       icon: notFound ? Compass : AlertTriangle,
       reloadable: !notFound,
     };
   }
 
   return {
-    code: 'ERR_RENDER_FAILED',
-    title: 'Something broke on this screen',
-    hint: 'The page failed while rendering. Reloading usually clears it; if it keeps happening the details below are worth reporting.',
-    detail: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    code: "ERR_RENDER_FAILED",
+    title: "Something broke on this screen",
+    hint: "The page failed while rendering. Reloading usually clears it; if it keeps happening the details below are worth reporting.",
+    detail:
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : String(error),
     icon: AlertTriangle,
     reloadable: true,
   };
@@ -50,16 +60,17 @@ function present(error: unknown): Presentation {
 export function RouteErrorBoundary({ inline = false }: { inline?: boolean }) {
   const error = useRouteError();
   const { code, title, hint, detail, icon: Icon, reloadable } = present(error);
-  const stack = import.meta.env.DEV && error instanceof Error ? error.stack : undefined;
-  const Container = inline ? 'section' : 'main';
+  const stack =
+    import.meta.env.DEV && error instanceof Error ? error.stack : undefined;
+  const Container = inline ? "section" : "main";
 
   return (
     <Container
       role="alert"
       className={
         inline
-          ? 'ui-font-sans flex min-h-[60vh] flex-col items-center justify-center p-6'
-          : 'ui-font-sans flex min-h-svh flex-col items-center justify-center bg-background p-6'
+          ? "ui-font-sans flex min-h-[60vh] flex-col items-center justify-center p-6"
+          : "ui-font-sans flex min-h-svh flex-col items-center justify-center bg-background p-6"
       }
     >
       <div className="w-full max-w-md animate-fade-up text-center">
@@ -67,7 +78,9 @@ export function RouteErrorBoundary({ inline = false }: { inline?: boolean }) {
           <Icon size={22} strokeWidth={1.75} />
         </span>
 
-        <h1 className="text-xl font-semibold tracking-tight text-ui-strong">{title}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-ui-strong">
+          {title}
+        </h1>
         <p className="mt-2 text-sm leading-relaxed text-ui-subtle">{hint}</p>
 
         {detail && (

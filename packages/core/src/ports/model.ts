@@ -1,8 +1,11 @@
-import type { RepoConfig } from '@codraoss/schema';
-import type { FileDiff } from '../diff';
-import type { BatchReviewResult, parseFileReviewResponse } from '../model-output';
-import type { RejectedExemplar } from '../prompts/file-review';
-import type { VerifyCandidate } from '../prompts/verify';
+import type { RepoConfig } from "@codraoss/schema";
+import type { FileDiff } from "../diff";
+import type {
+  BatchReviewResult,
+  parseFileReviewResponse,
+} from "../model-output";
+import type { RejectedExemplar } from "../prompts/file-review";
+import type { VerifyCandidate } from "../prompts/verify";
 
 type ParsedFileReview = ReturnType<typeof parseFileReviewResponse>;
 
@@ -13,7 +16,7 @@ export type ModelResponse = {
   modelUsed: string;
   provider: string;
   // schema-dropped: model refused the grammar. truncated: parsed prefix of a cut-off answer, may be incomplete.
-  degraded?: 'schema-dropped' | 'schema-dropped-catchall' | 'truncated';
+  degraded?: "schema-dropped" | "schema-dropped-catchall" | "truncated";
 };
 
 export type ModelResponseSchema = {
@@ -62,13 +65,21 @@ export interface ReviewModel {
     compactPrompt?: boolean;
   }): Promise<{ requestId: string; model: string } | null>;
 
-  pollReviewBatch(params: { model: string; requestId: string; file: FileDiff; config: RepoConfig }): Promise<
-    | { status: 'pending' }
-    | { status: 'done'; response: FileReviewOutcome }
-    | { status: 'failed'; error: unknown }
+  pollReviewBatch(params: {
+    model: string;
+    requestId: string;
+    file: FileDiff;
+    config: RepoConfig;
+  }): Promise<
+    | { status: "pending" }
+    | { status: "done"; response: FileReviewOutcome }
+    | { status: "failed"; error: unknown }
   >;
 
-  verifyFindings(params: { candidates: VerifyCandidate[]; config: RepoConfig }): Promise<ModelResponse>;
+  verifyFindings(params: {
+    candidates: VerifyCandidate[];
+    config: RepoConfig;
+  }): Promise<ModelResponse>;
 }
 
 export interface ModelErrorClassifier {

@@ -1,6 +1,6 @@
-import { SectionCard, Select, Skeleton, Text } from '@codraoss/ui';
+import { SectionCard, Select, Skeleton, Text } from "@codraoss/ui";
 
-import { Mail } from 'lucide-react';
+import { Mail } from "lucide-react";
 import {
   COMMON_TIME_ZONES,
   DEFAULT_TIME_ZONE,
@@ -8,17 +8,18 @@ import {
   formatDateTime,
   resolvedTimeZone,
   timeZoneOffsetLabel,
-} from '@client/lib/timezone';
-import type { AccountSettings, AuthSessionUser } from '@codraoss/schema/api';
+} from "@client/lib/timezone";
+import type { AccountSettings, AuthSessionUser } from "@codraoss/schema/api";
 
-import { DetailGroup, RevealOnClick, DetailRow } from './detail-rows';
+import { DetailGroup, RevealOnClick, DetailRow } from "./detail-rows";
 
 // No "Automatic" option: defaults to UTC so timestamps read the same for everyone; the browser's own zone is folded into the list.
 let cachedZoneOptions: { value: string; label: string }[] | null = null;
 function getZoneOptions() {
   if (cachedZoneOptions) return cachedZoneOptions;
-  const zones = Array.from(new Set([DEFAULT_TIME_ZONE, ...COMMON_TIME_ZONES, browserTimeZone()]))
-    .sort((a, b) => a.localeCompare(b));
+  const zones = Array.from(
+    new Set([DEFAULT_TIME_ZONE, ...COMMON_TIME_ZONES, browserTimeZone()]),
+  ).sort((a, b) => a.localeCompare(b));
   cachedZoneOptions = zones.map((zone) => {
     const offset = timeZoneOffsetLabel(zone);
     return { value: zone, label: offset ? `${zone} · ${offset}` : zone };
@@ -28,12 +29,12 @@ function getZoneOptions() {
 
 function formatDate(value: string) {
   return formatDateTime(value, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short',
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
   });
 }
 
@@ -57,9 +58,7 @@ export function AccountDetailsSection({
   const zoneOpts = getZoneOptions();
 
   return (
-    <SectionCard
-      title="Details"
-    >
+    <SectionCard title="Details">
       <div className="space-y-4 p-5">
         <DetailGroup caption="Profile">
           <DetailRow label="Name" loading={pending} skeletonWidth={140}>
@@ -78,28 +77,53 @@ export function AccountDetailsSection({
         </DetailGroup>
 
         <DetailGroup caption="GitHub">
-          <DetailRow label="GitHub username" loading={pending} skeletonWidth={120}>
+          <DetailRow
+            label="GitHub username"
+            loading={pending}
+            skeletonWidth={120}
+          >
             @{user?.login}
           </DetailRow>
-          <DetailRow label="GitHub user ID" mono loading={pending} skeletonWidth={80}>
+          <DetailRow
+            label="GitHub user ID"
+            mono
+            loading={pending}
+            skeletonWidth={80}
+          >
             {user?.githubUserId}
           </DetailRow>
         </DetailGroup>
 
         <DetailGroup caption="Codra account">
           {(pending || account) && (
-            <DetailRow label="Account ID" mono loading={pending} skeletonWidth={230}>
+            <DetailRow
+              label="Account ID"
+              mono
+              loading={pending}
+              skeletonWidth={230}
+            >
               <RevealOnClick label="account ID">{account?.id}</RevealOnClick>
             </DetailRow>
           )}
-          <DetailRow label="Signed in" mono loading={pending} skeletonWidth={190}>
+          <DetailRow
+            label="Signed in"
+            mono
+            loading={pending}
+            skeletonWidth={190}
+          >
             {user ? formatDate(user.signedInAt) : null}
           </DetailRow>
 
           {/* Timestamps are stored absolute (UTC); this only controls how they're rendered. */}
           <div className="flex items-center justify-between gap-4 px-4 py-3">
             <span className="min-w-0 shrink-0">
-              <Text variant="body" size="sm" bold as="span" className="text-[13px] dark:text-ui-subtle">
+              <Text
+                variant="body"
+                size="sm"
+                bold
+                as="span"
+                className="text-[13px] dark:text-ui-subtle"
+              >
                 Date &amp; time zone
               </Text>
               <span className="mt-0.5 block text-[11px] leading-tight text-ui-subtle">

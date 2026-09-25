@@ -1,37 +1,45 @@
-import * as dotenv from 'dotenv';
-import * as path from 'node:path';
-dotenv.config({ path: path.resolve(process.cwd(), '../../.dev.vars') });
-dotenv.config({ path: path.resolve(process.cwd(), '.dev.vars') });
+import * as dotenv from "dotenv";
+import * as path from "node:path";
+dotenv.config({ path: path.resolve(process.cwd(), "../../.dev.vars") });
+dotenv.config({ path: path.resolve(process.cwd(), ".dev.vars") });
 
-import { serve } from '@hono/node-server';
-import { createApiRouter } from '@codraoss/api';
-import { runWithDb } from '@codraoss/db/client';
+import { serve } from "@hono/node-server";
+import { createApiRouter } from "@codraoss/api";
+import { runWithDb } from "@codraoss/db/client";
 
-import { NodeOrchestrator, RedisKVAdapter, RedisQueueAdapter, RedisSessionStore, startWorker } from '@codraoss/node-adapters';
-import { createNodeApiDeps } from './api-deps';
-import { createNodeEnv, type NodeAppBindings } from './env';
-import { logger } from '@codraoss/api/logger';
-import Redis from 'ioredis';
-import { Queue } from 'bullmq';
+import {
+  NodeOrchestrator,
+  RedisKVAdapter,
+  RedisQueueAdapter,
+  RedisSessionStore,
+  startWorker,
+} from "@codraoss/node-adapters";
+import { createNodeApiDeps } from "./api-deps";
+import { createNodeEnv, type NodeAppBindings } from "./env";
+import { logger } from "@codraoss/api/logger";
+import Redis from "ioredis";
+import { Queue } from "bullmq";
 
-import { serveStatic } from '@hono/node-server/serve-static';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { createReviewRuntime } from './runtime';
+import { serveStatic } from "@hono/node-server/serve-static";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import { createReviewRuntime } from "./runtime";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 const redisClient = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
-  tls: redisUrl.startsWith('rediss://') ? { rejectUnauthorized: process.env.REDIS_INSECURE_TLS !== 'true' } : undefined, // Managed Redis
+  tls: redisUrl.startsWith("rediss://")
+    ? { rejectUnauthorized: process.env.REDIS_INSECURE_TLS !== "true" }
+    : undefined, // Managed Redis
 });
-redisClient.on('error', (err) => {
-  logger.error('[Redis Error]', err);
+redisClient.on("error", (err) => {
+  logger.error("[Redis Error]", err);
 });
 
-const reviewQueue = new Queue('codra-reviews', { connection: redisClient });
+const reviewQueue = new Queue("codra-reviews", { connection: redisClient });
 
 const stubs = {
   SESSION_STORE: new RedisSessionStore(redisClient),
@@ -41,54 +49,71 @@ const stubs = {
 };
 
 const env: NodeAppBindings = createNodeEnv(stubs);
-env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(createReviewRuntime(env), stubs.REVIEW_QUEUE);
+env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(
+  createReviewRuntime(env),
+  stubs.REVIEW_QUEUE,
+);
 
 const app = createApiRouter();
 
 app.onError((err, c) => {
-  console.error('HONO ERROR:', err);
-  return c.text('Custom Error: ' + err.message, 500);
+  console.error("HONO ERROR:", err);
+  return c.text("Custom Error: " + err.message, 500);
 });
 
+const distClientPath = path.resolve(__dirname, "../../../dist/client");
+app.use("/assets/*", serveStatic({ root: distClientPath }));
+app.use("/*.svg", serveStatic({ root: distClientPath }));
+app.use("/*.ico", serveStatic({ root: distClientPath }));
+app.get("*", serveStatic({ root: distClientPath, path: "index.html" }));
 
-const distClientPath = path.resolve(__dirname, '../../../dist/client');
-app.use('/assets/*', serveStatic({ root: distClientPath }));
-app.use('/*.svg', serveStatic({ root: distClientPath }));
-app.use('/*.ico', serveStatic({ root: distClientPath }));
-app.get('*', serveStatic({ root: distClientPath, path: 'index.html' }));
+app.get("/health", (c) => c.text("OK"));
 
-app.get('/health', (c) => c.text('OK'));
-
-const port = parseInt(process.env.PORT || '3000', 10);
+const port = parseInt(process.env.PORT || "3000", 10);
 
 let worker: ReturnType<typeof startWorker> | undefined;
-if (process.env.START_WORKER !== 'false') {
-  worker = startWorker(redisClient, stubs.REVIEW_QUEUE, () => createReviewRuntime(env), logger);
-  logger.info('BullMQ Background Worker started.');
+if (process.env.START_WORKER !== "false") {
+  worker = startWorker(
+    redisClient,
+    stubs.REVIEW_QUEUE,
+    () => createReviewRuntime(env),
+    logger,
+  );
+  logger.info("BullMQ Background Worker started.");
 }
 
-if (process.env.START_API !== 'false') {
-  const server = serve({
-    fetch: async (request) => {
-      const apiEnv = {
-        ...env,
-        deps: createNodeApiDeps(env),
-      };
+if (process.env.START_API !== "false") {
+  const server = serve(
+    {
+      fetch: async (request) => {
+        const apiEnv = {
+          ...env,
+          deps: createNodeApiDeps(env),
+        };
 
-      try { return await runWithDb({ ...env, HYPERDRIVE: env.DATABASE_CONFIG }, () => app.fetch(request, apiEnv as any)); } catch (e) { console.error('SERVE ERROR:', e); return new Response('Internal Server Error', { status: 500 }); }
+        try {
+          return await runWithDb(
+            { ...env, HYPERDRIVE: env.DATABASE_CONFIG },
+            () => app.fetch(request, apiEnv as any),
+          );
+        } catch (e) {
+          console.error("SERVE ERROR:", e);
+          return new Response("Internal Server Error", { status: 500 });
+        }
+      },
+      port,
+      hostname: "0.0.0.0",
     },
-    port,
-    hostname: '0.0.0.0',
-  }, (info) => {
-    logger.info(`Codra Node server running on http://localhost:${info.port}`);
-  });
-
+    (info) => {
+      logger.info(`Codra Node server running on http://localhost:${info.port}`);
+    },
+  );
 
   if (server) {
     const originalClose = server.close.bind(server);
-    server.close = function(callback?: (err?: Error) => void) {
+    server.close = function (callback?: (err?: Error) => void) {
       return originalClose((err?: Error) => {
-        logger.info('HTTP server closed.');
+        logger.info("HTTP server closed.");
         if (callback) callback(err);
       });
     } as typeof server.close;
@@ -96,27 +121,26 @@ if (process.env.START_API !== 'false') {
 }
 
 const shutdown = async () => {
-  logger.info('Shutting down Codra Node server...');
+  logger.info("Shutting down Codra Node server...");
 
   // Close BullMQ worker
   if (worker) {
-    logger.info('Waiting for active BullMQ jobs to finish...');
+    logger.info("Waiting for active BullMQ jobs to finish...");
     await worker.close();
-    logger.info('BullMQ Worker closed gracefully.');
+    logger.info("BullMQ Worker closed gracefully.");
   }
 
   // Close Redis connection
   if (redisClient) {
-    logger.info('Closing Redis client...');
+    logger.info("Closing Redis client...");
     await redisClient.quit();
-    logger.info('Redis client closed.');
+    logger.info("Redis client closed.");
   }
 
   // Postgres client manages its own pool.
-  
-  logger.info('All services stopped. Exiting.');
+
+  logger.info("All services stopped. Exiting.");
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
-
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);

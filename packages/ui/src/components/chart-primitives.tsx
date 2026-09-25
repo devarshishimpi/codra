@@ -1,5 +1,5 @@
-import { Children, type ReactNode } from 'react';
-import { cn } from '../lib/utils';
+import { Children, type ReactNode } from "react";
+import { cn } from "../lib/utils";
 
 export function CardDots() {
   return (
@@ -7,8 +7,9 @@ export function CardDots() {
       aria-hidden
       className="pointer-events-none absolute inset-0 opacity-[0.35]"
       style={{
-        backgroundImage: 'radial-gradient(circle, var(--ui-line) 1px, transparent 1px)',
-        backgroundSize: '18px 18px',
+        backgroundImage:
+          "radial-gradient(circle, var(--ui-line) 1px, transparent 1px)",
+        backgroundSize: "18px 18px",
       }}
     />
   );
@@ -19,7 +20,7 @@ export function GraphShell({
   icon,
   legend,
   children,
-  className = '',
+  className = "",
 }: {
   title: string;
   icon?: ReactNode;
@@ -30,7 +31,7 @@ export function GraphShell({
   return (
     <div
       className={cn(
-        'flex flex-col rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black',
+        "flex flex-col rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black",
         className,
       )}
     >
@@ -79,8 +80,9 @@ export function SeriesMarker({ color, hatched, dashed }: SeriesMarkerProps) {
         hatched
           ? {
               backgroundImage:
-                'repeating-linear-gradient(45deg, var(--ui-subtle) 0 1.5px, transparent 1.5px 3.5px)',
-              backgroundColor: 'color-mix(in oklch, var(--ui-fill) 60%, transparent)',
+                "repeating-linear-gradient(45deg, var(--ui-subtle) 0 1.5px, transparent 1.5px 3.5px)",
+              backgroundColor:
+                "color-mix(in oklch, var(--ui-fill) 60%, transparent)",
             }
           : { backgroundColor: color }
       }
@@ -102,14 +104,18 @@ export function LegendChip({
   );
 }
 
-
-
 export function ChartDefs({ isDark }: { isDark: boolean }) {
-  const hatch = isDark ? 'rgba(228,228,231,0.5)' : 'rgba(63,63,70,0.4)';
-  const hatchBg = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)';
+  const hatch = isDark ? "rgba(228,228,231,0.5)" : "rgba(63,63,70,0.4)";
+  const hatchBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
   return (
     <defs>
-      <pattern id="hatchGray" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+      <pattern
+        id="hatchGray"
+        patternUnits="userSpaceOnUse"
+        width="5"
+        height="5"
+        patternTransform="rotate(45)"
+      >
         <rect width="5" height="5" fill={hatchBg} />
         <line x1="0" y1="0" x2="0" y2="5" stroke={hatch} strokeWidth="1.4" />
       </pattern>
@@ -118,8 +124,16 @@ export function ChartDefs({ isDark }: { isDark: boolean }) {
         <stop offset="100%" stopColor="#2563eb" />
       </linearGradient>
       <linearGradient id="amberFill" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor={isDark ? '#f59e0b' : '#d97706'} stopOpacity={0.16} />
-        <stop offset="100%" stopColor={isDark ? '#f59e0b' : '#d97706'} stopOpacity={0.02} />
+        <stop
+          offset="0%"
+          stopColor={isDark ? "#f59e0b" : "#d97706"}
+          stopOpacity={0.16}
+        />
+        <stop
+          offset="100%"
+          stopColor={isDark ? "#f59e0b" : "#d97706"}
+          stopOpacity={0.02}
+        />
       </linearGradient>
     </defs>
   );
@@ -128,14 +142,27 @@ export function ChartDefs({ isDark }: { isDark: boolean }) {
 const METER_ROW_PX = 20;
 const METER_GAP_PX = 14;
 
-export function MeterList({ visible, children }: { visible: number; children: ReactNode }) {
+export function MeterList({
+  visible,
+  children,
+}: {
+  visible: number;
+  children: ReactNode;
+}) {
   const scrolls = Children.count(children) > visible;
 
   return (
     <div className="px-3.5 py-4 sm:px-4 sm:py-4.5">
       <div
-        className={cn('space-y-3.5', scrolls && 'overflow-y-auto pr-3')}
-        style={scrolls ? { maxHeight: visible * METER_ROW_PX + (visible - 1) * METER_GAP_PX } : undefined}
+        className={cn("space-y-3.5", scrolls && "overflow-y-auto pr-3")}
+        style={
+          scrolls
+            ? {
+                maxHeight:
+                  visible * METER_ROW_PX + (visible - 1) * METER_GAP_PX,
+              }
+            : undefined
+        }
       >
         {children}
       </div>
@@ -157,11 +184,17 @@ export function TickMeter({
   valueLabel: string;
 }) {
   const SEGMENTS = 26;
-  const filled = value > 0 ? Math.max(1, Math.round((value / Math.max(max, 1)) * SEGMENTS)) : 0;
+  const filled =
+    value > 0
+      ? Math.max(1, Math.round((value / Math.max(max, 1)) * SEGMENTS))
+      : 0;
 
   return (
     <div className="flex h-5 items-center gap-3">
-      <span className="w-28 shrink-0 truncate text-[13px] font-medium text-ui-default" title={label}>
+      <span
+        className="w-28 shrink-0 truncate text-[13px] font-medium text-ui-default"
+        title={label}
+      >
         {label}
       </span>
       <div
@@ -173,7 +206,7 @@ export function TickMeter({
           <span
             key={i}
             className="min-w-[2px] rounded-[1px]"
-            style={{ backgroundColor: i < filled ? color : 'var(--ui-fill)' }}
+            style={{ backgroundColor: i < filled ? color : "var(--ui-fill)" }}
           />
         ))}
       </div>

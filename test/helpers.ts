@@ -1,12 +1,12 @@
-﻿import { describe } from 'vitest';
-import type { AppBindings } from '@server/env';
-import { InMemorySessionStore } from '@codraoss/core';
-import { encryptLlmApiKey, ModelRunner } from '@codraoss/models';
-import { queryRows } from '@codraoss/db/client';
-import { getResolvedModelConfig } from '@codraoss/db/model-configs';
-import type { TokenTracker } from '@codraoss/core/token-tracker';
-import { createApiRouterDeps } from '../apps/worker/src/api-deps';
-import type { ApiRouterDeps } from '@codraoss/api';
+﻿import { describe } from "vitest";
+import type { AppBindings } from "@server/env";
+import { InMemorySessionStore } from "@codraoss/core";
+import { encryptLlmApiKey, ModelRunner } from "@codraoss/models";
+import { queryRows } from "@codraoss/db/client";
+import { getResolvedModelConfig } from "@codraoss/db/model-configs";
+import type { TokenTracker } from "@codraoss/core/token-tracker";
+import { createApiRouterDeps } from "../apps/worker/src/api-deps";
+import type { ApiRouterDeps } from "@codraoss/api";
 
 export class MemoryKV {
   private readonly store = new Map<string, string>();
@@ -15,18 +15,18 @@ export class MemoryKV {
     this.store.set(key, value);
   }
 
-  async get(key: string, type?: 'text' | 'json' | Partial<any>) {
+  async get(key: string, type?: "text" | "json" | Partial<any>) {
     const value = this.store.get(key) ?? null;
     if (value === null) return null;
-    if (type === 'json') {
+    if (type === "json") {
       return JSON.parse(value);
     }
     return value;
   }
 
-  async getWithMetadata(key: string, type?: 'text' | 'json' | Partial<any>) {
+  async getWithMetadata(key: string, type?: "text" | "json" | Partial<any>) {
     return {
-      value: await this.get(key, type as 'text' | 'json'),
+      value: await this.get(key, type as "text" | "json"),
       metadata: null,
       cacheStatus: null,
     } as any;
@@ -36,7 +36,7 @@ export class MemoryKV {
     return {
       keys: Array.from(this.store.keys()).map((name) => ({ name })),
       list_complete: true,
-      cursor: '',
+      cursor: "",
     } as any;
   }
 
@@ -46,24 +46,26 @@ export class MemoryKV {
 }
 
 export class MockAssets {
-  private readonly self = 'mock-assets';
+  private readonly self = "mock-assets";
 
   async fetch(input: RequestInfo | URL) {
-    if (this?.self !== 'mock-assets') {
-      throw new TypeError('Illegal invocation: function called with incorrect `this` reference.');
+    if (this?.self !== "mock-assets") {
+      throw new TypeError(
+        "Illegal invocation: function called with incorrect `this` reference.",
+      );
     }
     const request = input instanceof Request ? input : new Request(input);
     const pathname = new URL(request.url).pathname;
 
-    if (pathname === '/index.html' || pathname.endsWith('/index.html')) {
+    if (pathname === "/index.html" || pathname.endsWith("/index.html")) {
       return new Response(null, {
         status: 307,
-        headers: { location: pathname.slice(0, -'index.html'.length) || '/' },
+        headers: { location: pathname.slice(0, -"index.html".length) || "/" },
       });
     }
 
     return new Response(`<html><body>${pathname}</body></html>`, {
-      headers: { 'content-type': 'text/html' },
+      headers: { "content-type": "text/html" },
     });
   }
 }
@@ -94,7 +96,7 @@ export class MockWorkflow {
 }
 
 function usableEnvValue(value: string | undefined) {
-  return value && value !== 'undefined' && value !== 'null' ? value : null;
+  return value && value !== "undefined" && value !== "null" ? value : null;
 }
 
 function requiredEnv(key: keyof NodeJS.ProcessEnv) {
@@ -106,18 +108,20 @@ function requiredEnv(key: keyof NodeJS.ProcessEnv) {
 }
 
 function _unusedEnv(key: string): string {
-  throw new Error(`${key} is not required by the current test suite. Add it to the test env only when a test exercises that path.`);
+  throw new Error(
+    `${key} is not required by the current test suite. Add it to the test env only when a test exercises that path.`,
+  );
 }
 
 export function getTestDatabaseUrl() {
-  return requiredEnv('TEST_DATABASE_URL');
+  return requiredEnv("TEST_DATABASE_URL");
 }
 
 export function hasConfiguredTestDatabaseUrl() {
   return Boolean(usableEnvValue(process.env.TEST_DATABASE_URL));
 }
 
-import { FakeIdentityProvider } from '../packages/core/test/fakes/identity-provider';
+import { FakeIdentityProvider } from "../packages/core/test/fakes/identity-provider";
 
 export function createTestEnv(
   overrides: Partial<AppBindings> = {},
@@ -126,7 +130,11 @@ export function createTestEnv(
   const env = {
     AI: {
       async run() {
-        return { response: '{"findings":[],"file_verdict":"approve","file_summary":"ok"}', usage: { prompt_tokens: 1, completion_tokens: 1 } };
+        return {
+          response:
+            '{"findings":[],"file_verdict":"approve","file_summary":"ok"}',
+          usage: { prompt_tokens: 1, completion_tokens: 1 },
+        };
       },
     },
     APP_KV: new MemoryKV() as unknown as any,
@@ -138,30 +146,38 @@ export function createTestEnv(
     HYPERDRIVE: {
       connectionString: getTestDatabaseUrl(),
     },
-    APP_PRIVATE_KEY: 'private_key',
-    GITHUB_APP_ID: 'app_id',
-    GITHUB_APP_SLUG: requiredEnv('GITHUB_APP_SLUG'),
-    GITHUB_APP_WEBHOOK_SECRET: requiredEnv('GITHUB_APP_WEBHOOK_SECRET'),
-    GITHUB_CLIENT_ID: requiredEnv('GITHUB_CLIENT_ID'),
-    GITHUB_CLIENT_SECRET: requiredEnv('GITHUB_CLIENT_SECRET'),
-    AUTH_CALLBACK_URL: requiredEnv('AUTH_CALLBACK_URL'),
-    APP_URL: requiredEnv('APP_URL'),
-    DASHBOARD_ALLOWED_USERS: requiredEnv('DASHBOARD_ALLOWED_USERS'),
-    LLM_CONFIG_ENCRYPTION_KEY: 'test-llm-config-encryption-key',
-    BOT_USERNAME: requiredEnv('BOT_USERNAME'),
-    ENVIRONMENT: 'test',
-    
-    
+    APP_PRIVATE_KEY: "private_key",
+    GITHUB_APP_ID: "app_id",
+    GITHUB_APP_SLUG: requiredEnv("GITHUB_APP_SLUG"),
+    GITHUB_APP_WEBHOOK_SECRET: requiredEnv("GITHUB_APP_WEBHOOK_SECRET"),
+    GITHUB_CLIENT_ID: requiredEnv("GITHUB_CLIENT_ID"),
+    GITHUB_CLIENT_SECRET: requiredEnv("GITHUB_CLIENT_SECRET"),
+    AUTH_CALLBACK_URL: requiredEnv("AUTH_CALLBACK_URL"),
+    APP_URL: requiredEnv("APP_URL"),
+    DASHBOARD_ALLOWED_USERS: requiredEnv("DASHBOARD_ALLOWED_USERS"),
+    LLM_CONFIG_ENCRYPTION_KEY: "test-llm-config-encryption-key",
+    BOT_USERNAME: requiredEnv("BOT_USERNAME"),
+    ENVIRONMENT: "test",
+
     ...overrides,
   } as AppBindings;
-  (env as any).deps = Object.assign(createApiRouterDeps(env, {} as any), depsOverrides);
+  (env as any).deps = Object.assign(
+    createApiRouterDeps(env, {} as any),
+    depsOverrides,
+  );
   return env;
 }
 
-export function createTestModelRunner(env: AppBindings, tracker?: TokenTracker, opts: { jobId?: string } = {}) {
+export function createTestModelRunner(
+  env: AppBindings,
+  tracker?: TokenTracker,
+  opts: { jobId?: string } = {},
+) {
   return new ModelRunner({
     kv: env.APP_KV as any,
-    secretStore: { getSecret: async (k: string) => (env as any)[k] as string || null },
+    secretStore: {
+      getSecret: async (k: string) => ((env as any)[k] as string) || null,
+    },
     getConfig: async (id: string) => getResolvedModelConfig(env as any, id),
     aiBinding: env.AI,
     tracker,
@@ -170,10 +186,24 @@ export function createTestModelRunner(env: AppBindings, tracker?: TokenTracker, 
 }
 
 // ensureModelCatalog seeds only Cloudflare models, so these Gemini fixtures must be created here or a fresh CI database fails.
-const GOOGLE_TEST_MODEL_IDS = ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-3.1-flash-lite'];
+const GOOGLE_TEST_MODEL_IDS = [
+  "gemini-3.1-pro-preview",
+  "gemini-2.5-pro",
+  "gemini-3.1-flash-lite",
+];
 
-export async function saveTestProviderApiKey(env: AppBindings, providerName = 'Google', apiKey = 'test-key') {
-  const encrypted = await encryptLlmApiKey({ getSecret: async (key) => env[key as keyof AppBindings] as string || null }, apiKey);
+export async function saveTestProviderApiKey(
+  env: AppBindings,
+  providerName = "Google",
+  apiKey = "test-key",
+) {
+  const encrypted = await encryptLlmApiKey(
+    {
+      getSecret: async (key) =>
+        (env[key as keyof AppBindings] as string) || null,
+    },
+    apiKey,
+  );
   await queryRows(
     env,
     `
@@ -184,7 +214,7 @@ export async function saveTestProviderApiKey(env: AppBindings, providerName = 'G
     [encrypted, providerName],
   );
 
-  if (providerName === 'Google') {
+  if (providerName === "Google") {
     for (const modelId of GOOGLE_TEST_MODEL_IDS) {
       await queryRows(
         env,
@@ -205,35 +235,37 @@ export async function saveTestProviderApiKey(env: AppBindings, providerName = 'G
   }
 }
 
-export function generateMockDiff(files: { path: string; content: string }[]): string {
+export function generateMockDiff(
+  files: { path: string; content: string }[],
+): string {
   return files
     .map((f) => {
-      const lines = f.content.split('\n');
+      const lines = f.content.split("\n");
       return `diff --git a/${f.path} b/${f.path}
 index 1234567..890abcd 100644
 --- a/${f.path}
 +++ b/${f.path}
 @@ -1,${lines.length} +1,${lines.length} @@
-${lines.map((l) => `+${l}`).join('\n')}`;
+${lines.map((l) => `+${l}`).join("\n")}`;
     })
-    .join('\n');
+    .join("\n");
 }
 
 export function createMockPRWebhook(overrides: any = {}) {
   return {
-    action: 'opened',
+    action: "opened",
     installation: { id: 12345 },
     repository: {
-      name: 'test-repo',
-      owner: { login: 'test-owner' },
+      name: "test-repo",
+      owner: { login: "test-owner" },
     },
     pull_request: {
       number: 1,
-      title: 'Initial PR',
-      body: 'Testing PR body',
-      user: { login: 'dev-author' },
-      head: { sha: 'headsha', ref: 'feature' },
-      base: { sha: 'basesha', ref: 'main' },
+      title: "Initial PR",
+      body: "Testing PR body",
+      user: { login: "dev-author" },
+      head: { sha: "headsha", ref: "feature" },
+      base: { sha: "basesha", ref: "main" },
       draft: false,
     },
     ...overrides,
@@ -242,7 +274,9 @@ export function createMockPRWebhook(overrides: any = {}) {
 
 export const sha = (seed: string) => seed.repeat(40).slice(0, 40);
 
-export const dbDescribe = hasConfiguredTestDatabaseUrl() ? describe : describe.skip;
+export const dbDescribe = hasConfiguredTestDatabaseUrl()
+  ? describe
+  : describe.skip;
 
 let nameSeq = 0;
 export function uniqueName(prefix: string) {
@@ -252,5 +286,3 @@ export function uniqueName(prefix: string) {
 }
 
 export const uniqueRepo = (label: string) => uniqueName(`test-repo-${label}`);
-
-

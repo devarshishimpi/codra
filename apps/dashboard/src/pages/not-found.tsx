@@ -1,6 +1,6 @@
-import { Button } from '@codraoss/ui';
-import { Link } from 'react-router-dom';
-import { Ghost, Home, ArrowLeft } from 'lucide-react';
+import { Button } from "@codraoss/ui";
+import { Link } from "react-router-dom";
+import { Ghost, Home, ArrowLeft } from "lucide-react";
 
 export function NotFoundPage() {
   return (
@@ -17,16 +17,21 @@ export function NotFoundPage() {
           </div>
         </div>
 
-        <h1 className="text-6xl font-black tracking-tighter text-foreground mb-2">404</h1>
-        <h2 className="text-xl font-bold text-foreground mb-4 uppercase tracking-widest">Resource not found</h2>
-        
+        <h1 className="text-6xl font-black tracking-tighter text-foreground mb-2">
+          404
+        </h1>
+        <h2 className="text-xl font-bold text-foreground mb-4 uppercase tracking-widest">
+          Resource not found
+        </h2>
+
         <p className="text-muted-foreground leading-relaxed mb-10">
-          The coordinates you're looking for don't exist in our current index. It may have been moved, deleted, or never existed in this dimension.
+          The coordinates you're looking for don't exist in our current index.
+          It may have been moved, deleted, or never existed in this dimension.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="gap-2 font-bold px-6"
             onClick={() => window.history.back()}
           >

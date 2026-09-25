@@ -1,6 +1,6 @@
-import type { DbEnv } from './env';
-import { queryRows } from './client';
-import type { ClaimType } from '@codraoss/schema';
+import type { DbEnv } from "./env";
+import { queryRows } from "./client";
+import type { ClaimType } from "@codraoss/schema";
 
 // Reads over findings a human has already judged: report only over the LABELLED subset, always with n. The absence of a label is not a signal.
 
@@ -15,7 +15,11 @@ export type RejectedExemplar = {
 // Findings a human rejected, injected as negative few-shot exemplars: retrieval measurably improves small models here (F1 36.35 -> 74.05 at 20 shots). Claim-type-keyed since there's no vector store.
 export async function getRejectedExemplars(
   env: DbEnv,
-  input: { repositoryId: number; claimTypes?: readonly ClaimType[]; limit?: number },
+  input: {
+    repositoryId: number;
+    claimTypes?: readonly ClaimType[];
+    limit?: number;
+  },
 ): Promise<RejectedExemplar[]> {
   const limit = Math.min(input.limit ?? 5, 20);
 
@@ -36,7 +40,11 @@ export async function getRejectedExemplars(
       ORDER BY rc.fingerprint, rc.id DESC
       LIMIT $3
     `,
-    [input.repositoryId, input.claimTypes?.length ? [...input.claimTypes] : null, limit],
+    [
+      input.repositoryId,
+      input.claimTypes?.length ? [...input.claimTypes] : null,
+      limit,
+    ],
   );
 }
 

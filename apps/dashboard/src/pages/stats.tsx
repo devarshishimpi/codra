@@ -1,17 +1,15 @@
-import { LoadError } from '@codraoss/ui';
-import { useEffect, useState } from 'react';
-import { PageHeaderActions } from '@client/components/shared/page-header-actions';
-import { PageHeader } from '@client/components/layout/page-header';
-import { useIsDarkMode } from '@codraoss/ui/hooks';
-import { usePolling } from '@client/hooks/use-polling';
-import { useStatsRange } from '@client/hooks/use-stats-range';
-import { api } from '@client/lib/api';
-import type { StatsPayload } from '@codraoss/schema';
+import { LoadError } from "@codraoss/ui";
+import { useEffect, useState } from "react";
+import { PageHeaderActions } from "@client/components/shared/page-header-actions";
+import { PageHeader } from "@client/components/layout/page-header";
+import { useIsDarkMode } from "@codraoss/ui/hooks";
+import { usePolling } from "@client/hooks/use-polling";
+import { useStatsRange } from "@client/hooks/use-stats-range";
+import { api } from "@client/lib/api";
+import type { StatsPayload } from "@codraoss/schema";
 
-
-import { MetricsGrid } from '@client/components/features/stats/metrics-grid';
-import { prefetchMetricsCharts } from '@client/components/features/stats/metrics-grid-prefetch';
-
+import { MetricsGrid } from "@client/components/features/stats/metrics-grid";
+import { prefetchMetricsCharts } from "@client/components/features/stats/metrics-grid-prefetch";
 
 export function StatsPage() {
   const [stats, setStats] = useState<StatsPayload | null>(null);
@@ -35,7 +33,7 @@ export function StatsPage() {
       setStats(res.stats);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load stats.');
+      setError(e instanceof Error ? e.message : "Failed to load stats.");
     } finally {
       setRefreshing(false);
     }

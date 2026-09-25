@@ -1,12 +1,18 @@
-import type { TokenTracker } from '../token-tracker';
-import type { Clock, IdGenerator, KvStore } from './platform';
-import type { FileReviewStore } from './file-reviews';
-import type { GitProviderFactory, ReviewGitProvider } from './git-provider';
-import type { JobStore } from './jobs';
-import type { ModelErrorClassifier, ReviewModel } from './model';
-import type { ReviewFormatter } from './formatter';
-import type { LearningStore, ModelConfigReader, RepoConfigLoader, ReviewSettingsReader, WebhookDeliveryReader } from './settings';
-import type { TelemetrySink } from './telemetry';
+import type { TokenTracker } from "../token-tracker";
+import type { Clock, IdGenerator, KvStore } from "./platform";
+import type { FileReviewStore } from "./file-reviews";
+import type { GitProviderFactory, ReviewGitProvider } from "./git-provider";
+import type { JobStore } from "./jobs";
+import type { ModelErrorClassifier, ReviewModel } from "./model";
+import type { ReviewFormatter } from "./formatter";
+import type {
+  LearningStore,
+  ModelConfigReader,
+  RepoConfigLoader,
+  ReviewSettingsReader,
+  WebhookDeliveryReader,
+} from "./settings";
+import type { TelemetrySink } from "./telemetry";
 
 export interface ReviewRuntime {
   kv: KvStore;
@@ -22,11 +28,14 @@ export interface ReviewRuntime {
   repoConfig: RepoConfigLoader;
   telemetry: TelemetrySink;
 
-    createTokenTracker(): TokenTracker;
-  createGitHub(installationId: string, tracker: TokenTracker): ReviewGitProvider;
+  createTokenTracker(): TokenTracker;
+  createGitHub(
+    installationId: string,
+    tracker: TokenTracker,
+  ): ReviewGitProvider;
   createModel(jobId: string, tracker: TokenTracker): ReviewModel;
   createFormatter(): ReviewFormatter;
 
-    githubClients: GitProviderFactory;
+  githubClients: GitProviderFactory;
   modelErrors: ModelErrorClassifier;
 }

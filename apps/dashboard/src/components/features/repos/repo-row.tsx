@@ -1,9 +1,18 @@
-import { Badge, Button, Switch } from '@codraoss/ui';
-import { Settings2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import type { RepoConfigRecord } from '@codraoss/schema';
-import { describeModelRoute, type ModelOption, type ModelRouteConfig } from '@client/components/features/models/model-route';
-import { getRepoRoute, hasMeaningfulCustomStrategy, formatLastActivity, type GlobalModelConfig } from './repo-route';
+import { Badge, Button, Switch } from "@codraoss/ui";
+import { Settings2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { RepoConfigRecord } from "@codraoss/schema";
+import {
+  describeModelRoute,
+  type ModelOption,
+  type ModelRouteConfig,
+} from "@client/components/features/models/model-route";
+import {
+  getRepoRoute,
+  hasMeaningfulCustomStrategy,
+  formatLastActivity,
+  type GlobalModelConfig,
+} from "./repo-route";
 
 export interface RepoRowProps {
   repo: RepoConfigRecord;
@@ -46,11 +55,17 @@ export function RepoRow({
             <h2 className="ui-font-mono truncate text-[13px] text-ui-default">
               {repo.owner}/{repo.repo}
             </h2>
-            <Badge variant={optimisticEnabled ? 'success' : 'neutral'} className="shrink-0">
-              {optimisticEnabled ? 'Enabled' : 'Paused'}
+            <Badge
+              variant={optimisticEnabled ? "success" : "neutral"}
+              className="shrink-0"
+            >
+              {optimisticEnabled ? "Enabled" : "Paused"}
             </Badge>
-            <Badge variant={custom ? 'default' : 'neutral'} className="hidden shrink-0 sm:inline-flex">
-              {custom ? 'Custom strategy' : 'Global strategy'}
+            <Badge
+              variant={custom ? "default" : "neutral"}
+              className="hidden shrink-0 sm:inline-flex"
+            >
+              {custom ? "Custom strategy" : "Global strategy"}
             </Badge>
           </div>
           {lastActivity && (
@@ -72,7 +87,7 @@ export function RepoRow({
             <Switch
               checked={optimisticEnabled}
               disabled={togglePending}
-              aria-label={`${optimisticEnabled ? 'Pause' : 'Enable'} reviews for ${repo.owner}/${repo.repo}`}
+              aria-label={`${optimisticEnabled ? "Pause" : "Enable"} reviews for ${repo.owner}/${repo.repo}`}
               onCheckedChange={handleToggle}
             />
           </label>

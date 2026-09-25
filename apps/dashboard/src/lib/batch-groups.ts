@@ -1,4 +1,4 @@
-import type { FileReviewRecord } from '@codraoss/schema';
+import type { FileReviewRecord } from "@codraoss/schema";
 
 // Bin membership is never persisted (pack.ts derives it rather than storing it). But every file in
 // a bin is written with the SAME shared response, so grouping on `rawAiOutput` reconstructs the bins
@@ -6,7 +6,9 @@ import type { FileReviewRecord } from '@codraoss/schema';
 // names each file it covers.
 export type BatchGroup = { index: number; paths: string[] };
 
-export function groupBatches(files: FileReviewRecord[]): Map<string, BatchGroup> {
+export function groupBatches(
+  files: FileReviewRecord[],
+): Map<string, BatchGroup> {
   const byResponse = new Map<string, BatchGroup>();
 
   for (const file of files) {
@@ -14,7 +16,11 @@ export function groupBatches(files: FileReviewRecord[]): Map<string, BatchGroup>
     if ((file.batchSize ?? 1) <= 1 || !file.rawAiOutput) continue;
     const existing = byResponse.get(file.rawAiOutput);
     if (existing) existing.paths.push(file.filePath);
-    else byResponse.set(file.rawAiOutput, { index: byResponse.size + 1, paths: [file.filePath] });
+    else
+      byResponse.set(file.rawAiOutput, {
+        index: byResponse.size + 1,
+        paths: [file.filePath],
+      });
   }
 
   // Re-keyed by path, because a row only knows its own identity.

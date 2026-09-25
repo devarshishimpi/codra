@@ -1,4 +1,4 @@
-import { logger } from '@codraoss/core/logger';
+import { logger } from "@codraoss/core/logger";
 
 export class GitHubError extends Error {
   constructor(
@@ -8,21 +8,38 @@ export class GitHubError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'GitHubError';
+    this.name = "GitHubError";
   }
 }
 
-export async function assertResponseOk(response: Response, path: string, action: string) {
+export async function assertResponseOk(
+  response: Response,
+  path: string,
+  action: string,
+) {
   if (!response.ok) {
     let errText;
-    try { errText = await response.text(); } catch { errText = '<unreadable>'; }
-    throw new GitHubError(response.status, errText, path, `${action} failed with ${response.status}: ${errText}`);
+    try {
+      errText = await response.text();
+    } catch {
+      errText = "<unreadable>";
+    }
+    throw new GitHubError(
+      response.status,
+      errText,
+      path,
+      `${action} failed with ${response.status}: ${errText}`,
+    );
   }
 }
 
 // 406 too_large beyond 20,000 lines diff cap.
 export function isDiffTooLargeError(error: unknown): boolean {
-  return error instanceof GitHubError && error.status === 406 && /too_large|maximum number of lines/i.test(error.body ?? '');
+  return (
+    error instanceof GitHubError &&
+    error.status === 406 &&
+    /too_large|maximum number of lines/i.test(error.body ?? "")
+  );
 }
 
 export async function withRetry<T>(
@@ -36,25 +53,32 @@ export async function withRetry<T>(
       return await fn();
     } catch (error: any) {
       attempt++;
-      const isSecondaryRateLimit = error instanceof GitHubError &&
+      const isSecondaryRateLimit =
+        error instanceof GitHubError &&
         error.status === 403 &&
-        error.body?.toLowerCase().includes('secondary rate limit');
+        error.body?.toLowerCase().includes("secondary rate limit");
 
       const isRetryable =
         isSecondaryRateLimit ||
-        (error instanceof GitHubError && (error.status === 429 || error.status >= 500)) ||
-        error.name === 'TimeoutError' ||
-        error.message.includes('timeout');
+        (error instanceof GitHubError &&
+          (error.status === 429 || error.status >= 500)) ||
+        error.name === "TimeoutError" ||
+        error.message.includes("timeout");
 
       if (!isRetryable || attempt > maxRetries) {
         throw error;
       }
 
-      const delay = isSecondaryRateLimit ? Math.pow(2, attempt) * 30000 : Math.pow(2, attempt) * 1000;
-      logger.warn(`Retrying GitHub operation ${operation} (attempt ${attempt}/${maxRetries}) in ${delay}ms`, {
-        status: error instanceof GitHubError ? error.status : undefined,
-        error: error.message,
-      });
+      const delay = isSecondaryRateLimit
+        ? Math.pow(2, attempt) * 30000
+        : Math.pow(2, attempt) * 1000;
+      logger.warn(
+        `Retrying GitHub operation ${operation} (attempt ${attempt}/${maxRetries}) in ${delay}ms`,
+        {
+          status: error instanceof GitHubError ? error.status : undefined,
+          error: error.message,
+        },
+      );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
@@ -65,7 +89,10 @@ export function installationCacheKey(installationId: string) {
 }
 
 export function encodeGitHubContentPath(path: string) {
-  return path.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+  return path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
 }
 
 export function repoApiPath(owner: string, repo: string) {
@@ -76,5 +103,9 @@ export function repoApiPath(owner: string, repo: string) {
 // An implementation detail of GitHubClient, NOT new public API: `request`/`requestAndCheck` stay private on the class, which hands one of these to the free functions.
 export type GitHubRequestContext = {
   request(path: string, init?: RequestInit, accept?: string): Promise<Response>;
-  requestAndCheck(path: string, init?: RequestInit, accept?: string): Promise<Response>;
+  requestAndCheck(
+    path: string,
+    init?: RequestInit,
+    accept?: string,
+  ): Promise<Response>;
 };

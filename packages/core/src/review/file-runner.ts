@@ -1,15 +1,25 @@
-import { logger } from '../logger';
-import { type ParsedReviewComment, type RepoConfig } from '@codraoss/schema';
-import { parseUnifiedDiff, type FileDiff } from '../diff';
-import { ruleHitsToComments, scanFileForRuleHits, type RuleScanStats } from '../rules/detect';
-import type { RejectedExemplar } from '../prompts/file-review';
-import type { PullRequestRecord, ReviewModel, ReviewRuntime } from '../ports';
-import { type PersistedReviewJob } from './phase-control';
-import { FRESH_INVOCATION_YIELD_SECONDS, MAX_RETRYABLE_FILE_REVIEW_FAILURES } from '../constants';
-import { isSubrequestBudgetError, retryableModelFailureDelaySeconds } from './retry-policy';
+import { logger } from "../logger";
+import { type ParsedReviewComment, type RepoConfig } from "@codraoss/schema";
+import { parseUnifiedDiff, type FileDiff } from "../diff";
+import {
+  ruleHitsToComments,
+  scanFileForRuleHits,
+  type RuleScanStats,
+} from "../rules/detect";
+import type { RejectedExemplar } from "../prompts/file-review";
+import type { PullRequestRecord, ReviewModel, ReviewRuntime } from "../ports";
+import { type PersistedReviewJob } from "./phase-control";
+import {
+  FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_RETRYABLE_FILE_REVIEW_FAILURES,
+} from "../constants";
+import {
+  isSubrequestBudgetError,
+  retryableModelFailureDelaySeconds,
+} from "./retry-policy";
 
 export async function persistCompletedReview(
-  env: Pick<ReviewRuntime, 'fileReviews'>,
+  env: Pick<ReviewRuntime, "fileReviews">,
   job: PersistedReviewJob,
   file: ReturnType<typeof parseUnifiedDiff>[number],
   response: {
@@ -21,7 +31,7 @@ export async function persistCompletedReview(
     userPrompt: string;
     parsed: {
       comments: ParsedReviewComment[];
-      verdict: 'approve' | 'comment';
+      verdict: "approve" | "comment";
       fileSummary: string;
       overallCorrectness?: string;
       confidenceScore?: number;
@@ -30,7 +40,7 @@ export async function persistCompletedReview(
 ) {
   await env.fileReviews.upsertFileReview(job.id, {
     filePath: file.path,
-    fileStatus: 'done',
+    fileStatus: "done",
     modelUsed: response.modelUsed,
     modelProvider: response.provider,
     diffLineCount: file.lineCount,
@@ -51,7 +61,7 @@ export async function persistCompletedReview(
 }
 
 export async function persistFailedFileReview(
-  env: Pick<ReviewRuntime, 'fileReviews'>,
+  env: Pick<ReviewRuntime, "fileReviews">,
   jobId: string,
   input: {
     filePath: string;
@@ -66,7 +76,7 @@ export async function persistFailedFileReview(
 ) {
   await env.fileReviews.upsertFileReview(jobId, {
     filePath: input.filePath,
-    fileStatus: 'failed',
+    fileStatus: "failed",
     modelUsed: input.modelUsed,
     modelProvider: input.modelProvider ?? null,
     diffLineCount: input.diffLineCount,
@@ -98,9 +108,12 @@ export function scanRuleChannel(
     });
     return { comments: ruleHitsToComments(file, result), stats: result.stats };
   } catch (error) {
-    logger.warn(`Rule scan failed for ${file.path}; continuing with LLM findings only`, {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.warn(
+      `Rule scan failed for ${file.path}; continuing with LLM findings only`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      },
+    );
     return { comments: [], stats: null };
   }
 }
@@ -112,14 +125,17 @@ export function scanRuleChannel(
  * 7% of the time against 20% for claims found by one -- so the fact that both reviewers found
  * something is not a reason to trust it more, and this field must never become a weight.
  */
-function tagReviewer(comments: ParsedReviewComment[], reviewerModel: string): ParsedReviewComment[] {
+function tagReviewer(
+  comments: ParsedReviewComment[],
+  reviewerModel: string,
+): ParsedReviewComment[] {
   return comments.map((comment) => ({ ...comment, reviewerModel }));
 }
 
 /** Never throws: the primary review already succeeded, and a second opinion is not worth losing it. */
 async function runSecondaryReview(
   model: ReviewModel,
-  params: Parameters<ReviewModel['reviewFile']>[0],
+  params: Parameters<ReviewModel["reviewFile"]>[0],
   secondary: { model: string; fallbacks: string[] },
   path: string,
 ) {
@@ -131,14 +147,21 @@ async function runSecondaryReview(
       ...params,
       config: {
         ...params.config,
-        model: { ...params.config.model, main: secondary.model, fallbacks: secondary.fallbacks },
+        model: {
+          ...params.config.model,
+          main: secondary.model,
+          fallbacks: secondary.fallbacks,
+        },
       },
     });
   } catch (error) {
-    logger.warn(`Secondary reviewer failed for ${path}; keeping the primary review`, {
-      model: secondary.model,
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.warn(
+      `Secondary reviewer failed for ${path}; keeping the primary review`,
+      {
+        model: secondary.model,
+        error: error instanceof Error ? error.message : String(error),
+      },
+    );
     return null;
   }
 }
@@ -184,18 +207,24 @@ export async function reviewAndPersistFile(
     // never cost the file -- it logs and the review stands on the primary alone. Skipped when
     // `compactPrompt` is set, because that flag means the last attempt was already too much.
     const secondary = config.model?.secondary ?? null;
-    const secondaryReview = secondary && !compactPrompt
-      ? await runSecondaryReview(model, reviewParams, secondary, file.path)
-      : null;
+    const secondaryReview =
+      secondary && !compactPrompt
+        ? await runSecondaryReview(model, reviewParams, secondary, file.path)
+        : null;
 
     const llmComments = [
       ...tagReviewer(response.parsed.comments, response.modelUsed),
-      ...(secondaryReview ? tagReviewer(secondaryReview.parsed.comments, secondaryReview.modelUsed) : []),
+      ...(secondaryReview
+        ? tagReviewer(
+            secondaryReview.parsed.comments,
+            secondaryReview.modelUsed,
+          )
+        : []),
     ];
 
     await env.fileReviews.upsertFileReview(job.id, {
       filePath: file.path,
-      fileStatus: 'done',
+      fileStatus: "done",
       modelUsed: response.modelUsed,
       modelProvider: response.provider,
       diffLineCount: file.lineCount,
@@ -205,7 +234,8 @@ export async function reviewAndPersistFile(
       // inheritance, resume and finalize all assume that. The two reviewers merge into it.
       parsedComments: [...llmComments, ...ruleScan.comments],
       inputTokens: response.inputTokens + (secondaryReview?.inputTokens ?? 0),
-      outputTokens: response.outputTokens + (secondaryReview?.outputTokens ?? 0),
+      outputTokens:
+        response.outputTokens + (secondaryReview?.outputTokens ?? 0),
       durationMs: env.clock.now() - startedAt,
       verdict: response.parsed.verdict,
       fileSummary: response.parsed.fileSummary,
@@ -213,10 +243,13 @@ export async function reviewAndPersistFile(
       confidenceScore: response.parsed.confidenceScore,
       errorMessage: null,
       withheldCounts: {
-        evidence: (response.parsed.evidenceStats?.unmatched ?? 0)
-          + (response.parsed.evidenceStats?.absent ?? 0)
-          + (response.parsed.evidenceStats?.weak ?? 0),
-        claimDenied: Object.values(response.parsed.deniedClaimCounts ?? {}).reduce((sum, n) => sum + n, 0),
+        evidence:
+          (response.parsed.evidenceStats?.unmatched ?? 0) +
+          (response.parsed.evidenceStats?.absent ?? 0) +
+          (response.parsed.evidenceStats?.weak ?? 0),
+        claimDenied: Object.values(
+          response.parsed.deniedClaimCounts ?? {},
+        ).reduce((sum, n) => sum + n, 0),
         // Findings about code the diff never touched. Counted apart from the evidence gate: those are
         // findings whose quote could not be found at all, these are ones that were found in the wrong
         // place, and only the second number says anything about how the reviewer is misreading a PR.
@@ -242,23 +275,30 @@ export async function reviewAndPersistFile(
     });
 
     if (response.wasPromptTruncated) {
-      logger.warn(`Reviewed only part of ${file.path}; findings from the remainder are missing.`, {
-        jobId: job.id,
-        model: response.modelUsed,
-        reviewedLineCount: response.reviewedLineCount,
-        diffLineCount: file.lineCount,
-      });
+      logger.warn(
+        `Reviewed only part of ${file.path}; findings from the remainder are missing.`,
+        {
+          jobId: job.id,
+          model: response.modelUsed,
+          reviewedLineCount: response.reviewedLineCount,
+          diffLineCount: file.lineCount,
+        },
+      );
     }
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown file review error';
-    const modelId = config.model?.main ?? 'unconfigured';
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown file review error";
+    const modelId = config.model?.main ?? "unconfigured";
     const modelProvider = await resolveFailureModelProvider();
 
     if (isSubrequestBudgetError(error)) {
-      logger.warn(`File review deferred for ${file.path}; subrequest budget will retry in a fresh invocation`, {
-        error: errorMessage,
-      });
-      Object.defineProperty(error, 'retryAfterSeconds', {
+      logger.warn(
+        `File review deferred for ${file.path}; subrequest budget will retry in a fresh invocation`,
+        {
+          error: errorMessage,
+        },
+      );
+      Object.defineProperty(error, "retryAfterSeconds", {
         value: FRESH_INVOCATION_YIELD_SECONDS,
         configurable: true,
       });
@@ -266,16 +306,17 @@ export async function reviewAndPersistFile(
     }
 
     if (env.modelErrors.isRetryableModelError(error)) {
-      const failureCount = await env.fileReviews.recordRetryableFileReviewFailure(job.id, {
-        filePath: file.path,
-        modelUsed: modelId,
-        modelProvider,
-        diffLineCount: file.lineCount,
-        diffInput: null,
-        durationMs: env.clock.now() - startedAt,
-        errorMessage,
-        countsAsAttempt: env.modelErrors.nextChainIndexOf(error) === null,
-      });
+      const failureCount =
+        await env.fileReviews.recordRetryableFileReviewFailure(job.id, {
+          filePath: file.path,
+          modelUsed: modelId,
+          modelProvider,
+          diffLineCount: file.lineCount,
+          diffInput: null,
+          durationMs: env.clock.now() - startedAt,
+          errorMessage,
+          countsAsAttempt: env.modelErrors.nextChainIndexOf(error) === null,
+        });
 
       if (failureCount >= MAX_RETRYABLE_FILE_REVIEW_FAILURES) {
         const finalError = `Review skipped after ${failureCount} repeated model provider outages.`;
@@ -288,18 +329,24 @@ export async function reviewAndPersistFile(
           errorMessage: finalError,
           parsedComments: ruleScan.comments,
         });
-        logger.error(`File review failed permanently for ${file.path} after transient retries`, {
-          attempts: failureCount,
-          error: errorMessage,
-        });
+        logger.error(
+          `File review failed permanently for ${file.path} after transient retries`,
+          {
+            attempts: failureCount,
+            error: errorMessage,
+          },
+        );
         return;
       }
 
-      logger.warn(`File review deferred for ${file.path}; transient model/provider failure will retry later`, {
-        error: errorMessage,
-        attempts: failureCount,
-      });
-      Object.defineProperty(error, 'retryAfterSeconds', {
+      logger.warn(
+        `File review deferred for ${file.path}; transient model/provider failure will retry later`,
+        {
+          error: errorMessage,
+          attempts: failureCount,
+        },
+      );
+      Object.defineProperty(error, "retryAfterSeconds", {
         value: retryableModelFailureDelaySeconds(failureCount),
         configurable: true,
       });
@@ -309,11 +356,14 @@ export async function reviewAndPersistFile(
     logger.error(`File review failed for ${file.path}`, { error });
 
     const isHardLimit =
-      errorMessage.includes('4006') ||
-      errorMessage.toLowerCase().includes('allocation');
+      errorMessage.includes("4006") ||
+      errorMessage.toLowerCase().includes("allocation");
 
     if (isHardLimit) {
-      logger.warn(`File review hit hard provider allocation limit for ${file.path}, marking as failed to allow partial PR review.`, { error: errorMessage });
+      logger.warn(
+        `File review hit hard provider allocation limit for ${file.path}, marking as failed to allow partial PR review.`,
+        { error: errorMessage },
+      );
     }
 
     await persistFailedFileReview(env, job.id, {

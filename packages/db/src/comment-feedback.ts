@@ -1,10 +1,16 @@
-import type { DbEnv } from './env';
+import type { DbEnv } from "./env";
 
-import { queryRows } from './client';
+import { queryRows } from "./client";
 
 // 'deleted' and 'marked_wrong' are the negative signals; 'resolved' and 'marked_right' are MEASUREMENT only, since suppressing on them would train the system to stop reporting findings that worked.
 // The ABSENCE of a row is not a signal either way, so precision is only ever `marked_right / (marked_right + marked_wrong)`, reported with n.
-export type CommentOutcome = 'posted' | 'deleted' | 'resolved' | 'unresolved' | 'marked_wrong' | 'marked_right';
+export type CommentOutcome =
+  | "posted"
+  | "deleted"
+  | "resolved"
+  | "unresolved"
+  | "marked_wrong"
+  | "marked_right";
 
 export type CommentFeedbackInput = {
   repositoryId: number;
@@ -57,7 +63,7 @@ export async function upsertDashboardFeedback(
     fingerprintV2?: string | null;
     jobId: string;
     labelledBy: number | null;
-    outcome: 'marked_wrong' | 'marked_right';
+    outcome: "marked_wrong" | "marked_right";
   },
 ): Promise<void> {
   await queryRows(
@@ -77,8 +83,14 @@ export async function upsertDashboardFeedback(
         updated_at  = now()
     `,
     [
-      input.repositoryId, input.prNumber, input.fingerprint, input.anchorHash,
-      input.outcome, input.jobId, input.labelledBy, input.fingerprintV2 ?? null,
+      input.repositoryId,
+      input.prNumber,
+      input.fingerprint,
+      input.anchorHash,
+      input.outcome,
+      input.jobId,
+      input.labelledBy,
+      input.fingerprintV2 ?? null,
     ],
   );
 }

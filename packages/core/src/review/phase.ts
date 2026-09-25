@@ -1,35 +1,47 @@
-import { logger } from '../logger';
-import { defaultRepoConfig, REVIEW_CONCURRENCY_LIMITS, type ParsedReviewComment, type RepoConfig } from '@codraoss/schema';
-import { budgetAwareFileLimit } from './budget';
-import { narrowUnit, planReviewUnits } from './pack';
-import { reviewAndPersistBin } from './bin-runner';
-import { getDiffFiles } from './diff-cache';
-import { changelogExcerptFromDiff, wantsFileContext } from '../prompts/file-review';
-import { loadFileContext } from './file-context';
-import type { ReviewGitProvider, ReviewModel, ReviewRuntime } from '../ports';
-import { TokenTracker } from '../token-tracker';
+import { logger } from "../logger";
+import {
+  defaultRepoConfig,
+  REVIEW_CONCURRENCY_LIMITS,
+  type ParsedReviewComment,
+  type RepoConfig,
+} from "@codraoss/schema";
+import { budgetAwareFileLimit } from "./budget";
+import { narrowUnit, planReviewUnits } from "./pack";
+import { reviewAndPersistBin } from "./bin-runner";
+import { getDiffFiles } from "./diff-cache";
+import {
+  changelogExcerptFromDiff,
+  wantsFileContext,
+} from "../prompts/file-review";
+import { loadFileContext } from "./file-context";
+import type { ReviewGitProvider, ReviewModel, ReviewRuntime } from "../ports";
+import { TokenTracker } from "../token-tracker";
 import {
   type PersistedReviewJob,
   NextPhaseError,
   enqueueJobPhase,
   hasCompletedStep,
   heartbeatAndCheckSuperseded,
-} from './phase-control';
+} from "./phase-control";
 import {
   ASYNC_BATCH_POLL_DELAY_SECONDS,
   FRESH_INVOCATION_YIELD_SECONDS,
   MAX_JOB_CONTINUATIONS,
   REVIEW_CHUNK_WALL_CLOCK_MS,
-} from '../constants';
+} from "../constants";
 import {
   canInheritParentFileReview,
   countsAsHandledFileReview,
   isAwaitingAsyncReview,
   isSubrequestBudgetError,
   resolveModelProviderName,
-} from './retry-policy';
-import { loadRejectedExemplars, runPreparePhase } from './prepare';
-import { persistCompletedReview, persistFailedFileReview, reviewAndPersistFile } from './file-runner';
+} from "./retry-policy";
+import { loadRejectedExemplars, runPreparePhase } from "./prepare";
+import {
+  persistCompletedReview,
+  persistFailedFileReview,
+  reviewAndPersistFile,
+} from "./file-runner";
 
 export async function runReviewPhase(
   env: ReviewRuntime,
@@ -39,22 +51,27 @@ export async function runReviewPhase(
   model: ReviewModel,
   tracker: TokenTracker,
 ) {
-  if (!hasCompletedStep(job, 'Preparation')) {
+  if (!hasCompletedStep(job, "Preparation")) {
     await runPreparePhase(env, job, leaseOwner, github);
     return;
   }
 
-  await env.jobs.updateJobStep(job.id, 'Reviewing Files', { status: 'running' });
+  await env.jobs.updateJobStep(job.id, "Reviewing Files", {
+    status: "running",
+  });
 
   const [rejectedExemplars, pr] = await Promise.all([
     loadRejectedExemplars(env, job),
     github.getPullRequest(job.owner, job.repo, job.prNumber),
   ]);
   const config = (job.configSnapshot ?? defaultRepoConfig) as RepoConfig;
-  const failureModelId = config.model?.main ?? 'unconfigured';
+  const failureModelId = config.model?.main ?? "unconfigured";
   let failureModelProviderPromise: Promise<string | null> | null = null;
   const resolveFailureModelProvider = () => {
-    failureModelProviderPromise ??= resolveModelProviderName(env, failureModelId);
+    failureModelProviderPromise ??= resolveModelProviderName(
+      env,
+      failureModelId,
+    );
     return failureModelProviderPromise;
   };
   const { concurrencyLevel, maxFiles } = await env.settings.getReviewSettings();
@@ -72,20 +89,24 @@ export async function runReviewPhase(
     Boolean(config.model?.secondary),
   );
   if (reviewChunkFileLimit <= 0) {
-    throw new Error('Subrequest budget for this invocation was exhausted before starting the next review chunk.');
+    throw new Error(
+      "Subrequest budget for this invocation was exhausted before starting the next review chunk.",
+    );
   }
   const startedAt = env.clock.now();
   let processedThisChunk = 0;
 
   const jobIdsToQuery = [job.id];
   if (job.retryOfJobId) jobIdsToQuery.push(job.retryOfJobId);
-  const allExistingReviews = await env.fileReviews.getFileReviewsForJobs(jobIdsToQuery);
+  const allExistingReviews =
+    await env.fileReviews.getFileReviewsForJobs(jobIdsToQuery);
   type ExistingReview = (typeof allExistingReviews)[number];
   const currentReviews = new Map<string, ExistingReview>();
   const parentReviews = new Map<string, ExistingReview>();
   for (const review of allExistingReviews) {
     if (review.job_id === job.id) currentReviews.set(review.file_path, review);
-    else if (review.file_status === 'done') parentReviews.set(review.file_path, review);
+    else if (review.file_status === "done")
+      parentReviews.set(review.file_path, review);
   }
 
   const reviewTasks: Array<Promise<void>> = [];
@@ -96,7 +117,9 @@ export async function runReviewPhase(
     const inheritablePaths = files.flatMap((file) => {
       if (currentReviews.has(file.path)) return [];
       const parent = parentReviews.get(file.path);
-      return parent && canInheritParentFileReview(config, parent) ? [file.path] : [];
+      return parent && canInheritParentFileReview(config, parent)
+        ? [file.path]
+        : [];
     });
 
     if (inheritablePaths.length > 0) {
@@ -111,24 +134,37 @@ export async function runReviewPhase(
       }
       terminalProgress += inheritedPaths.length;
       if (inheritedPaths.length > 0) {
-        logger.info(`Bulk-inherited ${inheritedPaths.length} parent file reviews for job ${job.id} in one pass`);
+        logger.info(
+          `Bulk-inherited ${inheritedPaths.length} parent file reviews for job ${job.id} in one pass`,
+        );
       }
     }
   }
 
   const binnedPaths = new Set<string>();
   if (config.review.batch_small_files) {
-    const ledger = new Map(files.map((file) => {
-      const existing = currentReviews.get(file.path);
-      const inheritable = parentReviews.get(file.path);
-      return [file.path, {
-        handled: Boolean((existing && countsAsHandledFileReview(existing)) || (inheritable && canInheritParentFileReview(config, inheritable))),
-        transientErrorCount: existing?.transient_error_count ?? 0,
-      }];
-    }));
+    const ledger = new Map(
+      files.map((file) => {
+        const existing = currentReviews.get(file.path);
+        const inheritable = parentReviews.get(file.path);
+        return [
+          file.path,
+          {
+            handled: Boolean(
+              (existing && countsAsHandledFileReview(existing)) ||
+              (inheritable && canInheritParentFileReview(config, inheritable)),
+            ),
+            transientErrorCount: existing?.transient_error_count ?? 0,
+          },
+        ];
+      }),
+    );
 
-    const units = planReviewUnits(files, { enabled: true, fullFileContext: config.review.full_file_context }).flatMap((unit) => narrowUnit(unit, ledger));
-    const plannedBins = units.filter((unit) => unit.kind === 'bin');
+    const units = planReviewUnits(files, {
+      enabled: true,
+      fullFileContext: config.review.full_file_context,
+    }).flatMap((unit) => narrowUnit(unit, ledger));
+    const plannedBins = units.filter((unit) => unit.kind === "bin");
     let binsDispatched = 0;
     let filesDispatchedInBins = 0;
 
@@ -136,19 +172,32 @@ export async function runReviewPhase(
       if (processedThisChunk >= reviewChunkFileLimit) break;
       if (env.clock.now() - startedAt >= REVIEW_CHUNK_WALL_CLOCK_MS) break;
 
-      const binFiles = unit.kind === 'bin' ? unit.files : [];
+      const binFiles = unit.kind === "bin" ? unit.files : [];
       binFiles.forEach((file) => binnedPaths.add(file.path));
-      reviewTasks.push((async () => {
-        const terminal = await reviewAndPersistBin(env, job, binFiles, pr, config, totalLineCount, model, resolveFailureModelProvider, rejectedExemplars, changelogExcerpt);
-        terminalProgress += terminal;
-      })());
+      reviewTasks.push(
+        (async () => {
+          const terminal = await reviewAndPersistBin(
+            env,
+            job,
+            binFiles,
+            pr,
+            config,
+            totalLineCount,
+            model,
+            resolveFailureModelProvider,
+            rejectedExemplars,
+            changelogExcerpt,
+          );
+          terminalProgress += terminal;
+        })(),
+      );
       processedThisChunk += 1;
       binsDispatched += 1;
       filesDispatchedInBins += binFiles.length;
     }
 
     if (plannedBins.length > 0) {
-      logger.info('Batched review plan', {
+      logger.info("Batched review plan", {
         jobId: job.id,
         binsPlanned: plannedBins.length,
         binsDispatched,
@@ -162,8 +211,15 @@ export async function runReviewPhase(
     if (binnedPaths.has(file.path)) continue;
 
     const existingReview = currentReviews.get(file.path);
-    const awaitingReview = existingReview && isAwaitingAsyncReview(existingReview) ? existingReview : null;
-    if (existingReview && countsAsHandledFileReview(existingReview) && !awaitingReview) {
+    const awaitingReview =
+      existingReview && isAwaitingAsyncReview(existingReview)
+        ? existingReview
+        : null;
+    if (
+      existingReview &&
+      countsAsHandledFileReview(existingReview) &&
+      !awaitingReview
+    ) {
       continue;
     }
 
@@ -174,12 +230,16 @@ export async function runReviewPhase(
     const inherited = parentReviews.get(file.path);
     let fileContextPromise: Promise<string | null> | null = null;
     const fileContextFor = () => {
-      if (!wantsFileContext(file, config.review.full_file_context, {
-        compactPrompt: (existingReview?.transient_error_count ?? 0) > 0,
-      })) {
+      if (
+        !wantsFileContext(file, config.review.full_file_context, {
+          compactPrompt: (existingReview?.transient_error_count ?? 0) > 0,
+        })
+      ) {
         return Promise.resolve(null);
       }
-      fileContextPromise ??= loadFileContext(github, job, file, () => tracker.incrementSubrequests(1));
+      fileContextPromise ??= loadFileContext(github, job, file, () =>
+        tracker.incrementSubrequests(1),
+      );
       return fileContextPromise;
     };
     const reviewTask = async () => {
@@ -190,15 +250,34 @@ export async function runReviewPhase(
           file,
           config,
         });
-        if (poll.status === 'pending') {
+        if (poll.status === "pending") {
           awaitingAsync += 1;
           return;
         }
-        if (poll.status === 'failed') {
-          logger.warn(`Async batch poll failed for ${file.path}; falling back to synchronous review`, {
-            error: poll.error instanceof Error ? poll.error.message : String(poll.error),
-          });
-          await reviewAndPersistFile(env, job, file, pr, config, totalLineCount, model, resolveFailureModelProvider, existingReview, rejectedExemplars, changelogExcerpt, await fileContextFor());
+        if (poll.status === "failed") {
+          logger.warn(
+            `Async batch poll failed for ${file.path}; falling back to synchronous review`,
+            {
+              error:
+                poll.error instanceof Error
+                  ? poll.error.message
+                  : String(poll.error),
+            },
+          );
+          await reviewAndPersistFile(
+            env,
+            job,
+            file,
+            pr,
+            config,
+            totalLineCount,
+            model,
+            resolveFailureModelProvider,
+            existingReview,
+            rejectedExemplars,
+            changelogExcerpt,
+            await fileContextFor(),
+          );
           terminalProgress += 1;
           return;
         }
@@ -221,7 +300,7 @@ export async function runReviewPhase(
         if (submitted) {
           await env.fileReviews.upsertFileReview(job.id, {
             filePath: file.path,
-            fileStatus: 'pending',
+            fileStatus: "pending",
             modelUsed: submitted.model,
             modelProvider: null,
             diffLineCount: file.lineCount,
@@ -242,19 +321,47 @@ export async function runReviewPhase(
           awaitingAsync += 1;
           return;
         }
-        await reviewAndPersistFile(env, job, file, pr, config, totalLineCount, model, resolveFailureModelProvider, existingReview, rejectedExemplars, changelogExcerpt, await fileContextFor());
+        await reviewAndPersistFile(
+          env,
+          job,
+          file,
+          pr,
+          config,
+          totalLineCount,
+          model,
+          resolveFailureModelProvider,
+          existingReview,
+          rejectedExemplars,
+          changelogExcerpt,
+          await fileContextFor(),
+        );
         terminalProgress += 1;
         return;
       }
 
       if (!canInheritParentFileReview(config, inherited)) {
-        logger.info(`Ignoring inherited review for ${file.path}; parent model ${inherited.model_used} is not in the current model strategy`);
-        await reviewAndPersistFile(env, job, file, pr, config, totalLineCount, model, resolveFailureModelProvider, existingReview, rejectedExemplars, changelogExcerpt, await fileContextFor());
+        logger.info(
+          `Ignoring inherited review for ${file.path}; parent model ${inherited.model_used} is not in the current model strategy`,
+        );
+        await reviewAndPersistFile(
+          env,
+          job,
+          file,
+          pr,
+          config,
+          totalLineCount,
+          model,
+          resolveFailureModelProvider,
+          existingReview,
+          rejectedExemplars,
+          changelogExcerpt,
+          await fileContextFor(),
+        );
         terminalProgress += 1;
       } else {
         await env.fileReviews.upsertFileReview(job.id, {
           filePath: file.path,
-          fileStatus: 'done',
+          fileStatus: "done",
           modelUsed: inherited.model_used,
           modelProvider: inherited.model_provider,
           diffLineCount: inherited.diff_line_count,
@@ -290,71 +397,104 @@ export async function runReviewPhase(
     await env.jobs.resetJobContinuationCount(job.id);
   }
 
-  logger.info('Review chunk model usage', {
+  logger.info("Review chunk model usage", {
     jobId: job.id,
     subrequests: tracker.getSubrequestCount(),
     usage: tracker.getTotalUsage(),
     wasted: tracker.getWasted(),
   });
 
-  const rejected = results.filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+  const rejected = results.filter(
+    (result): result is PromiseRejectedResult => result.status === "rejected",
+  );
   if (rejected.length > 0) {
     rejected.forEach((result, index) => {
-      logger.error(`Review chunk task ${index + 1}/${rejected.length} failed`, result.reason);
+      logger.error(
+        `Review chunk task ${index + 1}/${rejected.length} failed`,
+        result.reason,
+      );
     });
 
-    const deferrableError = rejected.map(r => r.reason).find(r => env.modelErrors.isRetryableModelError(r) || isSubrequestBudgetError(r));
+    const deferrableError = rejected
+      .map((r) => r.reason)
+      .find(
+        (r) =>
+          env.modelErrors.isRetryableModelError(r) ||
+          isSubrequestBudgetError(r),
+      );
     if (deferrableError) {
       throw deferrableError;
     }
 
     throw rejected.length === 1
       ? rejected[0].reason
-      : new AggregateError(rejected.map((result) => result.reason), `${rejected.length} review chunk tasks failed`);
+      : new AggregateError(
+          rejected.map((result) => result.reason),
+          `${rejected.length} review chunk tasks failed`,
+        );
   }
 
   const latestReviews = await env.fileReviews.getFileReviewsForJobs([job.id]);
   const reviewedPaths = new Set(
-    latestReviews.flatMap((review) => (
-      countsAsHandledFileReview(review) && !isAwaitingAsyncReview(review) ? [review.file_path] : []
-    )),
+    latestReviews.flatMap((review) =>
+      countsAsHandledFileReview(review) && !isAwaitingAsyncReview(review)
+        ? [review.file_path]
+        : [],
+    ),
   );
-  const completedCount = files.filter((file) => reviewedPaths.has(file.path)).length;
+  const completedCount = files.filter((file) =>
+    reviewedPaths.has(file.path),
+  ).length;
 
   if (completedCount >= files.length) {
-    await env.jobs.updateJobStep(job.id, 'Reviewing Files', { status: 'done' });
-    await enqueueJobPhase(env, job.id, 'finalize', FRESH_INVOCATION_YIELD_SECONDS);
+    await env.jobs.updateJobStep(job.id, "Reviewing Files", { status: "done" });
+    await enqueueJobPhase(
+      env,
+      job.id,
+      "finalize",
+      FRESH_INVOCATION_YIELD_SECONDS,
+    );
     return;
   }
 
   if (awaitingAsync > 0 && terminalProgress === 0) {
-    const pollCount = await env.jobs.markJobContinuationQueued(job.id, ASYNC_BATCH_POLL_DELAY_SECONDS);
+    const pollCount = await env.jobs.markJobContinuationQueued(
+      job.id,
+      ASYNC_BATCH_POLL_DELAY_SECONDS,
+    );
     if (pollCount > MAX_JOB_CONTINUATIONS) {
-      logger.error(`Async batch reviews did not complete after ${pollCount} polls; degrading to a partial review: ${job.owner}/${job.repo} PR #${job.prNumber}`);
+      logger.error(
+        `Async batch reviews did not complete after ${pollCount} polls; degrading to a partial review: ${job.owner}/${job.repo} PR #${job.prNumber}`,
+      );
       for (const review of latestReviews.filter(isAwaitingAsyncReview)) {
         await persistFailedFileReview(env, job.id, {
           filePath: review.file_path,
           modelUsed: review.async_model ?? review.model_used,
           diffLineCount: review.diff_line_count,
-          errorMessage: 'Async batch review did not complete in time.',
+          errorMessage: "Async batch review did not complete in time.",
           clearAsync: true,
         });
       }
-      await env.jobs.updateJobStep(job.id, 'Reviewing Files', { status: 'done' });
-      throw new NextPhaseError('finalize', FRESH_INVOCATION_YIELD_SECONDS);
+      await env.jobs.updateJobStep(job.id, "Reviewing Files", {
+        status: "done",
+      });
+      throw new NextPhaseError("finalize", FRESH_INVOCATION_YIELD_SECONDS);
     }
-    throw new NextPhaseError('review', ASYNC_BATCH_POLL_DELAY_SECONDS);
+    throw new NextPhaseError("review", ASYNC_BATCH_POLL_DELAY_SECONDS);
   }
 
   if (job.checkRunId) {
     try {
       await github.updateCheckRun(job.owner, job.repo, job.checkRunId, {
         title: `Reviewing (${completedCount}/${files.length})`,
-        summary: 'Codra is continuing this review in the next queue chunk.',
+        summary: "Codra is continuing this review in the next queue chunk.",
       });
     } catch (error) {
-      logger.warn(`Failed to update progress check run for job ${job.id}; continuing to the next chunk anyway`, error instanceof Error ? error : new Error(String(error)));
+      logger.warn(
+        `Failed to update progress check run for job ${job.id}; continuing to the next chunk anyway`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
     }
   }
-  await enqueueJobPhase(env, job.id, 'review', FRESH_INVOCATION_YIELD_SECONDS);
+  await enqueueJobPhase(env, job.id, "review", FRESH_INVOCATION_YIELD_SECONDS);
 }

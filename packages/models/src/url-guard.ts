@@ -1,5 +1,5 @@
 // SSRF guard for custom provider base URLs.
-import { ProviderRequestError } from './types';
+import { ProviderRequestError } from "./types";
 
 const PRIVATE_HOST_PATTERNS = [
   /^127\./,
@@ -16,17 +16,17 @@ const PRIVATE_HOST_PATTERNS = [
 ];
 
 // Cloud instance-metadata endpoints, which are public-looking but reachable only from inside.
-const METADATA_HOSTS = new Set(['metadata.google.internal', '100.100.100.200']);
+const METADATA_HOSTS = new Set(["metadata.google.internal", "100.100.100.200"]);
 
 export function isPrivateHost(hostname: string) {
-  const host = hostname.replace(/^\[|\]$/g, '');
+  const host = hostname.replace(/^\[|\]$/g, "");
   return PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(host));
 }
 
 export function isValidPublicUrl(urlString: string) {
   try {
     const url = new URL(urlString);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     if (METADATA_HOSTS.has(url.hostname.toLowerCase())) return false;
     return !isPrivateHost(url.hostname);
   } catch {
@@ -34,8 +34,15 @@ export function isValidPublicUrl(urlString: string) {
   }
 }
 
-export function assertPublicBaseUrl(baseUrl: string | null | undefined, providerName: string) {
+export function assertPublicBaseUrl(
+  baseUrl: string | null | undefined,
+  providerName: string,
+) {
   if (baseUrl && !isValidPublicUrl(baseUrl)) {
-    throw new ProviderRequestError(providerName, 400, 'Invalid provider base URL.');
+    throw new ProviderRequestError(
+      providerName,
+      400,
+      "Invalid provider base URL.",
+    );
   }
 }
