@@ -21,6 +21,7 @@
   getSecret: (key: string) => Promise<string | null>;
 
   aiBinding?: any;
+  cloudflareAiEnabled?: boolean;
   appUrl: string;
   botUsername: string;
   environment: string;
@@ -135,6 +136,7 @@ function identityProvider(p: PlatformDeps) {
 
 export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
   return {
+    cloudflareAiEnabled: p.cloudflareAiEnabled,
     repositories: {
       accounts: dbAccounts,
       jobs: dbJobs,
@@ -178,6 +180,11 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
         await Promise.all(
           providers.map(async (provider) => {
             if (!provider.enabled) return;
+            if (
+              provider.apiFormat === "cloudflare-workers-ai" &&
+              p.cloudflareAiEnabled === false
+            )
+              return;
             if (
               provider.apiFormat !== "cloudflare-workers-ai" &&
               !provider.encryptedApiKey
@@ -224,6 +231,15 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
         if (!config) throw { isNotFoundError: true };
         if (!config.providerEnabled)
           throw { isDisabledError: true, message: "Provider is disabled." };
+        if (
+          config.apiFormat === "cloudflare-workers-ai" &&
+          p.cloudflareAiEnabled === false
+        ) {
+          throw {
+            isUnsupportedError: true,
+            message: "Cloudflare Workers AI is unavailable in the Node.js runtime.",
+          };
+        }
 
         try {
           const input = {

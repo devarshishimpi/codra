@@ -1,59 +1,28 @@
-version: "3.8"
-
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME_IN_PROD}
-      POSTGRES_DB: codra
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  codra-app:
+  codra:
+    container_name: codra
+    image: ${CODRA_IMAGE:-codra:0.9.13}
+    network_mode: bridge
     build:
       context: .
       dockerfile: apps/node/Dockerfile
+      tags:
+        - codra:0.9.13
+        - codra:latest
     ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD:-INSECURE_DEFAULT_CHANGE_ME_IN_PROD}@postgres:5432/codra
-      - REDIS_URL=redis://redis:6379
-      - START_WORKER=true
-      - PORT=3000
+      - "${PORT:-3000}:3000"
     env_file:
       - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    stop_grace_period: 2m
+    environment:
+      PORT: 3000
+      START_WORKER: ${START_WORKER:-true}
+      START_API: ${START_API:-true}
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    stop_grace_period: 15s
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 30s
       timeout: 3s
       retries: 3
-
-volumes:
-  postgres_data:
-  redis_data:

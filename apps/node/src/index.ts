@@ -1,7 +1,12 @@
 import * as dotenv from "dotenv";
 import * as path from "node:path";
+import { readFile } from "node:fs/promises";
 dotenv.config({ path: path.resolve(process.cwd(), "../../.dev.vars") });
 dotenv.config({ path: path.resolve(process.cwd(), ".dev.vars") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env.local") });
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env.local") });
 
 import { serve } from "@hono/node-server";
 import { createApiRouter } from "@codraoss/api";
@@ -31,6 +36,7 @@ const __dirname = dirname(__filename);
 const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 const redisClient = new Redis(redisUrl, {
   maxRetriesPerRequest: null,
+  family: 4,
   tls: redisUrl.startsWith("rediss://")
     ? { rejectUnauthorized: process.env.REDIS_INSECURE_TLS !== "true" }
     : undefined, // Managed Redis
@@ -54,15 +60,21 @@ env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(
   stubs.REVIEW_QUEUE,
 );
 
-const app = createApiRouter();
+const distClientPath = path.resolve(__dirname, "../../../dist/client");
+const app = createApiRouter({
+  serveIndex: async () =>
+    new Response(await readFile(path.join(distClientPath, "index.html")), {
+      headers: { "Content-Type": "text/html; charset=UTF-8" },
+    }),
+});
 
 app.onError((err, c) => {
   console.error("HONO ERROR:", err);
   return c.text("Custom Error: " + err.message, 500);
 });
 
-const distClientPath = path.resolve(__dirname, "../../../dist/client");
 app.use("/assets/*", serveStatic({ root: distClientPath }));
+app.use("/icons/*", serveStatic({ root: distClientPath }));
 app.use("/*.svg", serveStatic({ root: distClientPath }));
 app.use("/*.ico", serveStatic({ root: distClientPath }));
 app.get("*", serveStatic({ root: distClientPath, path: "index.html" }));

@@ -11,7 +11,8 @@
     "@codraoss/db",
     "@codraoss/schema",
     "@codraoss/models",
-    "@codraoss/provider-github"
+    "@codraoss/provider-github",
+    "@codraoss/node-adapters"
   ],
   "outDir": "dist"
 }

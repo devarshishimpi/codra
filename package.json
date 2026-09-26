@@ -21,9 +21,11 @@
   "scripts": {
     "build": "vite build && npm run cf-typegen",
     "build:packages": "npm run build -w @codraoss/schema && npm run build -w @codraoss/core && npm run build -w @codraoss/provider-github && npm run build -w @codraoss/db && npm run build -w @codraoss/models && npm run build -w @codraoss/api && npm run build -w @codraoss/ui && npm run build -w @codraoss/node-adapters",
+    "build:node": "npm run build:packages && vite build && npm run build -w @codraoss/node-server",
     "build:all": "npm run build --workspaces --if-present",
     "cf-typegen": "cd apps/worker && wrangler types ./src/worker-env.d.ts",
     "deploy": "npm run build && npm run migrate && cd apps/worker && wrangler deploy",
+    "deploy:node": "npm run build:node && npm run migrate && npm run start -w @codraoss/node-server",
     "dev": "concurrently -k -n CLIENT,WORKER -c cyan,green \"npm:dev:client\" \"npm:dev:worker\"",
     "dev:client": "vite build --watch --mode development",
     "dev:node": "npm run dev -w @codraoss/node-server",

@@ -13,7 +13,46 @@ import {
 
 type AppAuthEnv = AppBindingsConfig;
 
+function encodeDerLength(length: number) {
+  if (length < 128) return Uint8Array.of(length);
+
+  const bytes: number[] = [];
+  let remaining = length;
+  while (remaining > 0) {
+    bytes.unshift(remaining & 0xff);
+    remaining >>>= 8;
+  }
+  return Uint8Array.of(0x80 | bytes.length, ...bytes);
+}
+
+function wrapPkcs1InPkcs8(pkcs1: ArrayBuffer) {
+  const algorithm = Uint8Array.from([
+    0x30, 0x0d, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01,
+    0x01, 0x05, 0x00,
+  ]);
+  const version = Uint8Array.from([0x02, 0x01, 0x00]);
+  const octetLength = encodeDerLength(pkcs1.byteLength);
+  const octet = new Uint8Array(1 + octetLength.length + pkcs1.byteLength);
+  octet[0] = 0x04;
+  octet.set(octetLength, 1);
+  octet.set(new Uint8Array(pkcs1), 1 + octetLength.length);
+
+  const bodyLength = version.length + algorithm.length + octet.length;
+  const sequenceLength = encodeDerLength(bodyLength);
+  const result = new Uint8Array(1 + sequenceLength.length + bodyLength);
+  result[0] = 0x30;
+  result.set(sequenceLength, 1);
+  let offset = 1 + sequenceLength.length;
+  result.set(version, offset);
+  offset += version.length;
+  result.set(algorithm, offset);
+  offset += algorithm.length;
+  result.set(octet, offset);
+  return result.buffer;
+}
+
 function pemToArrayBuffer(pem: string) {
+  const isPkcs1 = /-----BEGIN RSA PRIVATE KEY-----/.test(pem);
   const base64 = pem
     .replace(/-----BEGIN (RSA )?PRIVATE KEY-----/g, "")
     .replace(/-----END (RSA )?PRIVATE KEY-----/g, "")
@@ -28,7 +67,7 @@ function pemToArrayBuffer(pem: string) {
     bytes[index] = binary.charCodeAt(index);
   }
 
-  return bytes.buffer;
+  return isPkcs1 ? wrapPkcs1InPkcs8(bytes.buffer) : bytes.buffer;
 }
 
 function base64UrlEncode(input: string) {

@@ -73,6 +73,12 @@ export function createReposRouter() {
     }
   });
 
+  app.get("/config", async (c) => {
+    const denied = await requirePermission(c, "repos.read");
+    if (denied) return denied;
+    return c.redirect(new URL("/repos", c.req.url).toString(), 302);
+  });
+
   app.post("/sync", async (c) => {
     const denied = await requirePermission(c, "repos.sync");
     if (denied) return denied;

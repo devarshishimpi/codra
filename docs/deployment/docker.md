@@ -1,97 +1,124 @@
-# Self-Hosting with Docker
+# Deployment
 
-While Codra is natively optimized for Cloudflare Workers, you can easily self-host the entire architecture on a dedicated server (like a VPS or EC2 instance) using Docker. This setup replaces Cloudflare infrastructure with standard open-source equivalents:
+Codra supports three deployment modes:
 
-- **Node.js** (Web Server and Job Runner)
-- **PostgreSQL** (Database)
-- **Redis** (Key-Value Store and Queues via BullMQ)
+- **Cloudflare Workers** using Wrangler.
+- **Direct Node.js** using a managed PostgreSQL and Redis.
+- **Docker** using the published Codra image and external PostgreSQL and Redis.
 
-## Prerequisites
+All modes use the same application variables and migration script.
 
-Before deploying, ensure your server has the following installed:
+## Requirements
 
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+You need a configured GitHub App, an LLM provider, PostgreSQL, and Redis. Node.js 20+ is required for Cloudflare commands and direct Node.js deployment. Docker is required for Docker deployment.
 
-You will also need:
-
-- A GitHub App configured for your organization (See [GitHub App Setup](../setup/github-app.md)). You will need the **App ID**, **Client ID**, **Client Secret**, **Webhook Secret**, and **Private Key**.
-- An API Key for your chosen LLM provider (e.g., Anthropic, OpenAI, or Google).
-
-## Environment Setup
-
-Create a `.env` file in the root of the cloned repository. This file handles all your secrets.
+Create `.env` in the repository root for local deployment. Do not commit it or copy it into a Docker image.
 
 ```env
-# Server Configuration
-APP_URL=https://codra.yourdomain.com
+APP_URL=https://codra.example.com
 ENVIRONMENT=production
-
-# Database & Redis (these map to the docker-compose.yml service names)
-DATABASE_URL=postgres://postgres:codra_secure_default_pass@postgres:5432/codra
-REDIS_URL=redis://redis:6379
-
-# GitHub App Secrets
+DATABASE_URL=postgres://user:password@postgres.example.com:5432/codra?sslmode=require
+REDIS_URL=rediss://user:password@redis.example.com:6379
 GITHUB_APP_ID=your_app_id
 GITHUB_CLIENT_ID=your_client_id
 GITHUB_CLIENT_SECRET=your_client_secret
 GITHUB_APP_WEBHOOK_SECRET=your_webhook_secret
-# Note: For Docker Compose, you can preserve actual newlines in the private key without \n literals:
-APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
-...
------END RSA PRIVATE KEY-----"
-
-# Application Settings
-AUTH_CALLBACK_URL=https://codra.yourdomain.com/api/auth/callback
+APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+AUTH_CALLBACK_URL=https://codra.example.com/auth/github/callback
 DASHBOARD_ALLOWED_USERS=your_github_username
 BOT_USERNAME=your-github-app-slug[bot]
-
-# Encryption Key (Must be 32 random characters for AES-256)
-LLM_CONFIG_ENCRYPTION_KEY=generate_a_random_32_char_string
+LLM_CONFIG_ENCRYPTION_KEY=your_random_encryption_key
 ```
 
-## Running the Stack
+`DATABASE_URL` is read from the process environment first, then `.dev.vars`, `.env.local`, or `.env`. The migration script is shared by Cloudflare and Node/Docker deployments.
 
-Once your `.env` is prepared, deploying is a single command. From the root of the repository, run:
+## Cloudflare Workers
+
+From the repository root:
 
 ```bash
-docker compose up -d --build
+npm ci
+npm run deploy
 ```
 
-This command will:
+`npm run deploy` builds the dashboard, runs migrations, and deploys the Worker with Wrangler. Cloudflare Worker secrets are not readable by the local migration script, so provide `DATABASE_URL` in the shell or one of the supported local env files.
 
-1. Compile the Codra Node app and its workspace dependencies.
-2. Boot Postgres and Redis containers.
-3. Start the Codra Node application container (which runs both the HTTP server and the background worker by default).
+## Direct Node.js
 
-To view logs:
+Use this when PostgreSQL and Redis are already hosted separately:
 
 ```bash
-docker compose logs -f codra-app
+npm ci
+npm run deploy:node
 ```
 
-The application should now be accessible at `http://localhost:3000` (or whatever `PORT` you configured).
+This builds the dashboard and Node server, runs migrations, and starts the API plus BullMQ worker on port `3000`.
 
-## Advanced Configuration: Scaling (Unified Process Model)
+For separate processes, use the same built application with:
 
-By default, the `codra-app` service boots _both_ the web server (Hono API) and the background worker (BullMQ) in a single Node process.
-
-For high-traffic environments, you may want to scale the API web nodes independently of the heavy AI review worker nodes.
-
-You can split these by overriding the `START_WORKER` and `START_API` environment variables across different containers.
-
-**API Node:**
-
-```env
-START_WORKER=false
-# START_API=true (Default)
+```bash
+START_WORKER=false npm run start -w @codraoss/node-server
+START_API=false npm run start -w @codraoss/node-server
 ```
 
-**Worker Node:**
+Keep one API process and one worker process running, sharing the same database and Redis URLs.
 
-```env
-START_WORKER=true
-START_API=false # Disables the HTTP server
+## Docker
+
+The image contains only Codra. PostgreSQL, Redis, and secrets are external.
+
+Build and run the local image:
+
+```bash
+docker compose build
+docker compose run --rm codra node packages/db/scripts/migrate.mjs
+docker compose up -d codra
 ```
 
-This allows you to spin up multiple worker containers listening to Redis while load-balancing incoming HTTP requests to your API nodes.
+View logs or check health:
+
+```bash
+docker compose logs -f codra
+curl http://localhost:3000/health
+```
+
+The local image is tagged as `codra:0.9.13` and `codra:latest`.
+
+### Docker Hub
+
+Publish both the release tag and the rolling tag:
+
+```bash
+docker build -f apps/node/Dockerfile \
+  -t YOUR_DOCKERHUB_USER/codra:0.9.13 \
+  -t YOUR_DOCKERHUB_USER/codra:latest .
+docker push YOUR_DOCKERHUB_USER/codra:0.9.13
+docker push YOUR_DOCKERHUB_USER/codra:latest
+```
+
+To run a published image, set `CODRA_IMAGE` in the environment or `.env`:
+
+```bash
+CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:0.9.13 docker compose pull
+CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:0.9.13 docker compose run --rm codra node packages/db/scripts/migrate.mjs
+CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:0.9.13 docker compose up -d codra
+```
+
+For each release, replace `0.9.13` with the new version and publish that tag plus `latest`.
+
+## Domains
+
+For any permanent host, configure:
+
+```text
+GitHub webhook:  https://your-domain.example/webhook
+OAuth callback:  https://your-domain.example/auth/github/callback
+```
+
+Set `APP_URL` to the same HTTPS origin.
+
+**Railway:** Deploy the Docker image, add the variables in the service settings, expose port `3000`, and use Railway's generated HTTPS domain. Run the migration once from a Railway shell, then configure the GitHub App URLs. Add a custom domain through Railway Networking when ready.
+
+**GitHub Codespaces:** Start the container, forward port `3000`, and set the port visibility to **Public**. Use the generated `https://YOUR-CODESPACE-3000.app.github.dev` URL temporarily for `APP_URL`, the webhook, and the OAuth callback. Codespaces URLs are temporary and are not suitable for permanent GitHub webhooks.
+
+For BullMQ, configure Redis with the `noeviction` maxmemory policy.

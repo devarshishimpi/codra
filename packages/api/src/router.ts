@@ -35,6 +35,7 @@ async function serveIndex(c: Context<ApiEnv>) {
 }
 
 export interface ApiRouterOptions {
+  serveIndex?: (c: Context<ApiEnv>) => Response | Promise<Response>;
   // Cross-cutting request middleware; also sees /webhook and /auth, which the /api/* guards skip.
   beforeAuth?: MiddlewareHandler<ApiEnv>[];
   // Runs on /api/* after the session and CSRF guards, so `sessionUser` is populated.
@@ -47,6 +48,7 @@ export interface ApiRouterOptions {
 
 export function createApiRouter(options: ApiRouterOptions = {}) {
   const app = new Hono<ApiEnv>();
+  const renderIndex = options.serveIndex ?? serveIndex;
 
   app.use("*", observability);
   for (const middleware of options.beforeAuth ?? []) {
@@ -54,7 +56,7 @@ export function createApiRouter(options: ApiRouterOptions = {}) {
   }
 
   // Machine health check — no session required
-  app.get("/healthz", (c) =>
+  app.get("/health", (c) =>
     c.json({ status: "ok", timestamp: new Date().toISOString() }),
   );
 
@@ -77,22 +79,21 @@ export function createApiRouter(options: ApiRouterOptions = {}) {
   app.route("/api/models", createModelsRouter());
   app.route("/api/settings", createSettingsRouter());
 
-  app.get("/login", serveIndex);
-  app.get("/", serveIndex); // Unauthenticated landing page
-  app.get("/dashboard", requireSession, serveIndex);
-  app.get("/jobs", requireSession, serveIndex);
-  app.get("/jobs/*", requireSession, serveIndex);
-  app.get("/repos", requireSession, serveIndex);
-  app.get("/stats", requireSession, serveIndex);
-  app.get("/health", requireSession, serveIndex);
-  app.get("/settings", requireSession, serveIndex);
-  app.get("/account", requireSession, serveIndex);
+  app.get("/login", renderIndex);
+  app.get("/", renderIndex); // Unauthenticated landing page
+  app.get("/dashboard", requireSession, renderIndex);
+  app.get("/jobs", requireSession, renderIndex);
+  app.get("/jobs/*", requireSession, renderIndex);
+  app.get("/repos", requireSession, renderIndex);
+  app.get("/stats", requireSession, renderIndex);
+  app.get("/settings", requireSession, renderIndex);
+  app.get("/account", requireSession, renderIndex);
 
   for (const path of options.publicPages ?? []) {
-    app.get(path, serveIndex);
+    app.get(path, renderIndex);
   }
   for (const path of options.pages ?? []) {
-    app.get(path, requireSession, serveIndex);
+    app.get(path, requireSession, renderIndex);
   }
 
   options.routes?.(app);
