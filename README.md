@@ -28,6 +28,10 @@
     |
     <a href="CONTRIBUTING.md">Contributing</a>
   </p>
+
+  <p>
+    <a href="https://appflare.dev/install/codra/"><img alt="Install with Appflare" src="https://appflare.dev/badge.svg" height="39"></a>
+  </p>
 </div>
 
 ![Codra dashboard](./public/assets/codra-dashboard.png)
