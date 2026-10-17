@@ -273,9 +273,13 @@ function coerceReviewNumber(value: unknown) {
 export function normalizeFinding(finding: unknown) {
   if (!finding || typeof finding !== "object") return null;
   const f = finding as Record<string, unknown>;
+  const resolvedBody = String(
+    f.body ?? f.description ?? f.explanation ?? f.message ?? f.comment ?? "",
+  ).trim();
+
   if (
     isPlaceholderString(f.title) ||
-    isPlaceholderString(f.body) ||
+    isPlaceholderString(resolvedBody) ||
     isPlaceholderString(f.evidence)
   )
     return null;
@@ -317,6 +321,13 @@ export function normalizeFinding(finding: unknown) {
         .trim()
         .slice(0, 100)
         .replace(/[\uD800-\uDBFF]$/, "") || "Code finding",
+    body: resolvedBody || "No description provided.",
+    evidence:
+      typeof f.evidence === "string" && f.evidence.trim()
+        ? f.evidence.trim()
+        : typeof f.quote === "string" && f.quote.trim()
+          ? f.quote.trim()
+          : undefined,
     priority:
       priority === undefined
         ? undefined

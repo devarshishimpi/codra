@@ -91,6 +91,8 @@ export const reviewConfigSchema = z.object({
       on_file_types: [...DEFAULT_EXEC_FILE_TYPES],
       command: DEFAULT_EXEC_COMMAND,
     }),
+  prompt_style: z.enum(["permissive", "calibrated", "auto"]).default("auto"),
+  secondary_verifier: z.string().nullable().default(null),
 });
 
 export const DEFAULT_REVIEW_CONFIG = reviewConfigSchema.parse({});

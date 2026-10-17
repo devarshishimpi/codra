@@ -66,9 +66,10 @@ export async function verifyFindings(params: {
   files: FileDiff[];
   comments: ParsedReviewComment[];
   model: Pick<ReviewModel, "verifyFindings">;
+  secondaryModel?: Pick<ReviewModel, "verifyFindings">;
   maxCandidates?: number;
 }): Promise<VerifyOutcome> {
-  const { comments, files, model, config, job } = params;
+  const { comments, files, model, secondaryModel, config, job } = params;
 
   const keepAll = (skipped: VerifySkipReason | null): VerifyOutcome => ({
     comments,
@@ -176,6 +177,38 @@ export async function verifyFindings(params: {
     });
 
     const droppedSet = new Set(dropped.map((drop) => drop.comment));
+    let survivingComments = comments.filter((comment) => !droppedSet.has(comment));
+
+    if (secondaryModel && survivingComments.length > 0) {
+      try {
+        const secCandidates: VerifyCandidate[] = survivingComments.map((comment, index) => ({
+          index,
+          path: comment.path,
+          line: comment.line ?? null,
+          title: comment.title,
+          body: comment.body,
+          snippet: renderDiffSnippet(fileByPath.get(comment.path), comment.line ?? undefined),
+          evidence: comment.evidence ?? null,
+        }));
+        const secRes = await secondaryModel.verifyFindings({ candidates: secCandidates, config });
+        const secResults = parseVerifyResponse(secRes.rawText);
+        const secDropIndices = new Set<number>();
+        for (const r of secResults) {
+          if (r.verdict === "drop" && r.decidable !== false) {
+            secDropIndices.add(r.index);
+          }
+        }
+        if (secDropIndices.size > 0) {
+          survivingComments = survivingComments.filter((_, idx) => !secDropIndices.has(idx));
+        }
+      } catch (secErr) {
+        logger.warn("Secondary verifier failed or unavailable; proceeding with self-verified findings", {
+          jobId: job.id,
+          error: secErr instanceof Error ? secErr.message : String(secErr),
+        });
+      }
+    }
+
     logger.info("Verification pass complete", {
       jobId: job.id,
       candidates: candidates.length,
@@ -185,7 +218,7 @@ export async function verifyFindings(params: {
     });
 
     return {
-      comments: comments.filter((comment) => !droppedSet.has(comment)),
+      comments: survivingComments,
       dropped,
       reasons,
       skipped: null,

@@ -16,7 +16,8 @@ const OPENAI_MAX_OUTPUT_TOKENS = 16_384;
 export interface OpenAIResponse {
   choices?: Array<{
     message?: {
-      content?: string | Array<{ text?: string }>;
+      content?: string | Array<{ text?: string; type?: string }>;
+      reasoning_content?: string;
     };
   }>;
   output_text?: string;
@@ -28,14 +29,46 @@ export interface OpenAIResponse {
   };
 }
 
+function resolveOpenAiEndpointTemperature(baseUrl: string, model: string): number {
+  const lowerUrl = baseUrl.toLowerCase();
+  const lowerModel = model.toLowerCase();
+
+  // Mistral AI native scale: 0.0 to 1.5. Midpoint is 0.75.
+  if (lowerUrl.includes("mistral.ai") || lowerModel.includes("codestral") || lowerModel.includes("ministral")) {
+    return 0.75;
+  }
+
+  // NVIDIA NIM / Build native scale: 0.0 to 1.0. Midpoint is 0.5.
+  if (lowerUrl.includes("nvidia.com") || lowerUrl.includes("integrate.api.nvidia")) {
+    return 0.5;
+  }
+
+  // Z.ai / GLM native scale: 0.0 to 1.0. Midpoint is 0.5.
+  if (lowerUrl.includes("z.ai") || lowerUrl.includes("bigmodel.cn")) {
+    return 0.5;
+  }
+
+  // Standard OpenAI / Azure 0.0 to 2.0 scale. Official midpoint is 1.0.
+  return 1.0;
+}
+
 function extractOpenAiText(data: OpenAIResponse) {
-  const messageContent = data?.choices?.[0]?.message?.content;
-  if (typeof messageContent === "string") return messageContent.trim();
+  const choice = data?.choices?.[0];
+  const messageContent = choice?.message?.content;
+  if (typeof messageContent === "string" && messageContent.trim()) {
+    return messageContent.trim();
+  }
   if (Array.isArray(messageContent)) {
-    return messageContent
+    const text = messageContent
+      .filter((part) => part?.type === "text" || typeof part?.text === "string")
       .map((part) => (typeof part?.text === "string" ? part.text : ""))
       .join("")
       .trim();
+    if (text) return text;
+  }
+  const reasoningContent = choice?.message?.reasoning_content;
+  if (typeof reasoningContent === "string" && reasoningContent.trim()) {
+    return reasoningContent.trim();
   }
   const outputText = data?.output_text;
   if (typeof outputText === "string") return outputText.trim();
@@ -73,6 +106,7 @@ export async function reviewWithOpenAI(
     baseUrl = baseUrl.slice(0, -1);
   }
   const url = `${baseUrl}/chat/completions`;
+  const temperature = resolveOpenAiEndpointTemperature(baseUrl, model);
 
   if (tracker) tracker.incrementSubrequests(1);
   const response = await withTimeout("OpenAI API", timeoutMs, (signal) =>
@@ -89,8 +123,7 @@ export async function reviewWithOpenAI(
           { role: "system", content: prompts.system },
           { role: "user", content: prompts.user },
         ],
-        // 0.9 of a 0-2 scale.
-        temperature: 0.9,
+        temperature,
         max_tokens: outputCeiling,
         response_format: { type: "json_object" },
       }),

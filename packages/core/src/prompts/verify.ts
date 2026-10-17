@@ -83,12 +83,10 @@ Answer two questions per finding, in this order.
       reason: "the + line adds strict validation, so the claim is backwards".
 
 2. "verdict":
-   - "keep": the code in the window genuinely exhibits the problem the claim describes.
-   - "drop": the claim is not supported by the code shown - it describes something that isn't there, it is speculative, it is a subjective style preference, or it is not decidable from this window.
-   A claim you marked not decidable is always a "drop".
+   - "keep": the code in the window genuinely exhibits the defect or hazard described, or directly implies the logic error in the modified lines.
+   - "drop": the code directly contradicts the claim (the safeguard already exists, the logic is inverted), the claim is purely speculative about unseen files outside this diff, or it is a subjective stylistic preference.
 
-Judge the CLAIM against the CODE. Do not defer to the claim's confidence or phrasing; a well-written claim about code that doesn't do what it says is still a drop.
-Be strict: when in doubt, "drop". It is better to drop a borderline finding than to keep a wrong one.
+Judge the CLAIM against the CODE. Drop claims that contradict the code or speculate without grounded evidence; keep concrete, demonstrable defects introduced by these changes.
 
 Output MUST be valid JSON, exactly one object, no prose before or after:
 {
@@ -122,7 +120,7 @@ export function buildVerifyPrompt(candidates: VerifyCandidate[]): string {
 export function renderDiffSnippet(
   file: FileDiff | undefined,
   line: number | undefined,
-  radius = 12,
+  radius = 35,
 ): string {
   if (!file) return "";
   const flat = file.hunks.flatMap((hunk) => hunk.lines);
@@ -166,7 +164,16 @@ export function parseVerifyResponse(raw: string): VerifyResult[] {
   try {
     json = JSON.parse(candidate);
   } catch {
-    json = JSON.parse(jsonrepair(candidate));
+    try {
+      json = JSON.parse(jsonrepair(candidate));
+    } catch {
+      const match = trimmed.match(/\{[\s\S]*"results"[\s\S]*\}/);
+      if (match) {
+        json = JSON.parse(jsonrepair(match[0]));
+      } else {
+        throw new Error("Could not parse verifier response as JSON");
+      }
+    }
   }
 
   return verifyResultSchema.parse(json).results;

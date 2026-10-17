@@ -360,7 +360,7 @@ export async function reviewWithGoogle(
 
     const data = (await response.json()) as {
       candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
+        content?: { parts?: Array<{ text?: string; thought?: boolean }> };
         finishReason?: string;
       }>;
       usageMetadata?: {
@@ -372,7 +372,14 @@ export async function reviewWithGoogle(
     };
 
     const candidate = data.candidates?.[0];
-    const rawText = candidate?.content?.parts
+    const nonThoughtParts = candidate?.content?.parts?.filter(
+      (part) => !part.thought,
+    );
+    const partsToUse =
+      nonThoughtParts && nonThoughtParts.length > 0
+        ? nonThoughtParts
+        : candidate?.content?.parts;
+    const rawText = partsToUse
       ?.map((part) => part.text ?? "")
       .join("")
       ?.trim();

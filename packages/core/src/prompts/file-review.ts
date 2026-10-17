@@ -186,6 +186,7 @@ const MULTI_FILE_SCHEMA_FORMAT = `{
 export function buildFileReviewSystemPromptBase(opts?: {
   multiFile?: boolean;
   fileContext?: boolean;
+  promptStyle?: "permissive" | "calibrated";
 }): string {
   const multi = opts?.multiFile === true;
 
@@ -211,6 +212,15 @@ export function buildFileReviewSystemPromptBase(opts?: {
     ? `5. Return exactly one entry per file listed below, in the same order, and never omit a file. Review each file's diff with the same care you would give it if it were the only file in front of you. An empty findings array is a positive claim that this diff introduces no defect, so return one only when that is true. Do not pad, and do not withhold.`
     : "5. If the diff genuinely introduces no defect, return an empty findings array and a short explanation. Do not pad, and do not withhold.";
 
+  const whatToReport =
+    opts?.promptStyle === "calibrated"
+      ? `### WHAT TO REPORT:
+- Report concrete, demonstrable defects introduced directly by modified lines: bugs, security vulnerabilities, resource leaks, data races, or broken invariants.
+- Be strictly conservative. Only report issues you can clearly ground in the quoted diff lines. Do NOT speculate about unseen callers, missing imports, or potential edge cases outside what is directly shown in this diff.`
+      : `### WHAT TO REPORT:
+- Report anything a senior engineer reviewing this diff would want to investigate: a bug, a security hole, a performance problem, a resource leak, an unhandled failure, a broken invariant.
+- You do not need to be certain. A finding you can ground in a quoted line is worth raising; every finding is independently checked against the diff afterwards, and a wrong one is discarded at no cost to you. A defect you decline to mention is simply lost.`;
+
   return `You are a world-class software engineer performing a precise, high-signal code review.
 Your goal is to find REAL defects (bugs, security vulnerabilities, and performance problems) introduced by the diff. Every finding must be grounded in a line you can quote from the diff.
 
@@ -221,9 +231,7 @@ ${contextScope}
 - Assume the language, runtime and build target are whatever the project already uses successfully. A syntax or standard-library method appearing in the diff is available in this project by construction -- the code around it already compiles and ships. Do not raise compatibility, polyfill, transpilation, engine-version or server-side-rendering concerns unless the diff itself shows the incompatibility.
 - Two async facts that are frequently misread. \`return somePromise()\` inside an \`async\` function IS awaited by whoever awaits that function; it is equivalent to \`return await\` except inside \`try\`/\`finally\`, so it is not a missing await and not a floating promise. And \`void someAsyncCall()\` is deliberate fire-and-forget: if the called function handles its own errors, there is no unhandled rejection to report.
 
-### WHAT TO REPORT:
-- Report anything a senior engineer reviewing this diff would want to investigate: a bug, a security hole, a performance problem, a resource leak, an unhandled failure, a broken invariant.
-- You do not need to be certain. A finding you can ground in a quoted line is worth raising; every finding is independently checked against the diff afterwards, and a wrong one is discarded at no cost to you. A defect you decline to mention is simply lost.
+${whatToReport}
 
 ### EVIDENCE (mandatory, a finding without it cannot be posted):
 - Every finding MUST include "evidence": ${evidenceSource}
@@ -257,13 +265,24 @@ export const fileReviewSystemPromptBase = buildFileReviewSystemPromptBase();
 export function buildFileReviewSystemPrompt(
   config: RepoConfig["review"],
   languagePersona?: string,
-  opts?: { multiFile?: boolean; fileContext?: boolean },
+  opts?: {
+    multiFile?: boolean;
+    fileContext?: boolean;
+    promptStyle?: "permissive" | "calibrated";
+  },
 ) {
   const persona = languagePersona ? ` as ${languagePersona}` : "";
-  const prompt = buildFileReviewSystemPromptBase(opts).replace(
-    "{{MAX_COMMENTS}}",
-    reviewBreadth(config).toString(),
-  );
+  const resolvedStyle =
+    opts?.promptStyle ??
+    (config.prompt_style === "calibrated"
+      ? "calibrated"
+      : config.prompt_style === "permissive"
+        ? "permissive"
+        : undefined);
+  const prompt = buildFileReviewSystemPromptBase({
+    ...opts,
+    promptStyle: resolvedStyle,
+  }).replace("{{MAX_COMMENTS}}", reviewBreadth(config).toString());
   return `You are a world-class professional senior code reviewer${persona}. ${prompt}`;
 }
 
