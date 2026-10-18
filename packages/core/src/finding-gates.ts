@@ -12,6 +12,7 @@ import {
 } from "./prompts/verify";
 import { logger } from "./logger";
 import { reviewBreadth } from "./prompts/file-review";
+import { dedupeFindings } from "./model-output/dedupe";
 
 type VerifiableJob = { id: string };
 
@@ -83,21 +84,64 @@ export async function verifyFindings(params: {
   const limit = verifyCandidateLimit(
     params.maxCandidates ?? reviewBreadth(config.review),
   );
-  const toVerify = comments.slice(0, limit);
+  const dedupeRadius = config.review.dedupe_line_radius ?? 2;
+  const dedupedComments = dedupeFindings(comments, { lineRadius: dedupeRadius });
+  const toVerify = dedupedComments.slice(0, limit);
 
   const fileByPath = new Map(files.map((file) => [file.path, file]));
-  const prepared = toVerify.map((comment) => ({
+  const vRadius = config.review.verification_radius ?? 35;
+
+  // Deterministic absence check: refute claims asserting a symbol is missing when it is present in the diff
+  const falseAbsenceDrops: VerifyDrop[] = [];
+  const validCandidates: ParsedReviewComment[] = [];
+
+  for (const comment of toVerify) {
+    const file = fileByPath.get(comment.path);
+    let isFalseAbsence = false;
+    if (file) {
+      const match =
+        comment.title.match(/\bmissing\s+['"`]?([a-zA-Z0-9_$]{3,})['"`]?\b/i) ??
+        comment.body.match(/\bmissing\s+['"`]?([a-zA-Z0-9_$]{3,})['"`]?\b/i);
+      if (match) {
+        const symbol = match[1];
+        const present = file.hunks.some((h) =>
+          h.lines.some((l) => l.content.includes(symbol)),
+        );
+        if (present) {
+          isFalseAbsence = true;
+          falseAbsenceDrops.push({
+            comment,
+            disposition: "verify",
+            reason: `symbol "${symbol}" asserted as missing was found directly in the modified file diff`,
+          });
+        }
+      }
+    }
+    if (!isFalseAbsence) {
+      validCandidates.push(comment);
+    }
+  }
+
+  const prepared = validCandidates.map((comment) => ({
     comment,
     snippet: renderDiffSnippet(
       fileByPath.get(comment.path),
       comment.line ?? undefined,
+      vRadius,
     ),
   }));
 
   const verifiable = prepared.filter(
     (entry) => entry.snippet !== "" || entry.comment.evidence,
   );
-  if (verifiable.length === 0) return keepAll("no_verifiable_candidates");
+  if (verifiable.length === 0) {
+    return {
+      comments: validCandidates,
+      dropped: falseAbsenceDrops,
+      reasons: new Map(falseAbsenceDrops.map((d) => [d.comment, d.reason ?? ""])),
+      skipped: "no_verifiable_candidates",
+    };
+  }
 
   const candidates: VerifyCandidate[] = verifiable.map((entry, index) => ({
     index,
@@ -125,8 +169,19 @@ export async function verifyFindings(params: {
         result.index >= candidates.length
       )
         continue;
-      const verdict =
-        result.decidable === false ? ("drop" as const) : result.verdict;
+
+      // Codra v3 Two-Tiered Verification:
+      // Tier 1: Provably refuted by the snippet -> drop
+      // Tier 2: Unverified boundary hazard -> retain as advisory P3
+      let verdict: "keep" | "drop" | "downgrade_p3";
+      if (result.verdict === "drop" && result.decidable !== false) {
+        verdict = "drop";
+      } else if (result.decidable === false) {
+        verdict = "downgrade_p3";
+      } else {
+        verdict = "keep";
+      }
+
       const prior = byIndex.get(result.index);
       if (prior && prior.verdict !== verdict) {
         conflicting.add(result.index);
@@ -167,6 +222,9 @@ export async function verifyFindings(params: {
         });
         return;
       }
+      if (result?.verdict === "downgrade_p3") {
+        entry.comment.severity = "P3";
+      }
       if (!result) {
         dropped.push({
           comment: entry.comment,
@@ -187,7 +245,11 @@ export async function verifyFindings(params: {
           line: comment.line ?? null,
           title: comment.title,
           body: comment.body,
-          snippet: renderDiffSnippet(fileByPath.get(comment.path), comment.line ?? undefined),
+          snippet: renderDiffSnippet(
+            fileByPath.get(comment.path),
+            comment.line ?? undefined,
+            vRadius,
+          ),
           evidence: comment.evidence ?? null,
         }));
         const secRes = await secondaryModel.verifyFindings({ candidates: secCandidates, config });

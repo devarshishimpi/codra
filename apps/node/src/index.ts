@@ -132,6 +132,13 @@ if (process.env.START_API !== "false") {
   }
 }
 
+// Model registry refresh in background (zero DB impact, unreferenced interval)
+import("@codraoss/models").then(({ ModelRegistryService }) => {
+  const service = ModelRegistryService.getInstance();
+  service.refreshFromRemote().catch(() => {});
+  setInterval(() => service.refreshFromRemote().catch(() => {}), 60 * 60 * 1000).unref();
+}).catch(() => {});
+
 const shutdown = async () => {
   logger.info("Shutting down Codra Node server...");
 

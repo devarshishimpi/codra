@@ -108,49 +108,96 @@ export async function reviewWithOpenAI(
   const url = `${baseUrl}/chat/completions`;
   const temperature = resolveOpenAiEndpointTemperature(baseUrl, model);
 
-  if (tracker) tracker.incrementSubrequests(1);
-  const response = await withTimeout("OpenAI API", timeoutMs, (signal) =>
-    fetch(url, {
-      method: "POST",
-      signal,
-      headers: {
-        "content-type": "application/json",
-        ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}),
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: prompts.system },
-          { role: "user", content: prompts.user },
-        ],
-        temperature,
-        max_tokens: outputCeiling,
-        response_format: { type: "json_object" },
-      }),
-    }),
-  );
+  const lowerUrl = baseUrl.toLowerCase();
+  const lowerModel = model.toLowerCase();
+  const effectiveCeiling =
+    lowerUrl.includes("nvidia.com") || lowerModel.includes("nemotron")
+      ? Math.max(outputCeiling, 2048)
+      : outputCeiling;
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new ProviderRequestError(
-      config.providerName,
-      response.status,
-      providerErrorMessage(errorText),
-    );
-  }
-
-  const data = (await response.json()) as OpenAIResponse;
-  const rawText = extractOpenAiText(data);
-  if (!rawText) {
-    throw new Error("OpenAI provider returned an empty response.");
-  }
-
-  return {
-    rawText,
-    inputTokens: data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0,
-    outputTokens:
-      data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0,
-    modelUsed: model,
-    provider: config.providerName,
+  const bodyPayload: Record<string, unknown> = {
+    model,
+    messages: [
+      { role: "system", content: prompts.system },
+      { role: "user", content: prompts.user },
+    ],
+    temperature,
+    max_tokens: effectiveCeiling,
+    response_format: { type: "json_object" },
   };
+
+  if (lowerUrl.includes("z.ai") || lowerUrl.includes("bigmodel.cn")) {
+    bodyPayload.thinking = { type: "disabled" };
+  }
+
+  const maxRetries = 2;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      const backoffMs = 1500 * attempt + Math.floor(Math.random() * 500);
+      await new Promise((r) => setTimeout(r, backoffMs));
+    }
+
+    if (tracker) tracker.incrementSubrequests(1);
+    try {
+      const response = await withTimeout("OpenAI API", timeoutMs, (signal) =>
+        fetch(url, {
+          method: "POST",
+          signal,
+          headers: {
+            "content-type": "application/json",
+            ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}),
+          },
+          body: JSON.stringify(bodyPayload),
+        }),
+      );
+
+      if (response.status === 429 || response.status === 503) {
+        const errorText = await response.text();
+        lastError = new ProviderRequestError(
+          config.providerName,
+          response.status,
+          providerErrorMessage(errorText),
+        );
+        if (attempt < maxRetries) {
+          logger.warn(`OpenAI provider ${config.providerName} returned ${response.status}; retrying (attempt ${attempt + 1}/${maxRetries})...`);
+          continue;
+        }
+        throw lastError;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new ProviderRequestError(
+          config.providerName,
+          response.status,
+          providerErrorMessage(errorText),
+        );
+      }
+
+      const data = (await response.json()) as OpenAIResponse;
+      const rawText = extractOpenAiText(data);
+      if (!rawText) {
+        throw new Error("OpenAI provider returned an empty response.");
+      }
+
+      return {
+        rawText,
+        inputTokens: data?.usage?.prompt_tokens ?? data?.usage?.input_tokens ?? 0,
+        outputTokens:
+          data?.usage?.completion_tokens ?? data?.usage?.output_tokens ?? 0,
+        modelUsed: model,
+        provider: config.providerName,
+      };
+    } catch (e: unknown) {
+      if (attempt < maxRetries && (e instanceof TypeError || (e instanceof Error && e.message.includes("fetch failed")))) {
+        lastError = e instanceof Error ? e : new Error(String(e));
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  throw lastError ?? new Error("OpenAI request failed after retries.");
 }

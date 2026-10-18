@@ -216,3 +216,20 @@ describe("rejected exemplars", () => {
     expect(prompt).not.toContain("Rejected finding number 99");
   });
 });
+
+describe("prompt_style configuration", () => {
+  it("injects permissive calibration instructions when prompt_style is permissive", () => {
+    const { systemPrompt } = buildFileReviewPrompts({
+      file: fileAt("src/app.ts"),
+      prTitle: "PR",
+      prDescription: null,
+      config: {
+        ...defaultRepoConfig.review,
+        prompt_style: "permissive",
+      },
+    });
+
+    expect(systemPrompt).toContain("balanced, constructive technical reviewer");
+    expect(systemPrompt).toContain("Do not artificially suppress genuine defects");
+  });
+});

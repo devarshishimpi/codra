@@ -92,7 +92,21 @@ export const reviewConfigSchema = z.object({
       command: DEFAULT_EXEC_COMMAND,
     }),
   prompt_style: z.enum(["permissive", "calibrated", "auto"]).default("auto"),
-  secondary_verifier: z.string().nullable().default(null),
+  verification_radius: z.number().int().min(12).max(60).default(35),
+  dedupe_line_radius: z.number().int().min(0).max(5).default(2),
+  secondary_verifier: z
+    .union([
+      z.string().min(1),
+      z.object({
+        enabled: z.boolean().default(true),
+        provider: z.enum(["mistral", "google", "openai"]).default("mistral"),
+        model: z.string().default("labs-leanstral-1-5-1"),
+        api_key_env: z.string().default("MISTRAL_API_KEY"),
+        confidence_threshold: z.number().min(0).max(1).default(0.6),
+      }),
+    ])
+    .nullable()
+    .default(null),
 });
 
 export const DEFAULT_REVIEW_CONFIG = reviewConfigSchema.parse({});

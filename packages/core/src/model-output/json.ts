@@ -11,7 +11,7 @@ export function truncateJsonForLog(value: string) {
 }
 
 export function hasReviewKeys(input: string) {
-  return /"(files|findings|overall_explanation|overall_correctness|overall_confidence_score|summary)"\s*:/.test(
+  return /"(files|findings|overall_explanation|overall_correctness|overall_confidence_score|summary|title|body|evidence|code_location|claim_type)"\s*:/.test(
     input,
   );
 }
@@ -188,13 +188,24 @@ export function extractJson(
   return raw.trim();
 }
 
+export function sanitizeInnerQuotes(str: string): string {
+  return str.replace(
+    /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote)"\s*:\s*")(.*)("(?:\s*,?\s*(?:}|\])?\s*\r?))$/gm,
+    (m, p1, p2, p3) => {
+      const fixed = p2.replace(/(?<!\\)"/g, '\\"');
+      return p1 + fixed + p3;
+    },
+  );
+}
+
 export function preprocessJson(json: string): string {
+  const sanitized = sanitizeInnerQuotes(json);
   let result = "";
   let inString = false;
   let escape = false;
 
-  for (let i = 0; i < json.length; i++) {
-    const char = json[i];
+  for (let i = 0; i < sanitized.length; i++) {
+    const char = sanitized[i];
 
     if (escape) {
       result += char;
@@ -439,7 +450,13 @@ export function parseRawPayload(
 
     if (data && typeof data === "object") {
       const obj = data as Record<string, unknown>;
-      if (!obj.findings) obj.findings = [];
+      if (!obj.findings) {
+        if (obj.title || obj.body || obj.code_location || obj.evidence) {
+          obj.findings = [{ ...obj }];
+        } else {
+          obj.findings = [];
+        }
+      }
       if (!obj.overall_explanation)
         obj.overall_explanation = "No explanation provided.";
       if (!obj.overall_correctness) obj.overall_correctness = "Uncertain";

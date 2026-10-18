@@ -194,11 +194,12 @@ export function parseBatchReviewResponse(
       else byFile.set(target.path, { file: target, findings: [finding] });
     }
 
-    for (const { file, findings } of byFile.values()) {
+    for (const file of files) {
+      const bucket = byFile.get(file.path);
       ground(
         file,
         {
-          findings,
+          findings: bucket?.findings ?? [],
           overall_correctness: payload.data.overall_correctness,
           overall_explanation: payload.data.overall_explanation,
         },

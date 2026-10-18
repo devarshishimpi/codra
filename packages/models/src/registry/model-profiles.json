@@ -1,0 +1,211 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-10-17T20:30:00.000Z",
+  "schemaVersion": "1.0.0",
+  "profiles": {
+    "gemini-3.5-flash-lite": {
+      "id": "gemini-3.5-flash-lite",
+      "provider": "google",
+      "displayName": "Google Gemini 3.5 Flash Lite",
+      "sampling": {
+        "temperature": 0.85,
+        "thinkingBudget": "auto"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "In this candidate discovery pass, your directive is high recall: walk every changed line and surface all concrete bugs, edge cases, data races, resource leaks, and logic errors.",
+          "Do NOT self-censor during analysis; an independent verification pass will rigorously check each candidate against the diff."
+        ],
+        "instructionFocus": ["bugs", "resource_leaks", "data_races", "edge_cases"]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 15
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "gemini-3.1-flash-lite": {
+      "id": "gemini-3.1-flash-lite",
+      "provider": "google",
+      "displayName": "Google Gemini 3.1 Flash Lite",
+      "sampling": {
+        "temperature": 0.7,
+        "thinkingBudget": "auto"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "Focus on concrete code changes in the diff. Surface real defects and unhandled failure branches.",
+          "Secondary verification will prune speculative claims. Report all plausible defects."
+        ],
+        "instructionFocus": ["logic_errors", "null_dereferences", "unhandled_exceptions"]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 15
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "codestral-latest": {
+      "id": "codestral-latest",
+      "provider": "mistral",
+      "displayName": "Mistral Codestral Latest",
+      "sampling": {
+        "temperature": 0.55,
+        "topP": 0.95,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "Provide actionable, precise code review findings for syntax, logical errors, edge case inputs, and API contract regressions.",
+          "Surface every defect you identify in the modified hunks."
+        ],
+        "instructionFocus": ["correctness", "performance", "api_contracts"]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "labs-learntral": {
+      "id": "labs-learntral",
+      "provider": "mistral",
+      "displayName": "Mistral Labs Learntral",
+      "sampling": {
+        "temperature": 0.55,
+        "topP": 0.95,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "Surface all plausible code issues and verification checks for downstream adjudication."
+        ],
+        "instructionFocus": ["logic_errors", "unhandled_errors"]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 20
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "nvidia/nemotron-3-120b": {
+      "id": "nvidia/nemotron-3-120b",
+      "provider": "nvidia",
+      "displayName": "NVIDIA Nemotron 3 120B",
+      "sampling": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "reasoning_first",
+        "systemPromptAdditions": [
+          "Thoroughly trace execution flow through changed lines before formulating findings."
+        ],
+        "instructionFocus": ["concurrency", "correctness", "memory_safety"]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 3,
+        "rpmLimit": 20
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "zai-glm-4": {
+      "id": "zai-glm-4",
+      "provider": "zai",
+      "displayName": "Z.ai GLM-4 Flash",
+      "sampling": {
+        "temperature": 0.7,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "Report all concrete bugs and boundary conditions affected by the pull request."
+        ],
+        "instructionFocus": ["correctness", "typing", "error_paths"]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    },
+    "google/gemma-4-26b": {
+      "id": "google/gemma-4-26b",
+      "provider": "google",
+      "displayName": "Google Gemma 4 26B Instruct",
+      "sampling": {
+        "temperature": 0.65,
+        "topP": 0.95,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "discovery",
+        "systemPromptAdditions": [
+          "Act as an exhaustive reviewer, surfacing all potential bugs."
+        ],
+        "instructionFocus": ["logic", "exceptions"]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 3,
+        "rpmLimit": 20
+      },
+      "verification": {
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": true
+      }
+    }
+  }
+}

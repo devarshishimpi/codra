@@ -90,6 +90,13 @@ describe("renderDiffSnippet", () => {
   it("returns empty string when no line is supplied", () => {
     expect(renderDiffSnippet(file, undefined, 1)).toBe("");
   });
+
+  it("renders a full context window with custom radius 35", () => {
+    const snippet = renderDiffSnippet(file, 3, 35);
+    expect(snippet).toContain("+const c = a + b;");
+    expect(snippet).toContain("const a = 1;");
+    expect(snippet).toContain("return c;");
+  });
 });
 
 describe("buildVerifyPrompt", () => {
@@ -108,5 +115,15 @@ describe("buildVerifyPrompt", () => {
     expect(prompt).toContain("Finding index 0");
     expect(prompt).toContain("It breaks");
     expect(prompt).toContain("src/foo.ts:3");
+  });
+
+  it("includes calibrated decision guidance in verify system prompt", async () => {
+    const { VERIFY_SYSTEM_PROMPT } = await import(
+      "@codraoss/core/prompts/verify"
+    );
+    expect(VERIFY_SYSTEM_PROMPT).toContain("drop");
+    expect(VERIFY_SYSTEM_PROMPT).toContain("keep");
+    expect(VERIFY_SYSTEM_PROMPT).toContain("decidable");
+    expect(VERIFY_SYSTEM_PROMPT).toContain("demonstrable defects");
   });
 });

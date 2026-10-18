@@ -144,5 +144,24 @@ export function resolveEvidence(
     };
   }
 
+  // Codra v3 fallback: if quote formatting differed slightly but reportedLine matches a touched line nearby
+  if (reportedLine !== undefined) {
+    const nearby = index.lines
+      .map(({ line }) => line)
+      .filter(
+        (l) =>
+          l.sourceKind !== "context" &&
+          l.anchor.newLineNumber !== undefined &&
+          Math.abs(l.anchor.newLineNumber - reportedLine) <= 2,
+      );
+    if (nearby.length > 0) {
+      return {
+        status: "matched",
+        line: nearest(nearby),
+        touched: true,
+      };
+    }
+  }
+
   return { status: "unmatched" };
 }

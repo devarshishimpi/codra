@@ -67,3 +67,23 @@ describe("commentSyntaxFor", () => {
     expect(strip("a.ts", 'const anchor = "#top";')).not.toContain("top");
   });
 });
+
+describe("getLanguageForFile guidelines", () => {
+  it("provides tailored guidelines and anti-hallucination rules for Go, Rust, and PHP", async () => {
+    const { getLanguageForFile } = await import(
+      "@codraoss/core/prompts/languages"
+    );
+
+    const go = getLanguageForFile("pkg/server/handler.go");
+    expect(go?.language).toBe("Go");
+    expect(go?.guidelines.some((g) => g.includes("async/await"))).toBe(true);
+
+    const rust = getLanguageForFile("src/engine/memory.rs");
+    expect(rust?.language).toBe("Rust");
+    expect(rust?.guidelines.some((g) => g.includes("unsafe"))).toBe(true);
+
+    const php = getLanguageForFile("app/Http/Controllers/Api.php");
+    expect(php?.language).toBe("PHP");
+    expect(php?.guidelines.some((g) => g.includes("null dereference") || g.includes("SQL injection"))).toBe(true);
+  });
+});

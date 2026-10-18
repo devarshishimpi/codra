@@ -274,7 +274,15 @@ function applyClaimGate(
 
   claimTypeCounts[claimType] = (claimTypeCounts[claimType] ?? 0) + 1;
 
-  if (deniedClaimTypes.has(claimType)) {
+  // Codra v3: Do not drop real defect categories like resource leaks or null derefs
+  // before verification. Let the verifier inspect them!
+  const hardDenied = new Set([
+    "react_hook_missing_deps",
+    "react_missing_cleanup",
+    "redos_regex",
+    "external_version_claim",
+  ]);
+  if (hardDenied.has(claimType)) {
     deniedClaimCounts[claimType] = (deniedClaimCounts[claimType] ?? 0) + 1;
     return { withheld: { title, body, tag: `claim-denied:${claimType}` } };
   }
@@ -535,12 +543,11 @@ export function groundParsedFindings(
     })
     .filter((comment): comment is ParsedReviewComment => Boolean(comment));
 
+  const hasFindings = comments.length > 0;
   const verdict = parsed.overall_correctness
-    .toLowerCase()
-    .includes("patch is correct")
-    ? "approve"
-    : "comment";
-  let fileSummary = parsed.overall_explanation;
+    ? (parsed.overall_correctness.toLowerCase().includes("patch is correct") ? "approve" : "comment")
+    : (hasFindings ? "comment" : "approve");
+  let fileSummary = parsed.overall_explanation || (hasFindings ? "Findings reported on modified lines." : "No defects identified.");
 
   if (orphanedComments.length > 0) {
     fileSummary += `\n\n### Additional Comments (Off-diff)\n${orphanedComments.join("\n")}`;

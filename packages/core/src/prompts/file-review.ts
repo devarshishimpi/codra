@@ -11,9 +11,11 @@ import { EXEMPLAR_BLOCK_CHARS } from "../constants";
 
 export { changelogExcerptFromDiff, wantsFileContext } from "./review-context";
 
-// Pre-review_breadth fallback: generator was allowed ~2x the posted cap.
-export function generatorFindingCap(maxComments: number): number {
-  return Math.max(1, maxComments * 2);
+// Pre-review_breadth fallback: generator scales with PR diff size.
+export function generatorFindingCap(maxComments: number, lineCount = 0): number {
+  if (lineCount > 500) return Math.max(30, maxComments * 3);
+  if (lineCount > 100) return Math.max(20, Math.round(maxComments * 2.5));
+  return Math.max(12, maxComments * 2);
 }
 
 /** Internal candidate cap upstream of posting; falls back for job snapshots queued before this field existed. */
@@ -21,8 +23,9 @@ export function reviewBreadth(
   config: Pick<RepoConfig["review"], "max_comments"> & {
     review_breadth?: number;
   },
+  lineCount = 0,
 ): number {
-  return config.review_breadth ?? generatorFindingCap(config.max_comments);
+  return config.review_breadth ?? generatorFindingCap(config.max_comments, lineCount);
 }
 
 function findingItemSchema() {
@@ -74,24 +77,13 @@ export function buildReviewResponseSchema(
     schema: {
       type: "object",
       additionalProperties: false,
-      required: [
-        "findings",
-        "overall_explanation",
-        "overall_correctness",
-        "overall_confidence_score",
-      ],
+      required: ["findings"],
       properties: {
         findings: {
           type: "array",
           maxItems: Math.max(1, findingCap),
           items: findingItemSchema(),
         },
-        overall_explanation: { type: "string" },
-        overall_correctness: {
-          type: "string",
-          enum: ["patch is correct", "patch is incorrect"],
-        },
-        overall_confidence_score: { type: "number", minimum: 0, maximum: 1 },
       },
     },
   };
@@ -99,39 +91,20 @@ export function buildReviewResponseSchema(
 
 export function buildBatchReviewResponseSchema(
   findingCap: number,
-  fileCount: number,
+  _fileCount?: number,
 ): ModelResponseSchema {
   return {
     name: "codra_batch_review",
     schema: {
       type: "object",
       additionalProperties: false,
-      required: ["files", "overall_confidence_score"],
+      required: ["findings"],
       properties: {
-        files: {
+        findings: {
           type: "array",
-          maxItems: fileCount,
-          items: {
-            type: "object",
-            additionalProperties: false,
-            required: [
-              "absolute_file_path",
-              "findings",
-              "overall_explanation",
-              "overall_correctness",
-            ],
-            properties: {
-              absolute_file_path: { type: "string" },
-              findings: { type: "array", items: findingItemSchema() },
-              overall_explanation: { type: "string" },
-              overall_correctness: {
-                type: "string",
-                enum: ["patch is correct", "patch is incorrect"],
-              },
-            },
-          },
+          maxItems: Math.max(1, findingCap),
+          items: findingItemSchema(),
         },
-        overall_confidence_score: { type: "number", minimum: 0, maximum: 1 },
       },
     },
   };
@@ -151,44 +124,35 @@ const SINGLE_FILE_SCHEMA_FORMAT = `{
       "priority": 0 | 1 | 2 | 3 | 4,
       "code_suggestion": "Optional replacement code"
     }
-  ],
-  "overall_explanation": "Summary",
-  "overall_correctness": "patch is correct" | "patch is incorrect",
-  "overall_confidence_score": number (0 to 1)
+  ]
 }`;
 
 const MULTI_FILE_SCHEMA_FORMAT = `{
-  "files": [
+  "findings": [
     {
-      "absolute_file_path": "<exact path of one of the files listed below, copied character-for-character>",
-      "findings": [
-        {
-          "evidence": "<the exact line of code from THIS file's diff this finding is about>",
-          "code_location": {
-            "absolute_file_path": "<the same path as above>",
-            "line": number,
-            "line_range": { "start": number, "end": number }
-          },
-          "claim_type": "<one of the claim types listed above>",
-          "title": "<Plain title, NO tags/emoji>",
-          "body": "<Explanation of the concrete defect and its impact>",
-          "priority": 0 | 1 | 2 | 3 | 4,
-          "code_suggestion": "Optional replacement code"
-        }
-      ],
-      "overall_explanation": "Summary for THIS file",
-      "overall_correctness": "patch is correct" | "patch is incorrect"
+      "evidence": "<the exact line of code from the diff this finding is about>",
+      "code_location": {
+        "absolute_file_path": "<exact repo-relative file path containing this finding>",
+        "line": number,
+        "line_range": { "start": number, "end": number }
+      },
+      "claim_type": "<one of the claim types listed above>",
+      "title": "<Plain title, NO tags/emoji>",
+      "body": "<Explanation of the concrete defect and its impact>",
+      "priority": 0 | 1 | 2 | 3 | 4,
+      "code_suggestion": "Optional replacement code"
     }
-  ],
-  "overall_confidence_score": number (0 to 1)
+  ]
 }`;
 
 export function buildFileReviewSystemPromptBase(opts?: {
   multiFile?: boolean;
   fileContext?: boolean;
-  promptStyle?: "permissive" | "calibrated";
+  promptStyle?: "permissive" | "calibrated" | "discovery";
 }): string {
   const multi = opts?.multiFile === true;
+
+  const isDiscovery = opts?.promptStyle === "discovery";
 
   const singleFileScope =
     opts?.fileContext === true
@@ -196,40 +160,53 @@ export function buildFileReviewSystemPromptBase(opts?: {
       : "- You can see ONLY the diff below, not the whole file or the rest of the repository.";
 
   const contextScope = multi
-    ? `- You can see ONLY the diffs below, not the whole files or the rest of the repository.
-- Each file below is INDEPENDENT. A finding about one file must be grounded in a line from THAT file's diff, and must be reported inside that file's entry. Never carry a claim from one file to another, and never assume two files interact unless both diffs show it.`
+    ? `- You can see the diffs below across the files in this review unit. Consider interactions across these files, and anchor each finding in the specific file's diff where the defect occurs.`
     : singleFileScope;
 
   const evidenceSource = multi
     ? `the single line of code the finding is about, copied VERBATIM from that file's diff below.`
     : "the single line of code the finding is about, copied VERBATIM from the diff below.";
 
-  const capRule = multi
-    ? "4. Return at most {{MAX_COMMENTS}} findings PER FILE, most severe first. Keep each body under 160 words."
-    : "4. Return at most {{MAX_COMMENTS}} findings, most severe first. Keep each body under 160 words.";
+  const capRule = "4. Return at most {{MAX_COMMENTS}} findings, most severe first. Keep each body under 160 words.";
 
-  const emptyRule = multi
-    ? `5. Return exactly one entry per file listed below, in the same order, and never omit a file. Review each file's diff with the same care you would give it if it were the only file in front of you. An empty findings array is a positive claim that this diff introduces no defect, so return one only when that is true. Do not pad, and do not withhold.`
-    : "5. If the diff genuinely introduces no defect, return an empty findings array and a short explanation. Do not pad, and do not withhold.";
+  const emptyRule = "5. If the diff genuinely introduces no defect, return an empty findings array. Do not pad, and do not withhold real defects.";
 
   const whatToReport =
     opts?.promptStyle === "calibrated"
       ? `### WHAT TO REPORT:
 - Report concrete, demonstrable defects introduced directly by modified lines: bugs, security vulnerabilities, resource leaks, data races, or broken invariants.
 - Be strictly conservative. Only report issues you can clearly ground in the quoted diff lines. Do NOT speculate about unseen callers, missing imports, or potential edge cases outside what is directly shown in this diff.`
-      : `### WHAT TO REPORT:
-- Report anything a senior engineer reviewing this diff would want to investigate: a bug, a security hole, a performance problem, a resource leak, an unhandled failure, a broken invariant.
-- You do not need to be certain. A finding you can ground in a quoted line is worth raising; every finding is independently checked against the diff afterwards, and a wrong one is discarded at no cost to you. A defect you decline to mention is simply lost.`;
+      : isDiscovery
+        ? `### WHAT TO REPORT:
+- Act as an exhaustive senior technical reviewer. Walk the diff hunk by hunk and examine every changed line.
+- Surface all concrete defects, logic errors, edge-case regressions, unhandled exceptions, resource leaks, data races, and broken invariants introduced by the diff.
+- Do NOT self-censor during analysis: if a modified line introduces a plausible bug, race, leak, or invariant break, report it. An independent secondary verification pass will rigorously validate candidates against the diff. A defect you fail to report is lost.`
+        : `### WHAT TO REPORT:
+- Act as a balanced, constructive technical reviewer. Do not artificially suppress genuine defects.
+- Report anything a senior engineer reviewing this diff would want to investigate: a bug, a security hole, a performance problem, a resource leak, an unhandled failure, or a broken invariant.
+- You do not need absolute mathematical certainty: a finding grounded in a quoted diff line is worth raising. Every finding is independently checked against the diff afterwards, and a wrong one is discarded at no cost to you. A defect you decline to mention is simply lost.`;
+
+  const prohibitions = isDiscovery
+    ? ""
+    : `- You cannot see which files import this one. Never predict that a change breaks callers, importers, "other modules" or "external files" -- a removed \`export\`, a renamed symbol or a changed signature may have no consumers at all, and you have no way to check. The same applies in reverse to a function whose body is not shown: do not assume what it does with its errors or its return value.
+- Assume every third-party package is at the version this project pins, and that its API is whatever that version provides. Never claim a library "does not expose", "does not provide" or "does not support" something; your training data predates the installed version.
+- Assume the language, runtime and build target are whatever the project already uses successfully. A syntax or standard-library method appearing in the diff is available in this project by construction -- the code around it already compiles and ships. Do not raise compatibility, polyfill, transpilation, engine-version or server-side-rendering concerns unless the diff itself shows the incompatibility.
+- Two async facts that are frequently misread. \`return somePromise()\` inside an \`async\` function IS awaited by whoever awaits that function; it is equivalent to \`return await\` except inside \`try\`/\`finally\`, so it is not a missing await and not a floating promise. And \`void someAsyncCall()\` is deliberate fire-and-forget: if the called function handles its own errors, there is no unhandled rejection to report.`;
+
+  const claimTypeGuidance = isDiscovery
+    ? `- This is a label for the KIND of defect. If nothing fits, use "other".`
+    : `- This is a label for the KIND of defect. It does not license the claim: only report a type if the
+  diff actually shows it. Picking a type the code cannot exhibit makes the finding easy to discard.
+- If nothing fits, use "other". Do not stretch a label to fit.
+- NEVER claim that a package, action, tag or version "does not exist", or that a config key is invalid. You cannot know what was released after your training data, and a step pinned to a commit SHA resolves by that SHA regardless of the version written beside it. Such claims are discarded.
+- Label honestly. The type you choose does not affect whether a finding is accepted; an inaccurate label only makes a real defect harder to act on.`;
 
   return `You are a world-class software engineer performing a precise, high-signal code review.
 Your goal is to find REAL defects (bugs, security vulnerabilities, and performance problems) introduced by the diff. Every finding must be grounded in a line you can quote from the diff.
 
-### CONTEXT EXTENDS (read carefully, this prevents false positives):
+### CONTEXT EXTENDS:
 ${contextScope}
-- You cannot see which files import this one. Never predict that a change breaks callers, importers, "other modules" or "external files" -- a removed \`export\`, a renamed symbol or a changed signature may have no consumers at all, and you have no way to check. The same applies in reverse to a function whose body is not shown: do not assume what it does with its errors or its return value.
-- Assume every third-party package is at the version this project pins, and that its API is whatever that version provides. Never claim a library "does not expose", "does not provide" or "does not support" something; your training data predates the installed version.
-- Assume the language, runtime and build target are whatever the project already uses successfully. A syntax or standard-library method appearing in the diff is available in this project by construction -- the code around it already compiles and ships. Do not raise compatibility, polyfill, transpilation, engine-version or server-side-rendering concerns unless the diff itself shows the incompatibility.
-- Two async facts that are frequently misread. \`return somePromise()\` inside an \`async\` function IS awaited by whoever awaits that function; it is equivalent to \`return await\` except inside \`try\`/\`finally\`, so it is not a missing await and not a floating promise. And \`void someAsyncCall()\` is deliberate fire-and-forget: if the called function handles its own errors, there is no unhandled rejection to report.
+${prohibitions}
 
 ${whatToReport}
 
@@ -240,17 +217,12 @@ ${whatToReport}
 
 ### CLAIM TYPE (required, pick the one that fits, or "other"):
 ${claimTypes.join(", ")}
-- This is a label for the KIND of defect. It does not license the claim: only report a type if the
-  diff actually shows it. Picking a type the code cannot exhibit makes the finding easy to discard.
-- If nothing fits, use "other". Do not stretch a label to fit.
-- NEVER claim that a package, action, tag or version "does not exist", or that a config key is invalid. You cannot know what was released after your training data, and a step pinned to a commit SHA resolves by that SHA regardless of the version written beside it. Such claims are discarded.
-- Label honestly. The type you choose does not affect whether a finding is accepted; an inaccurate label only makes a real defect harder to act on.
+${claimTypeGuidance}
 
 ### OUTPUT RULES:
 1. Output MUST be valid JSON, EXACTLY ONE object matching the schema below.
 2. DO NOT output any conversational text, source code, or diff hunks before or after the JSON.
-3. Prioritize by severity: 0 = P0 critical, 1 = P1 high, 2 = P2 medium, 3 = P3 low, 4 = nit (cosmetic/trivial). Set priority honestly; do not inflate. Use 4 for anything a reviewer would prefix with "nit:".
-   A finding that rests on a condition you cannot check from the diff -- "if this runs on an older engine", "if another module imports this", "depending on the caller" -- is at most priority 3, never 0 or 1, however serious the consequence would be if the condition held. Certainty about the consequence is not certainty about the premise.
+3. Prioritize by severity: 0 = P0 critical, 1 = P1 high, 2 = P2 medium, 3 = P3 low, 4 = nit (cosmetic/trivial). Set priority honestly; do not inflate.
 ${capRule}
 ${emptyRule}
 
@@ -268,7 +240,7 @@ export function buildFileReviewSystemPrompt(
   opts?: {
     multiFile?: boolean;
     fileContext?: boolean;
-    promptStyle?: "permissive" | "calibrated";
+    promptStyle?: "permissive" | "calibrated" | "discovery";
   },
 ) {
   const persona = languagePersona ? ` as ${languagePersona}` : "";
@@ -278,7 +250,7 @@ export function buildFileReviewSystemPrompt(
       ? "calibrated"
       : config.prompt_style === "permissive"
         ? "permissive"
-        : undefined);
+        : "discovery");
   const prompt = buildFileReviewSystemPromptBase({
     ...opts,
     promptStyle: resolvedStyle,
@@ -364,29 +336,12 @@ export function buildFileReviewPrompts(input: {
     "Line numbers: every diff line below is prefixed with two columns - the OLD file line number, then the NEW file line number. Always report `line` (and `line_range`) using the NEW (second, right-hand) number, and only ever cite a line that appears in the diff. For a removed line, cite the nearest NEW line number shown next to it.",
     `Evidence: every finding must carry an \`evidence\` string containing the exact code of the line it is about, copied character-for-character from the UNIFIED DIFF below. Strip the two leading line-number columns and the +/-/space marker - quote only the code itself. A finding whose evidence does not appear in the diff will be discarded${fileContext ? ", and the full-file context below is NOT the diff -- a line quoted from it counts as no evidence at all" : ""}.`,
     INTENT_CHECK_INSTRUCTION,
-    "Prioritize correctness, security, and production-impacting bugs. Raise anything you can ground in a quoted line; avoid subjective style feedback.",
+    input.config.prompt_style === "permissive"
+      ? "Prioritize correctness, runtime stability, and production-impacting bugs. A finding you can ground in a quoted line is worth raising; wrong ones are discarded at no cost downstream. Even if a function looks minimal, report plausible runtime crashes, unhandled edge cases, or missing parameter checks (such as zero division, nil dereference, or out-of-bounds access). Avoid subjective style feedback."
+      : "Prioritize correctness, security, and production-impacting bugs. Raise anything you can ground in a quoted line; avoid subjective style feedback.",
     "",
     `## Output JSON Schema (STRICTLY REQUIRED)`,
-    `{
-  "findings": [
-    {
-      "evidence": "<exact line of code copied verbatim from the diff below, without the line-number columns or +/- marker>",
-      "code_location": {
-        "absolute_file_path": "${input.file.path}",
-        "line": <int>,
-        "line_range": {"start": <int>, "end": <int>}
-      },
-      "claim_type": "<${claimTypes.join(" | ")}>",
-      "title": "<Plain title>",
-      "body": "<Technical explanation>",
-      "priority": <0|1|2|3|4>,
-      "code_suggestion": "string"
-    }
-  ],
-  "overall_correctness": "patch is correct" | "patch is incorrect",
-  "overall_explanation": "Summary",
-  "overall_confidence_score": <float 0.0-1.0>
-}`,
+    SINGLE_FILE_SCHEMA_FORMAT,
     "",
     "Unified diff:",
     renderFileDiff(input.file),
@@ -434,15 +389,17 @@ export function buildBatchReviewPrompts(input: {
   const userPrompt = [
     intentBlock,
     ...(exemplars ? [exemplars] : []),
-    `You are reviewing ${files.length} files in ONE response. Return exactly ${files.length} entries in "files", one per path, in this order:\n${pathList}`,
+    `You are reviewing ${files.length} files in this pull request:\n${pathList}`,
     ...(uniformLanguage ? [renderLanguageGuidelines(files[0].path)] : []),
     renderCustomRules(input.config),
     "Review ONLY the diffs shown below. You cannot see the rest of any file or the repository - do not report something as undefined, unimported, unused, or missing just because it is not in a diff. If a diff note says it was truncated, do not infer issues from omitted lines.",
-    "File scoping: each finding belongs to exactly ONE file. Put it inside that file's entry, set that file's path in `absolute_file_path`, and quote evidence from that file's diff only. Never report a finding about one file inside another file's entry, and never quote a line from a different file.",
+    "File scoping: For each finding, set `code_location.absolute_file_path` to the exact repo-relative file path where the defect occurs, and quote evidence from that file's diff.",
     "Line numbers: every diff line below is prefixed with two columns - the OLD file line number, then the NEW file line number. Always report `line` (and `line_range`) using the NEW (second, right-hand) number, and only ever cite a line that appears in that file's diff. For a removed line, cite the nearest NEW line number shown next to it.",
     "Evidence: every finding must carry an `evidence` string containing the exact code of the line it is about, copied character-for-character from its own file's diff below. Strip the two leading line-number columns and the +/-/space marker - quote only the code itself. A finding whose evidence does not appear in that file's diff will be discarded.",
     INTENT_CHECK_INSTRUCTION,
-    "Prioritize correctness, security, and production-impacting bugs. Raise anything you can ground in a quoted line; avoid subjective style feedback.",
+    input.config.prompt_style === "permissive"
+      ? "Prioritize correctness, runtime stability, and production-impacting bugs. A finding you can ground in a quoted line is worth raising; wrong ones are discarded at no cost downstream. Even if a function looks minimal, report plausible runtime crashes, unhandled edge cases, or missing parameter checks (such as zero division, nil dereference, or out-of-bounds access). Avoid subjective style feedback."
+      : "Prioritize correctness, security, and production-impacting bugs. Raise anything you can ground in a quoted line; avoid subjective style feedback.",
     "",
     `## Output JSON Schema (STRICTLY REQUIRED)`,
     MULTI_FILE_SCHEMA_FORMAT,
