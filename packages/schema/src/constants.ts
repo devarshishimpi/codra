@@ -11,6 +11,15 @@ export const DEFAULT_SKIP_FILES = [
   ".next/**",
   "*.generated.*",
   "coverage/**",
+  "**/test/**",
+  "**/tests/**",
+  "**/t/**",
+  "**/*.test.*",
+  "**/*.spec.*",
+  "**/*_test.*",
+  "**/*Test.*",
+  "**/dev-tools/**",
+  "**/gradle/hacks/**",
 ];
 export const DEFAULT_EXEC_FILE_TYPES = [".ts", ".tsx", ".js"];
 export const DEFAULT_EXEC_COMMAND = "npm run lint && npm run typecheck";

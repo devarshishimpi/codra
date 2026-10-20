@@ -11,7 +11,7 @@ export function truncateJsonForLog(value: string) {
 }
 
 export function hasReviewKeys(input: string) {
-  return /"(files|findings|overall_explanation|overall_correctness|overall_confidence_score|summary|title|body|evidence|code_location|claim_type)"\s*:/.test(
+  return /"(files|findings|issues|comments|reviews|overall_explanation|overall_correctness|overall_confidence_score|summary|title|body|evidence|code_location|claim_type|defect|analysis|notes?|format|id|content|line)"\s*:/.test(
     input,
   );
 }
@@ -57,17 +57,18 @@ export function extractJson(
   raw: string,
   anchorKey: "findings" | "files" = "findings",
 ) {
-  const jsonBlocks = Array.from(raw.matchAll(/```json([\s\S]*?)```/gi));
+  const jsonBlocks = Array.from(raw.matchAll(/```json\s*([\s\S]*?)(?:```|$)/gi));
   if (jsonBlocks.length > 0) {
-    return jsonBlocks[jsonBlocks.length - 1][1].trim();
+    const candidates = jsonBlocks.slice().reverse().find(b => b[1].includes('"findings"') || b[1].includes('"files"') || b[1].includes('"path"'));
+    return (candidates ? candidates[1] : jsonBlocks[jsonBlocks.length - 1][1]).trim();
   }
 
   const genericBlocks = Array.from(
-    raw.matchAll(/```(?:[\w+-]+)?([\s\S]*?)```/gi),
+    raw.matchAll(/```(?:[\w+-]+)?\s*([\s\S]*?)(?:```|$)/gi),
   );
   if (genericBlocks.length > 0) {
     const candidates = genericBlocks.filter(
-      (b) => b[1].includes("{") && b[1].includes("}") && hasReviewKeys(b[1]),
+      (b) => b[1].includes("{") && (b[1].includes("}") || b[1].includes('"findings"')) && (hasReviewKeys(b[1]) || b[1].includes('"path"')),
     );
     if (candidates.length > 0) {
       const content = candidates[candidates.length - 1][1].trim();
@@ -94,7 +95,17 @@ export function extractJson(
 
   let firstBrace = -1;
   if (targetIdx !== -1) {
-    firstBrace = raw.lastIndexOf("{", targetIdx);
+    const allBraces = Array.from(raw.matchAll(/\{/g)).map(m => m.index!).filter(i => i <= targetIdx);
+    for (const idx of allBraces) {
+      const balanced = scanBalanced(raw, idx, "{", "}");
+      if (!balanced || (idx + balanced.length) > targetIdx) {
+        firstBrace = idx;
+        break;
+      }
+    }
+    if (firstBrace === -1) {
+      firstBrace = raw.lastIndexOf("{", targetIdx);
+    }
   }
 
   if (firstBrace === -1) {
@@ -190,12 +201,41 @@ export function extractJson(
 
 export function sanitizeInnerQuotes(str: string): string {
   return str.replace(
-    /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote)"\s*:\s*")(.*)("(?:\s*,?\s*(?:}|\])?\s*\r?))$/gm,
+    /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote|code_suggestion|fix|replacement|patch|example)"\s*:\s*")(.*)("(?:\s*,?\s*(?:}|\])?\s*\r?))$/gm,
     (m, p1, p2, p3) => {
       const fixed = p2.replace(/(?<!\\)"/g, '\\"');
       return p1 + fixed + p3;
     },
   );
+}
+
+export function extractMarkdownFindings(raw: string): any[] {
+  const mdFindings: any[] = [];
+  const sections = raw.split(/(?:###|\*\*)\s*(?:Finding|Defect|Issue|Bug)\s*\d*[:\.]?/i);
+  if (sections.length > 1) {
+    for (const sec of sections.slice(1)) {
+      const path = /(?:File|Path|Location):\s*[`"']?([^\s`"'\n]+)/i.exec(sec)?.[1];
+      const lineStr = /(?:Line|Line number):\s*(\d+)/i.exec(sec)?.[1];
+      const sev = /(?:Severity|Priority):\s*(P[0-3]|0|1|2|3)/i.exec(sec)?.[1] ?? 'P2';
+      const title = /(?:Title|Description|Summary):\s*([^\n]+)/i.exec(sec)?.[1] ?? sec.trim().split('\n')[0].replace(/^#*\s*/, '').slice(0, 100);
+      const evidence = /(?:Evidence|Code|Quoted line):\s*[`"']?([^\n`"']+)/i.exec(sec)?.[1];
+      if (path) {
+        mdFindings.push({
+          path,
+          line: lineStr ? parseInt(lineStr, 10) : undefined,
+          code_location: {
+            absolute_file_path: path,
+            line: lineStr ? parseInt(lineStr, 10) : undefined,
+          },
+          severity: sev.startsWith('P') ? sev : `P${sev}`,
+          title: title.trim(),
+          body: sec.trim().slice(0, 500),
+          evidence: evidence ? evidence.trim() : undefined,
+        });
+      }
+    }
+  }
+  return mdFindings;
 }
 
 export function preprocessJson(json: string): string {
@@ -281,6 +321,21 @@ function coerceReviewNumber(value: unknown) {
   return undefined;
 }
 
+function coercePriority(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(4, Math.trunc(value)));
+  }
+  if (typeof value === "string" && !isPlaceholderString(value)) {
+    const match = /^P?([0-4])$/i.exec(value.trim());
+    if (match) return Number(match[1]);
+    const num = Number(value.trim());
+    if (Number.isFinite(num)) {
+      return Math.max(0, Math.min(4, Math.trunc(num)));
+    }
+  }
+  return undefined;
+}
+
 export function normalizeFinding(finding: unknown) {
   if (!finding || typeof finding !== "object") return null;
   const f = finding as Record<string, unknown>;
@@ -299,7 +354,7 @@ export function normalizeFinding(finding: unknown) {
     f.code_location && typeof f.code_location === "object"
       ? (f.code_location as Record<string, unknown>)
       : {};
-  const line = coerceReviewNumber(location.line);
+  const line = coerceReviewNumber(location.line) ?? coerceReviewNumber(f.line);
   const start = coerceReviewNumber(
     location.line_range && typeof location.line_range === "object"
       ? (location.line_range as Record<string, unknown>).start
@@ -310,10 +365,11 @@ export function normalizeFinding(finding: unknown) {
       ? (location.line_range as Record<string, unknown>).end
       : undefined,
   );
-  const priority = coerceReviewNumber(f.priority);
+  const priority = coercePriority(f.priority) ?? coercePriority(f.severity);
 
+  const rawPath = String(location.absolute_file_path || f.path || f.file_path || f.filename || "").trim();
   const codeLocation: Record<string, unknown> = {
-    absolute_file_path: location.absolute_file_path || f.path || "",
+    absolute_file_path: rawPath,
   };
   if (line !== undefined) {
     codeLocation.line = Math.trunc(line as number);
@@ -327,6 +383,9 @@ export function normalizeFinding(finding: unknown) {
 
   return {
     ...f,
+    path: rawPath,
+    line: line !== undefined ? Math.trunc(line as number) : undefined,
+    severity: priority !== undefined ? `P${priority}` : (typeof f.severity === "string" ? f.severity : undefined),
     title:
       (f.title ? String(f.title) : "")
         .trim()
@@ -339,10 +398,7 @@ export function normalizeFinding(finding: unknown) {
         : typeof f.quote === "string" && f.quote.trim()
           ? f.quote.trim()
           : undefined,
-    priority:
-      priority === undefined
-        ? undefined
-        : Math.max(0, Math.min(4, Math.trunc(priority as number))),
+    priority: priority !== undefined ? priority : undefined,
     code_location: codeLocation,
     confidence_score:
       typeof f.confidence_score === "number"
@@ -362,56 +418,50 @@ export function normalizeFinding(finding: unknown) {
 export function parseRawPayload(
   raw: string,
 ): z.infer<typeof fileReviewModelOutputSchema> {
-  let extracted: string;
+  let extracted: string = "";
+  let jsonExtracted = false;
   try {
     extracted = extractJson(raw);
-    if (!hasReviewKeys(extracted)) {
-      throw new Error("Model response did not contain review JSON keys.");
+    if (hasReviewKeys(extracted) || /^\s*\{[\s\S]*\}\s*$/.test(extracted)) {
+      jsonExtracted = true;
     }
-  } catch (e) {
-    logger.error("Failed to extract JSON from model response", {
-      rawLength: raw.length,
-      rawPrefix: raw.slice(0, 500),
-      error: e instanceof Error ? e.message : String(e),
-    });
-    throw new Error("Could not find JSON root in model response.", {
-      cause: e,
-    });
+  } catch {}
+
+  let parsedJson: unknown = null;
+  if (jsonExtracted) {
+    let preprocessed: string = extracted;
+    try {
+      preprocessed = preprocessJson(extracted);
+    } catch {
+      preprocessed = extracted;
+    }
+
+    let repaired = preprocessed;
+    try {
+      repaired = jsonrepair(preprocessed);
+    } catch {}
+
+    try {
+      parsedJson = stripNulls(JSON.parse(repaired));
+    } catch {}
   }
 
-  let preprocessed: string;
-  try {
-    preprocessed = preprocessJson(extracted);
-  } catch (e) {
-    logger.warn("JSON preprocessing partially failed, continuing...", {
-      extracted,
-      error: e,
-    });
-    preprocessed = extracted;
-  }
-
-  let repaired = preprocessed;
-  try {
-    repaired = jsonrepair(preprocessed);
-  } catch (e) {
-    logger.warn(
-      "jsonrepair failed to fix model output, using preprocessed text",
-      { preprocessed: truncateJsonForLog(preprocessed), error: e },
-    );
-  }
-
-  let parsedJson: unknown;
-  try {
-    parsedJson = stripNulls(JSON.parse(repaired));
-  } catch (e) {
-    logger.error("Critical JSON parse error after extraction and repair", {
-      repaired: truncateJsonForLog(repaired),
-      error: e,
-    });
-    throw new Error(
-      `Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`,
-      { cause: e },
-    );
+  if (!parsedJson) {
+    const mdFindings = extractMarkdownFindings(raw);
+    if (mdFindings.length > 0) {
+      parsedJson = {
+        findings: mdFindings,
+        overall_explanation: "Extracted from markdown findings.",
+        overall_correctness: "Uncertain",
+        overall_confidence_score: 0.5,
+      };
+    } else {
+      logger.error("Failed to extract JSON or markdown findings from model response", {
+        rawLength: raw.length,
+        rawPrefix: raw.slice(0, 500),
+      });
+      throw new Error("Could not find JSON root or findings in model response.");
+    }
   }
 
   try {
@@ -451,7 +501,19 @@ export function parseRawPayload(
     if (data && typeof data === "object") {
       const obj = data as Record<string, unknown>;
       if (!obj.findings) {
-        if (obj.title || obj.body || obj.code_location || obj.evidence) {
+        if (Array.isArray(obj.issues)) {
+          obj.findings = obj.issues;
+        } else if (Array.isArray(obj.comments)) {
+          obj.findings = obj.comments;
+        } else if (Array.isArray(obj.reviews)) {
+          obj.findings = obj.reviews;
+        } else if (obj.defect && !obj.body) {
+          obj.body = String(obj.defect);
+          if (!obj.title) obj.title = String(obj.defect).slice(0, 100);
+        }
+        if (obj.findings) {
+          // already assigned above
+        } else if (obj.title || obj.body || obj.code_location || obj.evidence || obj.defect) {
           obj.findings = [{ ...obj }];
         } else {
           obj.findings = [];

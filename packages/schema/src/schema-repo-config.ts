@@ -45,10 +45,10 @@ export const reviewConfigSchema = z.object({
   large_file_threshold_lines: z.number().int().min(1).max(5_000).default(200),
   max_diff_lines_per_file: z.number().int().min(1).max(5_000).default(800),
   batch_small_files: z.boolean().default(true),
-  max_comments: z.number().int().min(1).max(150).default(10),
+  max_comments: z.number().int().min(1).max(150).default(5),
   review_breadth: z.number().int().min(1).max(150).default(25),
   full_file_context: z.boolean().default(false),
-  min_severity: z.enum(reviewSeverities).default("P3"),
+  min_severity: z.enum(reviewSeverities).default("P2"),
   language_gates: z
     .record(
       z.string(),
@@ -58,7 +58,7 @@ export const reviewConfigSchema = z.object({
       }),
     )
     .default({}),
-  min_confidence: z.number().min(0).max(1).default(0),
+  min_confidence: z.number().min(0).max(1).default(0.65),
   focus: z.array(z.enum(reviewCategories)).default([...reviewCategories]),
   deny_claim_types: z
     .array(z.enum(claimTypes))

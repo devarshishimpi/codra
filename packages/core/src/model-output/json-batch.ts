@@ -95,93 +95,54 @@ export type RawBatchPayload =
   | { shape: "flat"; data: z.infer<typeof fileReviewModelOutputSchema> };
 
 export function parseRawBatchPayload(raw: string): RawBatchPayload {
-  let extracted: string;
+  let extracted: string = "";
+  let jsonExtracted = false;
   try {
     extracted = extractJson(raw, "files");
-    if (!hasReviewKeys(extracted)) {
-      throw new Error("Model response did not contain review JSON keys.");
+    if (hasReviewKeys(extracted)) {
+      jsonExtracted = true;
     }
-  } catch (e) {
-    logger.error("Failed to extract JSON from batched model response", {
-      rawLength: raw.length,
-      rawPrefix: raw.slice(0, 500),
-      error: e instanceof Error ? e.message : String(e),
-    });
-    throw new Error("Could not find JSON root in batched model response.", {
-      cause: e,
-    });
+  } catch {}
+
+  if (jsonExtracted) {
+    let preprocessed = extracted;
+    try {
+      preprocessed = preprocessJson(extracted);
+    } catch {
+      preprocessed = extracted;
+    }
+
+    let repaired = preprocessed;
+    try {
+      repaired = jsonrepair(preprocessed);
+    } catch {}
+
+    let parsedJson: unknown = null;
+    try {
+      parsedJson = stripNulls(JSON.parse(repaired));
+    } catch {}
+
+    const entries = collectBatchEntries(parsedJson);
+    const root =
+      parsedJson && typeof parsedJson === "object" && !Array.isArray(parsedJson)
+        ? (parsedJson as Record<string, unknown>)
+        : {};
+
+    if (entries?.length) {
+      try {
+        return {
+          shape: "nested",
+          data: batchReviewModelOutputSchema.parse({
+            files: entries,
+            overall_confidence_score:
+              normalizeConfidence(root.overall_confidence_score) ?? 0.5,
+          }),
+        };
+      } catch (e) {
+        logger.warn("Batched model response failed schema validation, falling back to flat payload", { error: e });
+      }
+    }
   }
 
-  let preprocessed: string;
-  try {
-    preprocessed = preprocessJson(extracted);
-  } catch (e) {
-    logger.warn("JSON preprocessing partially failed, continuing...", {
-      extracted,
-      error: e,
-    });
-    preprocessed = extracted;
-  }
-
-  let repaired = preprocessed;
-  try {
-    repaired = jsonrepair(preprocessed);
-  } catch (e) {
-    logger.warn(
-      "jsonrepair failed to fix batched model output, using preprocessed text",
-      { preprocessed: truncateJsonForLog(preprocessed), error: e },
-    );
-  }
-
-  let parsedJson: unknown;
-  try {
-    parsedJson = stripNulls(JSON.parse(repaired));
-  } catch (e) {
-    logger.error("Critical JSON parse error after extraction and repair", {
-      repaired: truncateJsonForLog(repaired),
-      error: e,
-    });
-    throw new Error(
-      `Invalid JSON format: ${e instanceof Error ? e.message : "Unknown error"}`,
-      { cause: e },
-    );
-  }
-
-  const entries = collectBatchEntries(parsedJson);
-  const root =
-    parsedJson && typeof parsedJson === "object" && !Array.isArray(parsedJson)
-      ? (parsedJson as Record<string, unknown>)
-      : {};
-
-  if (!entries?.length) {
-    if (Array.isArray(root.findings))
-      return { shape: "flat", data: parseRawPayload(raw) };
-    logger.error(
-      "Batched model response contained no recognisable file entries",
-      {
-        parsedJson: truncateJsonForLog(JSON.stringify(parsedJson ?? null)),
-      },
-    );
-    throw new Error("Batched response contained no recognisable file entries.");
-  }
-
-  try {
-    return {
-      shape: "nested",
-      data: batchReviewModelOutputSchema.parse({
-        files: entries,
-        overall_confidence_score:
-          normalizeConfidence(root.overall_confidence_score) ?? 0.5,
-      }),
-    };
-  } catch (e) {
-    logger.error("Batched model response failed schema validation", {
-      parsedJson,
-      error: e,
-    });
-    throw new Error(
-      `Batched response schema mismatch: ${e instanceof Error ? e.message : "Check logs"}`,
-      { cause: e },
-    );
-  }
+  return { shape: "flat", data: parseRawPayload(raw) };
 }

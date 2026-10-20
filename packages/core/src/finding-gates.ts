@@ -170,14 +170,26 @@ export async function verifyFindings(params: {
       )
         continue;
 
-      // Codra v3 Two-Tiered Verification:
-      // Tier 1: Provably refuted by the snippet -> drop
-      // Tier 2: Unverified boundary hazard -> retain as advisory P3
-      let verdict: "keep" | "drop" | "downgrade_p3";
-      if (result.verdict === "drop" && result.decidable !== false) {
+      // Codra v5 Verification:
+      // Drop if verifier answered "drop".
+      // If result.decidable === false, only drop if the verifier answered "drop" OR if it is a low-severity/low-confidence guess.
+      // High-severity (P0/P1) findings that the verifier kept are protected from being discarded merely due to diff-window truncation.
+      let verdict: "keep" | "drop";
+      const candidateComment = verifiable[result.index]?.comment;
+      const isHighSev =
+        candidateComment?.severity === "P0" || candidateComment?.severity === "P1";
+
+      if (result.verdict === "drop") {
         verdict = "drop";
       } else if (result.decidable === false) {
-        verdict = "downgrade_p3";
+        if (result.verdict === "keep") {
+          verdict = "keep";
+        } else if (isHighSev || (typeof result.confidence === "number" && result.confidence >= 0.55)) {
+          if (candidateComment) candidateComment.severity = "P3";
+          verdict = "keep";
+        } else {
+          verdict = "drop";
+        }
       } else {
         verdict = "keep";
       }
@@ -221,9 +233,6 @@ export async function verifyFindings(params: {
           reason: result.reason,
         });
         return;
-      }
-      if (result?.verdict === "downgrade_p3") {
-        entry.comment.severity = "P3";
       }
       if (!result) {
         dropped.push({

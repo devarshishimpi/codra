@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "updatedAt": "2026-10-17T20:30:00.000Z",
+  "version": "1.1.0",
+  "updatedAt": "2026-10-18T16:00:00.000Z",
   "schemaVersion": "1.0.0",
   "profiles": {
     "gemini-3.5-flash-lite": {
@@ -8,28 +8,47 @@
       "provider": "google",
       "displayName": "Google Gemini 3.5 Flash Lite",
       "sampling": {
-        "temperature": 0.85,
-        "thinkingBudget": "auto"
+        "temperature": 0.7,
+        "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "discovery",
+        "style": "v7-balanced",
         "systemPromptAdditions": [
-          "In this candidate discovery pass, your directive is high recall: walk every changed line and surface all concrete bugs, edge cases, data races, resource leaks, and logic errors.",
-          "Do NOT self-censor during analysis; an independent verification pass will rigorously check each candidate against the diff."
+          "Focus on concrete code changes in the diff. Surface real defects and unhandled failure branches.",
+          "Every finding must be grounded in a quoted diff line."
         ],
-        "instructionFocus": ["bugs", "resource_leaks", "data_races", "edge_cases"]
+        "instructionFocus": [
+          "correctness",
+          "resource_leaks",
+          "logic_errors"
+        ]
       },
       "schema": {
         "format": "strict_json_schema",
         "flattenCodeLocation": false
       },
       "limits": {
-        "maxConcurrentCalls": 4,
+        "maxConcurrentCalls": 3,
         "rpmLimit": 15
       },
       "verification": {
+        "enabled": true,
         "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
       }
     },
     "gemini-3.1-flash-lite": {
@@ -38,15 +57,19 @@
       "displayName": "Google Gemini 3.1 Flash Lite",
       "sampling": {
         "temperature": 0.7,
-        "thinkingBudget": "auto"
+        "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "discovery",
+        "style": "v7-balanced",
         "systemPromptAdditions": [
           "Focus on concrete code changes in the diff. Surface real defects and unhandled failure branches.",
-          "Secondary verification will prune speculative claims. Report all plausible defects."
+          "Every finding must be grounded in a quoted diff line."
         ],
-        "instructionFocus": ["logic_errors", "null_dereferences", "unhandled_exceptions"]
+        "instructionFocus": [
+          "logic_errors",
+          "null_dereferences",
+          "unhandled_exceptions"
+        ]
       },
       "schema": {
         "format": "strict_json_schema",
@@ -57,55 +80,44 @@
         "rpmLimit": 15
       },
       "verification": {
+        "enabled": true,
         "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
       }
     },
-    "codestral-latest": {
-      "id": "codestral-latest",
-      "provider": "mistral",
-      "displayName": "Mistral Codestral Latest",
+    "gemini-3.6-flash": {
+      "id": "gemini-3.6-flash",
+      "provider": "google",
+      "displayName": "Google Gemini 3.6 Flash",
       "sampling": {
-        "temperature": 0.55,
-        "topP": 0.95,
-        "thinkingBudget": "off"
+        "temperature": 0.6,
+        "thinkingBudget": "auto"
       },
       "prompts": {
-        "style": "discovery",
+        "style": "calibrated",
         "systemPromptAdditions": [
-          "Provide actionable, precise code review findings for syntax, logical errors, edge case inputs, and API contract regressions.",
-          "Surface every defect you identify in the modified hunks."
+          "Report real bugs, security vulnerabilities, resource leaks, and logic flaws introduced by the diff.",
+          "Be strictly conservative. Only report issues you can clearly ground in the quoted diff lines."
         ],
-        "instructionFocus": ["correctness", "performance", "api_contracts"]
-      },
-      "schema": {
-        "format": "strict_json_schema",
-        "flattenCodeLocation": false
-      },
-      "limits": {
-        "maxConcurrentCalls": 4,
-        "rpmLimit": 30
-      },
-      "verification": {
-        "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
-      }
-    },
-    "labs-learntral": {
-      "id": "labs-learntral",
-      "provider": "mistral",
-      "displayName": "Mistral Labs Learntral",
-      "sampling": {
-        "temperature": 0.55,
-        "topP": 0.95,
-        "thinkingBudget": "off"
-      },
-      "prompts": {
-        "style": "discovery",
-        "systemPromptAdditions": [
-          "Surface all plausible code issues and verification checks for downstream adjudication."
-        ],
-        "instructionFocus": ["logic_errors", "unhandled_errors"]
+        "instructionFocus": [
+          "correctness",
+          "data_races",
+          "resource_leaks"
+        ]
       },
       "schema": {
         "format": "strict_json_schema",
@@ -116,25 +128,116 @@
         "rpmLimit": 20
       },
       "verification": {
-        "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
       }
     },
-    "nvidia/nemotron-3-120b": {
-      "id": "nvidia/nemotron-3-120b",
-      "provider": "nvidia",
-      "displayName": "NVIDIA Nemotron 3 120B",
+    "gemini-3.7-flash": {
+      "id": "gemini-3.7-flash",
+      "provider": "google",
+      "displayName": "Google Gemini 3.7 Flash",
       "sampling": {
         "temperature": 0.6,
-        "topP": 0.9,
+        "thinkingBudget": "auto"
+      },
+      "prompts": {
+        "style": "calibrated",
+        "systemPromptAdditions": [
+          "Report real bugs, edge cases, and invariants broken directly by the change.",
+          "Do not assume anything about code you cannot see."
+        ],
+        "instructionFocus": [
+          "logic_errors",
+          "correctness"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 20
+      },
+      "verification": {
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
+      }
+    },
+    "gemini-3.8-flash": {
+      "id": "gemini-3.8-flash",
+      "provider": "google",
+      "displayName": "Google Gemini 3.8 Flash",
+      "sampling": {
+        "temperature": 0.6,
+        "thinkingBudget": "auto"
+      },
+      "prompts": {
+        "style": "calibrated",
+        "systemPromptAdditions": [
+          "Report real defects introduced by modified lines: bugs, security vulnerabilities, resource leaks.",
+          "A claim you cannot ground in a line of this diff is not a finding."
+        ],
+        "instructionFocus": [
+          "correctness",
+          "concurrency"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 20
+      },
+      "verification": {
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
+      }
+    },
+    "google/gemma-4-31b": {
+      "id": "google/gemma-4-31b",
+      "provider": "google",
+      "displayName": "Google Gemma 4 31B Instruct",
+      "sampling": {
+        "temperature": 0.65,
+        "topP": 0.95,
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "reasoning_first",
+        "style": "calibrated",
         "systemPromptAdditions": [
-          "Thoroughly trace execution flow through changed lines before formulating findings."
+          "Focus strictly on demonstrable bugs in the modified lines. Do not hallucinate unseen imports."
         ],
-        "instructionFocus": ["concurrency", "correctness", "memory_safety"]
+        "instructionFocus": [
+          "correctness",
+          "error_handling"
+        ]
       },
       "schema": {
         "format": "flat_json_schema",
@@ -145,37 +248,16 @@
         "rpmLimit": 20
       },
       "verification": {
-        "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
-      }
-    },
-    "zai-glm-4": {
-      "id": "zai-glm-4",
-      "provider": "zai",
-      "displayName": "Z.ai GLM-4 Flash",
-      "sampling": {
-        "temperature": 0.7,
-        "topP": 0.9,
-        "thinkingBudget": "off"
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
       },
-      "prompts": {
-        "style": "discovery",
-        "systemPromptAdditions": [
-          "Report all concrete bugs and boundary conditions affected by the pull request."
-        ],
-        "instructionFocus": ["correctness", "typing", "error_paths"]
-      },
-      "schema": {
-        "format": "strict_json_schema",
-        "flattenCodeLocation": false
-      },
-      "limits": {
-        "maxConcurrentCalls": 4,
-        "rpmLimit": 30
-      },
-      "verification": {
-        "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
       }
     },
     "google/gemma-4-26b": {
@@ -188,11 +270,14 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "discovery",
+        "style": "calibrated",
         "systemPromptAdditions": [
-          "Act as an exhaustive reviewer, surfacing all potential bugs."
+          "Focus strictly on demonstrable bugs in the modified lines."
         ],
-        "instructionFocus": ["logic", "exceptions"]
+        "instructionFocus": [
+          "logic",
+          "exceptions"
+        ]
       },
       "schema": {
         "format": "flat_json_schema",
@@ -203,8 +288,302 @@
         "rpmLimit": 20
       },
       "verification": {
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
+      }
+    },
+    "zai-glm-4": {
+      "id": "zai-glm-4",
+      "provider": "zai",
+      "displayName": "Z.ai GLM-4 Flash",
+      "sampling": {
+        "temperature": 0.7,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "v7-balanced",
+        "systemPromptAdditions": [
+          "Report concrete bugs in modified lines. Do not speculate on unseen callers or external dependencies."
+        ],
+        "instructionFocus": [
+          "correctness",
+          "typing",
+          "error_paths"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
         "sensitivity": "balanced",
-        "downgradeUnverifiedToP3": true
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
+      }
+    },
+    "nvidia/nemotron-3-120b": {
+      "id": "nvidia/nemotron-3-120b",
+      "provider": "nvidia",
+      "displayName": "NVIDIA Nemotron 3 120B",
+      "sampling": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "v10-nemotron",
+        "systemPromptAdditions": [
+          "Thoroughly analyze execution flow through changed lines before formulating findings."
+        ],
+        "instructionFocus": [
+          "concurrency",
+          "correctness",
+          "memory_safety"
+        ]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 8,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "unified",
+        "maxDiffLinesPerFile": 1500,
+        "maxDiffChars": 450000,
+        "verifierFullContext": true
+      }
+    },
+    "nvidia/step-5-preview": {
+      "id": "nvidia/step-5-preview",
+      "provider": "nvidia",
+      "displayName": "StepFun Step-5 Preview",
+      "sampling": {
+        "temperature": 0.7,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "calibrated",
+        "systemPromptAdditions": [
+          "Report concrete bugs introduced by modified lines."
+        ],
+        "instructionFocus": [
+          "correctness",
+          "logic_errors"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 2,
+        "rpmLimit": 10
+      },
+      "verification": {
+        "enabled": true,
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
+      }
+    },
+    "stepfun-ai/step-5-preview": {
+      "id": "stepfun-ai/step-5-preview",
+      "provider": "nvidia",
+      "displayName": "StepFun Step-5 Preview",
+      "sampling": {
+        "temperature": 0.7,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "calibrated",
+        "systemPromptAdditions": [
+          "Report concrete bugs introduced by modified lines."
+        ],
+        "instructionFocus": [
+          "correctness",
+          "logic_errors"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 2,
+        "rpmLimit": 10
+      },
+      "verification": {
+        "enabled": true,
+        "sensitivity": "strict",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": true,
+        "strictDiffOnly": true
+      },
+      "gates": {
+        "maxComments": 5,
+        "minSeverity": "P2",
+        "minConfidence": 0.7,
+        "suppressTestFiles": true
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
+      }
+    },
+    "nvidia/nemotron-3-super-120b-a12b": {
+      "id": "nvidia/nemotron-3-super-120b-a12b",
+      "provider": "nvidia",
+      "displayName": "NVIDIA Nemotron 3 120B",
+      "sampling": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "v10-nemotron",
+        "systemPromptAdditions": [
+          "Thoroughly analyze execution flow through changed lines before formulating findings."
+        ],
+        "instructionFocus": [
+          "concurrency",
+          "correctness",
+          "memory_safety"
+        ]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 8,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "unified",
+        "maxDiffLinesPerFile": 1500,
+        "maxDiffChars": 450000,
+        "verifierFullContext": true
+      }
+    },
+    "glm-4.7-flash": {
+      "id": "glm-4.7-flash",
+      "provider": "zai",
+      "displayName": "Z.ai GLM-4 Flash",
+      "sampling": {
+        "temperature": 0.7,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "v7-balanced",
+        "systemPromptAdditions": [
+          "Report concrete bugs in modified lines. Do not speculate on unseen callers or external dependencies."
+        ],
+        "instructionFocus": [
+          "correctness",
+          "typing",
+          "error_paths"
+        ]
+      },
+      "schema": {
+        "format": "strict_json_schema",
+        "flattenCodeLocation": false
+      },
+      "limits": {
+        "maxConcurrentCalls": 4,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "chunked",
+        "maxDiffLinesPerFile": 1000,
+        "maxDiffChars": 250000,
+        "verifierFullContext": true
       }
     }
   }

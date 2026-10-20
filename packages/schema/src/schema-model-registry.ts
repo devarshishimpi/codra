@@ -27,8 +27,28 @@ export const ModelProfileLimitsSchema = z.object({
 
 export const ModelProfileVerificationSchema = z.object({
   sensitivity: z.enum(["strict", "balanced", "permissive"]).default("balanced"),
-  downgradeUnverifiedToP3: z.boolean().default(true),
+  downgradeUnverifiedToP3: z.boolean().default(false),
+  dropUndecidable: z.boolean().default(true),
+  strictDiffOnly: z.boolean().default(true),
 });
+
+export const ModelProfileGatesSchema = z.object({
+  maxComments: z.number().int().min(1).max(50).default(5),
+  minSeverity: z.enum(["P0", "P1", "P2", "P3", "nit"]).default("P2"),
+  minConfidence: z.number().min(0).max(1).default(0.65),
+  suppressTestFiles: z.boolean().default(true),
+});
+
+export const ModelProfileTopologySchema = z.object({
+  mode: z.enum(["unified", "chunked"]).default("unified"),
+  maxDiffLinesPerFile: z.number().int().min(50).default(1000),
+  maxDiffChars: z.number().int().min(10000).default(300000),
+  thoughtBudgetWords: z.number().int().optional(),
+  jsonFirst: z.boolean().default(false),
+  verifierFullContext: z.boolean().default(true),
+});
+
+export type ModelProfileTopology = z.infer<typeof ModelProfileTopologySchema>;
 
 export const ModelProfileSchema = z.object({
   id: z.string(),
@@ -39,6 +59,8 @@ export const ModelProfileSchema = z.object({
   schema: ModelSchemaConfigSchema,
   limits: ModelProfileLimitsSchema,
   verification: ModelProfileVerificationSchema,
+  gates: ModelProfileGatesSchema.optional(),
+  topology: ModelProfileTopologySchema.optional(),
 });
 
 export const ModelRegistrySchema = z.object({
@@ -53,5 +75,6 @@ export type ModelPromptConfig = z.infer<typeof ModelPromptConfigSchema>;
 export type ModelSchemaConfig = z.infer<typeof ModelSchemaConfigSchema>;
 export type ModelProfileLimits = z.infer<typeof ModelProfileLimitsSchema>;
 export type ModelProfileVerification = z.infer<typeof ModelProfileVerificationSchema>;
+export type ModelProfileGates = z.infer<typeof ModelProfileGatesSchema>;
 export type ModelProfile = z.infer<typeof ModelProfileSchema>;
 export type ModelRegistry = z.infer<typeof ModelRegistrySchema>;

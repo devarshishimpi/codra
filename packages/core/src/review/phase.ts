@@ -163,6 +163,7 @@ export async function runReviewPhase(
     const units = planReviewUnits(files, {
       enabled: true,
       fullFileContext: config.review.full_file_context,
+      unified: (config.review as any).topology_mode === "unified",
     }).flatMap((unit) => narrowUnit(unit, ledger));
     const plannedBins = units.filter((unit) => unit.kind === "bin");
     let binsDispatched = 0;

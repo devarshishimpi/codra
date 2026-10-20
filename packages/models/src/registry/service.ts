@@ -22,19 +22,37 @@ export class ModelRegistryService {
 
   public getProfile(modelId: string, provider?: string): ModelProfile {
     const key = `${provider ? provider + "/" : ""}${modelId}`;
-    if (this.currentRegistry.profiles[key]) return this.currentRegistry.profiles[key];
-    if (this.currentRegistry.profiles[modelId]) return this.currentRegistry.profiles[modelId];
+    const defaultGates = {
+      maxComments: 5,
+      minSeverity: "P2" as const,
+      minConfidence: 0.65,
+      suppressTestFiles: true,
+    };
 
-    // Fallback profile if model is not explicitly registered
+    const found = this.currentRegistry.profiles[key] ?? this.currentRegistry.profiles[modelId];
+    if (found) {
+      return {
+        ...found,
+        gates: {
+          ...defaultGates,
+          ...found.gates,
+        },
+      };
+    }
+
+    // Fallback profile if model is not explicitly registered:
+    // Uses optimized Codra v5 defaults so any custom or unknown model achieves high precision out of the box.
     return {
       id: modelId,
       provider: provider ?? "generic",
       displayName: modelId,
-      sampling: { temperature: 0.7, thinkingBudget: "auto" },
-      prompts: { style: "discovery", systemPromptAdditions: [], instructionFocus: [] },
+      sampling: { temperature: 0.6, thinkingBudget: "auto" },
+      prompts: { style: "calibrated", systemPromptAdditions: [], instructionFocus: [] },
       schema: { format: "strict_json_schema", flattenCodeLocation: false },
       limits: { maxConcurrentCalls: 3, rpmLimit: 15 },
-      verification: { sensitivity: "balanced", downgradeUnverifiedToP3: true },
+      verification: { sensitivity: "balanced", downgradeUnverifiedToP3: false, dropUndecidable: true, strictDiffOnly: true },
+      gates: defaultGates,
+      topology: { mode: "unified", maxDiffLinesPerFile: 1000, maxDiffChars: 300000, jsonFirst: false, verifierFullContext: true },
     };
   }
 
