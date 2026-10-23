@@ -52,7 +52,11 @@ export type VerifyDrop = {
 
 /** `null` means verification ran; any other value means findings were posted unverified. */
 export type VerifySkipReason =
-  "no_verifiable_candidates" | "low_answer_ratio" | "verify_call_failed";
+  | "no_verifiable_candidates"
+  | "low_answer_ratio"
+  | "verify_call_failed"
+  // the model profile switches the verifier off on purpose (review.model_tuning.verify)
+  | "disabled_by_profile";
 
 export type VerifyOutcome = {
   comments: ParsedReviewComment[];
@@ -89,7 +93,8 @@ export async function verifyFindings(params: {
   const toVerify = dedupedComments.slice(0, limit);
 
   const fileByPath = new Map(files.map((file) => [file.path, file]));
-  const vRadius = config.review.verification_radius ?? 35;
+  const vRadius =
+    config.review.model_tuning?.verification_radius ?? config.review.verification_radius ?? 35;
 
   // Deterministic absence check: refute claims asserting a symbol is missing when it is present in the diff
   const falseAbsenceDrops: VerifyDrop[] = [];
@@ -159,7 +164,7 @@ export async function verifyFindings(params: {
 
     const byIndex = new Map<
       number,
-      { verdict: "keep" | "drop"; reason?: string }
+      { verdict: "keep" | "drop"; reason?: string; confidence?: number }
     >();
     const conflicting = new Set<number>();
     for (const result of results) {
@@ -170,22 +175,20 @@ export async function verifyFindings(params: {
       )
         continue;
 
-      // Codra v5 Verification:
+      // Verifier verdicts:
       // Drop if verifier answered "drop".
       // If result.decidable === false, only drop if the verifier answered "drop" OR if it is a low-severity/low-confidence guess.
       // High-severity (P0/P1) findings that the verifier kept are protected from being discarded merely due to diff-window truncation.
       let verdict: "keep" | "drop";
       const candidateComment = verifiable[result.index]?.comment;
-      const isHighSev =
-        candidateComment?.severity === "P0" || candidateComment?.severity === "P1";
+      const isHighSev = candidateComment?.severity === "P0" || candidateComment?.severity === "P1";
 
       if (result.verdict === "drop") {
         verdict = "drop";
       } else if (result.decidable === false) {
         if (result.verdict === "keep") {
           verdict = "keep";
-        } else if (isHighSev || (typeof result.confidence === "number" && result.confidence >= 0.55)) {
-          if (candidateComment) candidateComment.severity = "P3";
+        } else if (isHighSev || (typeof result.confidence === "number" && result.confidence >= 0.50)) {
           verdict = "keep";
         } else {
           verdict = "drop";
@@ -199,7 +202,7 @@ export async function verifyFindings(params: {
         conflicting.add(result.index);
         continue;
       }
-      if (!prior) byIndex.set(result.index, { verdict, reason: result.reason });
+      if (!prior) byIndex.set(result.index, { verdict, reason: result.reason, confidence: result.confidence });
     }
     for (const index of conflicting) byIndex.delete(index);
 
@@ -225,21 +228,42 @@ export async function verifyFindings(params: {
     verifiable.forEach((entry, index) => {
       const result = byIndex.get(index);
       if (result?.reason) reasons.set(entry.comment, result.reason);
+      if (typeof result?.confidence === "number") {
+        entry.comment.confidenceScore = result.confidence;
+      }
 
       if (result?.verdict === "drop") {
         dropped.push({
           comment: entry.comment,
           disposition: "verify",
-          reason: result.reason,
+          reason: result.reason ?? "verification refuted this finding",
         });
         return;
       }
       if (!result) {
+        if (typeof entry.comment.confidenceScore === "number" && entry.comment.confidenceScore >= 0.7) {
+          // Preserve high confidence candidate omitted by verifier output
+        } else {
+          dropped.push({
+            comment: entry.comment,
+            disposition: "verify_unanswered",
+            reason: "the verifier returned no verdict for this finding",
+          });
+          return;
+        }
+      }
+
+      // Drop non-critical test suite nits (exempt non-source test artifacts like .trx, .xml, .log)
+      const p = (entry.comment.path || "").toLowerCase();
+      const isTestCode = (p.includes("/test/") || p.includes("/tests/") || p.includes("/spec/") || p.endsWith(".test.ts") || p.endsWith(".test.js") || p.endsWith("_test.go"))
+        && !p.endsWith(".trx") && !p.endsWith(".xml") && !p.endsWith(".log") && !p.endsWith(".dump") && !p.endsWith(".json");
+      if (isTestCode && entry.comment.severity === "nit") {
         dropped.push({
           comment: entry.comment,
-          disposition: "verify_unanswered",
-          reason: "the verifier returned no verdict for this finding",
+          disposition: "verify",
+          reason: "Non-critical finding in test suite or mock fixture",
         });
+        return;
       }
     });
 
@@ -265,7 +289,7 @@ export async function verifyFindings(params: {
         const secResults = parseVerifyResponse(secRes.rawText);
         const secDropIndices = new Set<number>();
         for (const r of secResults) {
-          if (r.verdict === "drop" && r.decidable !== false) {
+          if (r.verdict === "drop" || r.decidable === false) {
             secDropIndices.add(r.index);
           }
         }

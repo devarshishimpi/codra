@@ -218,11 +218,12 @@ export async function runFinalizePhase(
     ...shadowEvaluate(beforeVerifyList, finalComments),
   });
 
-  // Failed on every skip reason: each one means findings were posted unverified.
+  // Failed on every skip reason but one: each means findings were posted unverified. A profile that turns
+  // the verifier off for its model is configuration, not a failure.
   await env.jobs.updateJobStep(
     job.id,
     "Verifying Findings",
-    verificationSkipped
+    verificationSkipped && verificationSkipped !== "disabled_by_profile"
       ? {
           status: "failed",
           error: `Verification did not run (${verificationSkipped}); findings were posted unverified.`,

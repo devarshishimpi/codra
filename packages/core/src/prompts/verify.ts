@@ -2,6 +2,9 @@ import { z } from "zod";
 import { jsonrepair } from "jsonrepair";
 import type { FileDiff } from "../diff";
 
+// Re-exported so @codraoss/models reaches the per-model verifier style through this package subpath.
+export { applyModelVerifyStyle } from "./model-styles";
+
 export type VerifyCandidate = {
   index: number;
   path: string;
@@ -83,10 +86,10 @@ Answer two questions per finding, in this order.
       reason: "the + line adds strict validation, so the claim is backwards".
 
 2. "verdict":
-   - "keep": the code in the window genuinely exhibits the defect or hazard described, or directly implies the logic error in the modified lines.
-   - "drop": the code directly contradicts the claim (the safeguard already exists, the logic is inverted), the claim is purely speculative about unseen files outside this diff, or it is a subjective stylistic preference.
+   - "keep": ONLY if the code in the window genuinely exhibits the concrete defect described, AND the defect directly stems from the modified line quoted in evidence.
+   - "drop": if the claim cannot be proven from this window alone, if the code contradicts it, if the safeguard already exists, if it speculates on unseen callers or external files, or if it is a stylistic preference.
 
-Judge the CLAIM against the CODE. Drop claims that contradict the code or speculate without grounded evidence; keep concrete, demonstrable defects introduced by these changes.
+Judge the CLAIM strictly against the CODE. Drop claims that cannot be decisively proven from the provided diff window; keep only concrete, demonstrable defects introduced by these changes.
 
 Output MUST be valid JSON, exactly one object, no prose before or after:
 {
@@ -120,11 +123,24 @@ export function buildVerifyPrompt(candidates: VerifyCandidate[]): string {
 export function renderDiffSnippet(
   file: FileDiff | undefined,
   line: number | undefined,
-  radius = 35,
+  radius = 120,
 ): string {
   if (!file) return "";
   const flat = file.hunks.flatMap((hunk) => hunk.lines);
   if (flat.length === 0) return "";
+
+  if (flat.length <= 300) {
+    return flat
+      .map((l) => {
+        const prefix = l.kind === "add" ? "+" : l.kind === "del" ? "-" : " ";
+        const gutter = String(l.newLineNumber ?? l.oldLineNumber ?? "").padStart(
+          4,
+          " ",
+        );
+        return `${gutter} ${prefix}${l.content}`;
+      })
+      .join("\n");
+  }
 
   if (line == null) return "";
 

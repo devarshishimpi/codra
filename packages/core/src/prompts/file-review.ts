@@ -2,6 +2,7 @@ import { claimTypes, type RepoConfig } from "@codraoss/schema";
 import type { FileDiff } from "../diff";
 import type { ModelResponseSchema } from "../ports/model";
 import { getLanguageForFile } from "./languages";
+import { applyModelPromptStyle } from "./model-styles";
 import {
   INTENT_CHECK_INSTRUCTION,
   renderFileContext,
@@ -13,9 +14,9 @@ export { changelogExcerptFromDiff, wantsFileContext } from "./review-context";
 
 // Pre-review_breadth fallback: generator scales with PR diff size.
 export function generatorFindingCap(maxComments: number, lineCount = 0): number {
-  if (lineCount > 500) return Math.max(30, maxComments * 3);
-  if (lineCount > 100) return Math.max(20, Math.round(maxComments * 2.5));
-  return Math.max(12, maxComments * 2);
+  if (lineCount > 500) return Math.max(12, Math.round(maxComments * 2));
+  if (lineCount > 100) return Math.max(10, Math.round(maxComments * 1.6));
+  return Math.max(8, Math.round(maxComments * 1.4));
 }
 
 /** Internal candidate cap upstream of posting; falls back for job snapshots queued before this field existed. */
@@ -69,8 +70,33 @@ function findingItemSchema() {
   };
 }
 
+function flatFindingItemSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: [
+      "path",
+      "line",
+      "severity",
+      "title",
+      "body",
+      "evidence",
+    ],
+    properties: {
+      path: { type: "string" },
+      line: { type: "integer", minimum: 1 },
+      severity: { type: "integer", minimum: 0, maximum: 4 },
+      claim_type: { type: "string" },
+      title: { type: "string", maxLength: 100 },
+      body: { type: "string" },
+      evidence: { type: "string" },
+    },
+  };
+}
+
 export function buildReviewResponseSchema(
   findingCap: number,
+  format?: string,
 ): ModelResponseSchema {
   return {
     name: "codra_file_review",
@@ -82,7 +108,7 @@ export function buildReviewResponseSchema(
         findings: {
           type: "array",
           maxItems: Math.max(1, findingCap),
-          items: findingItemSchema(),
+          items: format === "flat_json_schema" ? flatFindingItemSchema() : findingItemSchema(),
         },
       },
     },
@@ -92,6 +118,7 @@ export function buildReviewResponseSchema(
 export function buildBatchReviewResponseSchema(
   findingCap: number,
   _fileCount?: number,
+  format?: string,
 ): ModelResponseSchema {
   return {
     name: "codra_batch_review",
@@ -103,7 +130,7 @@ export function buildBatchReviewResponseSchema(
         findings: {
           type: "array",
           maxItems: Math.max(1, findingCap),
-          items: findingItemSchema(),
+          items: format === "flat_json_schema" ? flatFindingItemSchema() : findingItemSchema(),
         },
       },
     },
@@ -172,23 +199,16 @@ export function buildFileReviewSystemPromptBase(opts?: {
   const emptyRule = "5. If the diff genuinely introduces no defect, return an empty findings array. Do not pad, and do not withhold real defects.";
 
   const whatToReport =
-    opts?.promptStyle === "calibrated"
+    opts?.promptStyle === "calibrated" || opts?.promptStyle === "discovery"
       ? `### WHAT TO REPORT:
 - Report concrete, demonstrable defects introduced directly by modified lines: bugs, security vulnerabilities, resource leaks, data races, or broken invariants.
 - Be strictly conservative. Only report issues you can clearly ground in the quoted diff lines. Do NOT speculate about unseen callers, missing imports, or potential edge cases outside what is directly shown in this diff.`
-      : isDiscovery
-        ? `### WHAT TO REPORT:
-- Act as an exhaustive senior technical reviewer. Walk the diff hunk by hunk and examine every changed line.
-- Surface all concrete defects, logic errors, edge-case regressions, unhandled exceptions, resource leaks, data races, and broken invariants introduced by the diff.
-- Do NOT self-censor during analysis: if a modified line introduces a plausible bug, race, leak, or invariant break, report it. An independent secondary verification pass will rigorously validate candidates against the diff. A defect you fail to report is lost.`
-        : `### WHAT TO REPORT:
+      : `### WHAT TO REPORT:
 - Act as a balanced, constructive technical reviewer. Do not artificially suppress genuine defects.
 - Report anything a senior engineer reviewing this diff would want to investigate: a bug, a security hole, a performance problem, a resource leak, an unhandled failure, or a broken invariant.
-- You do not need absolute mathematical certainty: a finding grounded in a quoted diff line is worth raising. Every finding is independently checked against the diff afterwards, and a wrong one is discarded at no cost to you. A defect you decline to mention is simply lost.`;
+- Every finding must be grounded in a quoted diff line. A defect you decline to mention is simply lost.`;
 
-  const prohibitions = isDiscovery
-    ? ""
-    : `- You cannot see which files import this one. Never predict that a change breaks callers, importers, "other modules" or "external files" -- a removed \`export\`, a renamed symbol or a changed signature may have no consumers at all, and you have no way to check. The same applies in reverse to a function whose body is not shown: do not assume what it does with its errors or its return value.
+  const prohibitions = `- You cannot see which files import this one. Never predict that a change breaks callers, importers, "other modules" or "external files" -- a removed \`export\`, a renamed symbol or a changed signature may have no consumers at all, and you have no way to check. The same applies in reverse to a function whose body is not shown: do not assume what it does with its errors or its return value.
 - Assume every third-party package is at the version this project pins, and that its API is whatever that version provides. Never claim a library "does not expose", "does not provide" or "does not support" something; your training data predates the installed version.
 - Assume the language, runtime and build target are whatever the project already uses successfully. A syntax or standard-library method appearing in the diff is available in this project by construction -- the code around it already compiles and ships. Do not raise compatibility, polyfill, transpilation, engine-version or server-side-rendering concerns unless the diff itself shows the incompatibility.
 - Two async facts that are frequently misread. \`return somePromise()\` inside an \`async\` function IS awaited by whoever awaits that function; it is equivalent to \`return await\` except inside \`try\`/\`finally\`, so it is not a missing await and not a floating promise. And \`void someAsyncCall()\` is deliberate fire-and-forget: if the called function handles its own errors, there is no unhandled rejection to report.`;
@@ -348,7 +368,10 @@ export function buildFileReviewPrompts(input: {
     ...(fileContext ? ["", fileContext] : []),
   ].join("\n");
 
-  return { systemPrompt, userPrompt };
+  return applyModelPromptStyle(input.config.model_tuning?.prompt_style, {
+    systemPrompt,
+    userPrompt,
+  });
 }
 
 function packFileHeader(file: FileDiff, index: number, total: number): string {
@@ -406,7 +429,10 @@ export function buildBatchReviewPrompts(input: {
     ...fileBlocks,
   ].join("\n");
 
-  return { systemPrompt, userPrompt };
+  return applyModelPromptStyle(input.config.model_tuning?.prompt_style, {
+    systemPrompt,
+    userPrompt,
+  });
 }
 
 export function renderFileDiff(file: FileDiff) {

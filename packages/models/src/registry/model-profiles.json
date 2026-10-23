@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
-  "updatedAt": "2026-10-18T16:00:00.000Z",
+  "version": "1.4.0",
+  "updatedAt": "2026-10-23T12:00:00.000Z",
   "schemaVersion": "1.0.0",
   "profiles": {
     "gemini-3.5-flash-lite": {
@@ -12,7 +12,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v7-balanced",
+        "style": "balanced",
         "systemPromptAdditions": [
           "Focus on concrete code changes in the diff. Surface real defects and unhandled failure branches.",
           "Every finding must be grounded in a quoted diff line."
@@ -60,7 +60,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v7-balanced",
+        "style": "balanced",
         "systemPromptAdditions": [
           "Focus on concrete code changes in the diff. Surface real defects and unhandled failure branches.",
           "Every finding must be grounded in a quoted diff line."
@@ -310,7 +310,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v7-balanced",
+        "style": "balanced",
         "systemPromptAdditions": [
           "Report concrete bugs in modified lines. Do not speculate on unseen callers or external dependencies."
         ],
@@ -358,7 +358,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v10-nemotron",
+        "style": "trace_then_report",
         "systemPromptAdditions": [
           "Thoroughly analyze execution flow through changed lines before formulating findings."
         ],
@@ -500,7 +500,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v10-nemotron",
+        "style": "trace_then_report",
         "systemPromptAdditions": [
           "Thoroughly analyze execution flow through changed lines before formulating findings."
         ],
@@ -548,7 +548,7 @@
         "thinkingBudget": "off"
       },
       "prompts": {
-        "style": "v7-balanced",
+        "style": "balanced",
         "systemPromptAdditions": [
           "Report concrete bugs in modified lines. Do not speculate on unseen callers or external dependencies."
         ],
@@ -583,6 +583,102 @@
         "mode": "chunked",
         "maxDiffLinesPerFile": 1000,
         "maxDiffChars": 250000,
+        "verifierFullContext": true
+      }
+    },
+    "nvidia/nemotron-3.5-super-vl-120b-a12b": {
+      "id": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "provider": "nvidia",
+      "displayName": "NVIDIA Nemotron 3.5 Super VL 120B",
+      "sampling": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "trace_then_report",
+        "systemPromptAdditions": [
+          "Thoroughly analyze execution flow through changed lines before formulating findings."
+        ],
+        "instructionFocus": [
+          "concurrency",
+          "correctness",
+          "memory_safety"
+        ]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 8,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "unified",
+        "maxDiffLinesPerFile": 1500,
+        "maxDiffChars": 450000,
+        "verifierFullContext": true
+      }
+    },
+    "nvidia/nemotron-3.5-lightning-30b-a3b": {
+      "id": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "provider": "nvidia",
+      "displayName": "NVIDIA Nemotron 3.5 Lightning 30B A3B",
+      "sampling": {
+        "temperature": 0.6,
+        "topP": 0.9,
+        "thinkingBudget": "off"
+      },
+      "prompts": {
+        "style": "trace_then_report",
+        "systemPromptAdditions": [
+          "Thoroughly analyze execution flow through changed lines before formulating findings."
+        ],
+        "instructionFocus": [
+          "concurrency",
+          "correctness",
+          "memory_safety"
+        ]
+      },
+      "schema": {
+        "format": "flat_json_schema",
+        "flattenCodeLocation": true
+      },
+      "limits": {
+        "maxConcurrentCalls": 8,
+        "rpmLimit": 30
+      },
+      "verification": {
+        "enabled": false,
+        "sensitivity": "balanced",
+        "downgradeUnverifiedToP3": false,
+        "dropUndecidable": false,
+        "strictDiffOnly": false
+      },
+      "gates": {
+        "maxComments": 8,
+        "minSeverity": "P3",
+        "minConfidence": 0.5,
+        "suppressTestFiles": false
+      },
+      "topology": {
+        "mode": "unified",
+        "maxDiffLinesPerFile": 1500,
+        "maxDiffChars": 450000,
         "verifierFullContext": true
       }
     }

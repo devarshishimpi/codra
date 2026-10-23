@@ -85,6 +85,8 @@ vi.mock("@codraoss/models", async () => {
   const { nextChainIndexOfMock } = await import("../mocks/services");
   return {
     ModelRunner: MockModelService,
+    // loadRepoConfig resolves the model profile; these flows test the review lifecycle, not tuning.
+    applyModelProfile: (config: unknown) => config,
     isRetryableModelError: (e: unknown) =>
       Boolean(e && typeof e === "object" && (e as any).retryable === true),
     nextChainIndexOf: nextChainIndexOfMock,

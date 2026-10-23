@@ -81,14 +81,18 @@ describe("renderDiffSnippet", () => {
     expect(renderDiffSnippet(undefined, 3)).toBe("");
   });
 
-  // It used to fall back to the top of the file's diff, judging the claim against unrelated code.
-  // Returning nothing instead lets the caller pass the candidate through unverified.
-  it("returns empty string when the line cannot be located", () => {
-    expect(renderDiffSnippet(file, 999, 1)).toBe("");
+  // A diff of up to 300 lines is shown whole, so the verifier judges the claim against the entire change
+  // rather than a window. Only a larger diff falls back to nothing when the line cannot be located,
+  // letting the caller pass the candidate through unverified instead of judging it against unrelated code.
+  it("shows a small diff whole even when the line cannot be located", () => {
+    expect(renderDiffSnippet(file, 999, 1)).toContain("+const c = a + b;");
+    expect(renderDiffSnippet(file, undefined, 1)).toContain("const a = 1;");
   });
 
-  it("returns empty string when no line is supplied", () => {
-    expect(renderDiffSnippet(file, undefined, 1)).toBe("");
+  it("returns empty string for a large diff when the line cannot be located", () => {
+    const big = { ...file, hunks: [{ ...file.hunks[0], lines: Array.from({ length: 301 }, (_, i) => ({ kind: "context" as const, content: `line ${i}`, newLineNumber: i + 1, oldLineNumber: i + 1, position: i + 1 })) }] };
+    expect(renderDiffSnippet(big, 999, 1)).toBe("");
+    expect(renderDiffSnippet(big, undefined, 1)).toBe("");
   });
 
   it("renders a full context window with custom radius 35", () => {

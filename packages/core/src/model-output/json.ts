@@ -54,9 +54,13 @@ function scanBalanced(
 }
 
 export function extractJson(
-  raw: string,
+  input: string,
   anchorKey: "findings" | "files" = "findings",
 ) {
+  // Repair unescaped quotes first: the brace scan below tracks strings by their quotes, and one stray quote
+  // (a model quoting `\\"` from escaping code) made it cut the object at the wrong brace. Idempotent, so the
+  // second pass in preprocessJson changes nothing.
+  const raw = dropStrayKeyFragments(sanitizeInnerQuotes(input));
   const jsonBlocks = Array.from(raw.matchAll(/```json\s*([\s\S]*?)(?:```|$)/gi));
   if (jsonBlocks.length > 0) {
     const candidates = jsonBlocks.slice().reverse().find(b => b[1].includes('"findings"') || b[1].includes('"files"') || b[1].includes('"path"'));
@@ -199,14 +203,39 @@ export function extractJson(
   return raw.trim();
 }
 
+/**
+ * Removes a broken key fragment opening the reply: step-5-preview sometimes answers `{"  ,"findings": [...]}`,
+ * which no parser accepts, and the whole reply was discarded. Only the reply's first brace is touched
+ * (optionally inside a ```json fence): further in, the same characters occur inside string values, such
+ * as evidence `"  if (asChild) {",` followed by the next key.
+ */
+export function dropStrayKeyFragments(str: string): string {
+  return str.replace(/^(\s*(?:```(?:json)?\s*)?)\{\s*"\s*,\s*"(?=[A-Za-z_])/i, '$1{"');
+}
+
 export function sanitizeInnerQuotes(str: string): string {
   return str.replace(
     /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote|code_suggestion|fix|replacement|patch|example)"\s*:\s*")(.*)("(?:\s*,?\s*(?:}|\])?\s*\r?))$/gm,
-    (m, p1, p2, p3) => {
-      const fixed = p2.replace(/(?<!\\)"/g, '\\"');
-      return p1 + fixed + p3;
-    },
+    (m, p1, p2, p3) => p1 + escapeInnerQuotes(p2) + p3,
   );
+}
+
+/**
+ * Escapes the quotes inside one string value that a model left unescaped. A quote is already escaped only
+ * when an ODD number of backslashes precedes it: models quoting escaping code (`replace("\\", "\\\\")`)
+ * write `\\"`, an escaped backslash followed by a bare quote, which ended the string early and lost the
+ * whole reply. A value ending in an odd run of backslashes would escape its own closing quote, so the
+ * last backslash is doubled into a literal one.
+ */
+function escapeInnerQuotes(value: string): string {
+  let out = "";
+  let run = 0;
+  for (const char of value) {
+    if (char === '"' && run % 2 === 0) out += "\\";
+    out += char;
+    run = char === "\\" ? run + 1 : 0;
+  }
+  return run % 2 === 1 ? `${out}\\` : out;
 }
 
 export function extractMarkdownFindings(raw: string): any[] {
@@ -254,6 +283,12 @@ export function preprocessJson(json: string): string {
     }
 
     if (char === "\\") {
+      // `\u` must be followed by four hex digits or JSON.parse (and jsonrepair) reject the whole reply;
+      // a model writing about `\u12` or `\user` means a literal backslash.
+      if (inString && sanitized[i + 1] === "u" && !/^[0-9a-fA-F]{4}$/.test(sanitized.slice(i + 2, i + 6))) {
+        result += "\\\\";
+        continue;
+      }
       result += char;
       escape = true;
       continue;

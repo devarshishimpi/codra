@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { reviewSeverities } from "./review-limits";
 import { reviewCategories } from "./schema-enums";
+import { modelPromptStyles } from "./schema-model-registry";
 import {
   claimTypes,
   DEFAULT_DENIED_CLAIM_TYPES,
@@ -94,6 +95,17 @@ export const reviewConfigSchema = z.object({
   prompt_style: z.enum(["permissive", "calibrated", "auto"]).default("auto"),
   verification_radius: z.number().int().min(12).max(60).default(35),
   dedupe_line_radius: z.number().int().min(0).max(5).default(2),
+  // Per-model tuning resolved from the model registry (applyModelProfile in @codraoss/models), not a
+  // user-facing setting: absent means "no profile", and every consumer then behaves as before.
+  model_tuning: z
+    .object({
+      profile: z.string(),
+      prompt_style: z.enum(modelPromptStyles).optional(),
+      verify: z.boolean().default(true),
+      topology: z.enum(["unified", "chunked"]).optional(),
+      verification_radius: z.number().int().min(12).max(500).optional(),
+    })
+    .optional(),
   secondary_verifier: z
     .union([
       z.string().min(1),

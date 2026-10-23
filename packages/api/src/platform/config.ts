@@ -5,6 +5,7 @@ import {
   type RepoConfig,
 } from "@codraoss/schema";
 import { REPO_CONFIG_CACHE_VERSION } from "@codraoss/schema";
+import { applyModelProfile } from "@codraoss/models";
 import { getRepoConfigRecord, syncRepoConfig } from "@codraoss/db/repo-configs";
 import type { DbEnv } from "@codraoss/db/env";
 import type { KvCompat } from "./kv";
@@ -108,6 +109,9 @@ export async function loadRepoConfig(
       model: globalModel,
     };
   }
+
+  // The model profile is resolved last, against the model this repo actually reviews with.
+  parsedJson = applyModelProfile(parsedJson);
 
   const finalConfig: CachedConfig = {
     parsedJson,

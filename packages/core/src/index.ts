@@ -26,3 +26,4 @@ export {
 } from "./review";
 
 export * from "./ports";
+export * from "./review/model-gates";

@@ -144,7 +144,7 @@ export function resolveEvidence(
     };
   }
 
-  // Codra v3 fallback: if quote formatting differed slightly but reportedLine matches a touched line nearby
+  // Fallback: the quote's formatting differed slightly, but reportedLine matches a touched line nearby.
   if (reportedLine !== undefined) {
     const nearby = index.lines
       .map(({ line }) => line)

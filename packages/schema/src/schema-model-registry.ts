@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { claimTypes } from "./schema-claims";
 
 export const ModelSamplingConfigSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
@@ -8,8 +9,20 @@ export const ModelSamplingConfigSchema = z.object({
   maxOutputTokens: z.number().int().positive().optional(),
 });
 
+// Every style a profile may name. calibrated, balanced and trace_then_report are the per-model prompt
+// transforms in @codraoss/core/prompts/model-styles; the rest are carried as plain labels.
+export const modelPromptStyles = [
+  "discovery",
+  "calibrated",
+  "concise",
+  "reasoning_first",
+  "balanced",
+  "trace_then_report",
+] as const;
+export type ModelPromptStyle = (typeof modelPromptStyles)[number];
+
 export const ModelPromptConfigSchema = z.object({
-  style: z.enum(["discovery", "calibrated", "concise", "reasoning_first"]).default("discovery"),
+  style: z.enum(modelPromptStyles).default("discovery"),
   systemPromptAdditions: z.array(z.string()).default([]),
   instructionFocus: z.array(z.string()).default([]),
 });
@@ -26,6 +39,8 @@ export const ModelProfileLimitsSchema = z.object({
 });
 
 export const ModelProfileVerificationSchema = z.object({
+  // false skips the verifier pass for this model (its self-verification discarded real defects).
+  enabled: z.boolean().default(true).optional(),
   sensitivity: z.enum(["strict", "balanced", "permissive"]).default("balanced"),
   downgradeUnverifiedToP3: z.boolean().default(false),
   dropUndecidable: z.boolean().default(true),

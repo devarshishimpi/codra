@@ -7,6 +7,7 @@ import {
 } from "@codraoss/schema";
 import { budgetAwareFileLimit } from "./budget";
 import { narrowUnit, planReviewUnits } from "./pack";
+import { isUnifiedTopology } from "./model-gates";
 import { reviewAndPersistBin } from "./bin-runner";
 import { getDiffFiles } from "./diff-cache";
 import {
@@ -142,7 +143,7 @@ export async function runReviewPhase(
   }
 
   const binnedPaths = new Set<string>();
-  if (config.review.batch_small_files) {
+  if (config.review.batch_small_files || isUnifiedTopology(config.review)) {
     const ledger = new Map(
       files.map((file) => {
         const existing = currentReviews.get(file.path);
@@ -163,7 +164,7 @@ export async function runReviewPhase(
     const units = planReviewUnits(files, {
       enabled: true,
       fullFileContext: config.review.full_file_context,
-      unified: (config.review as any).topology_mode === "unified",
+      unified: isUnifiedTopology(config.review),
     }).flatMap((unit) => narrowUnit(unit, ledger));
     const plannedBins = units.filter((unit) => unit.kind === "bin");
     let binsDispatched = 0;

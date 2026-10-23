@@ -3,6 +3,7 @@ import {
   SUMMARY_SYSTEM_PROMPT,
 } from "@codraoss/core/prompts/summary";
 import {
+  applyModelVerifyStyle,
   buildVerifyPrompt,
   VERIFY_RESPONSE_SCHEMA,
   VERIFY_SYSTEM_PROMPT,
@@ -153,7 +154,10 @@ export async function verifyFindings(
   });
   const modelsToTry = [primary, ...fallbacks];
   const input: ModelInput = {
-    systemPrompt: VERIFY_SYSTEM_PROMPT,
+    systemPrompt: applyModelVerifyStyle(
+      params.config.review.model_tuning?.prompt_style,
+      VERIFY_SYSTEM_PROMPT,
+    ),
     userPrompt: buildVerifyPrompt(params.candidates),
     // Must use verify grammar, not file-review.
     responseSchema:

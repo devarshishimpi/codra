@@ -274,8 +274,8 @@ function applyClaimGate(
 
   claimTypeCounts[claimType] = (claimTypeCounts[claimType] ?? 0) + 1;
 
-  // Codra v3: Do not drop real defect categories like resource leaks or null derefs
-  // before verification. Let the verifier inspect them!
+  // Real defect categories such as resource leaks or null dereferences are not dropped here, before
+  // verification: the verifier inspects them.
   const hardDenied = new Set([
     "react_hook_missing_deps",
     "react_missing_cleanup",
@@ -327,7 +327,7 @@ function buildParsedComment(params: {
   } = params;
 
   const confidenceScore =
-    typeof finding.confidence_score === "number" ? finding.confidence_score : 0;
+    typeof finding.confidence_score === "number" ? finding.confidence_score : undefined;
 
   const codeSuggestion =
     typeof finding.code_suggestion === "string" &&
