@@ -8,6 +8,7 @@ import {
 } from "../types";
 import { assertPublicBaseUrl } from "../url-guard";
 import { MODEL_TIMEOUT_MAX_MS, resolveOutputTokenCeiling } from "../limits";
+import { profileSampling } from "./profile-sampling";
 
 const OPENAI_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const OPENAI_DEFAULT_OUTPUT_TOKENS = 4096;
@@ -106,7 +107,10 @@ export async function reviewWithOpenAI(
     baseUrl = baseUrl.slice(0, -1);
   }
   const url = `${baseUrl}/chat/completions`;
-  const temperature = resolveOpenAiEndpointTemperature(baseUrl, model);
+  // The model's registered profile sets sampling; without one, the endpoint's own midpoint.
+  const sampling = profileSampling(model);
+  const temperature =
+    sampling?.temperature ?? resolveOpenAiEndpointTemperature(baseUrl, model);
 
   const lowerUrl = baseUrl.toLowerCase();
   const lowerModel = model.toLowerCase();
@@ -122,12 +126,21 @@ export async function reviewWithOpenAI(
       { role: "user", content: prompts.user },
     ],
     temperature,
+    ...(sampling?.topP !== undefined ? { top_p: sampling.topP } : {}),
     max_tokens: effectiveCeiling,
     response_format: { type: "json_object" },
   };
 
   if (lowerUrl.includes("z.ai") || lowerUrl.includes("bigmodel.cn")) {
     bodyPayload.thinking = { type: "disabled" };
+  }
+  // A profile with thinking off: Step-5 takes the same switch as GLM, and NVIDIA serves Nemotron 3.5's
+  // reasoning toggle only through the chat template (left on, it can spend every token thinking).
+  if (sampling?.thinkingBudget === "off") {
+    if (lowerModel.includes("step-5")) bodyPayload.thinking = { type: "disabled" };
+    if (lowerModel.includes("nemotron-3.5")) {
+      bodyPayload.chat_template_kwargs = { enable_thinking: false };
+    }
   }
 
   const maxRetries = 2;

@@ -19,6 +19,7 @@ import {
   geminiThinkingBudgetTokens,
   resolveOutputTokenCeiling,
 } from "../limits";
+import { geminiThinkingBudget, profileSampling } from "./profile-sampling";
 
 const GEMINI_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const GEMINI_MAX_RETRIES = 2;
@@ -133,7 +134,8 @@ export async function reviewWithGoogle(
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_DEFAULT_OUTPUT_TOKENS,
   );
-  const thinkingBudget = geminiThinkingBudgetTokens(answerBudget);
+  const sampling = profileSampling(model);
+  const thinkingBudget = geminiThinkingBudget(sampling, geminiThinkingBudgetTokens(answerBudget));
   let currentCeiling = Math.min(
     GEMINI_MAX_OUTPUT_TOKENS,
     answerBudget + thinkingBudget,
@@ -199,8 +201,10 @@ export async function reviewWithGoogle(
               ...(thinkingRejected
                 ? {}
                 : { thinkingConfig: { thinkingBudget } }),
-              // Gemini's temperature scale is 0-2, not 0-1.
-              temperature: 0.9,
+              // The model's registered profile sets sampling; without one, 0.9 (Gemini's scale is 0-2).
+              temperature: sampling?.temperature ?? 0.9,
+              ...(sampling?.topP !== undefined ? { topP: sampling.topP } : {}),
+              ...(sampling?.topK !== undefined ? { topK: sampling.topK } : {}),
             },
           }),
         }),

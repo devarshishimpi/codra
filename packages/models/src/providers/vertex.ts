@@ -17,6 +17,7 @@ import {
   geminiThinkingBudgetTokens,
   resolveOutputTokenCeiling,
 } from "../limits";
+import { geminiThinkingBudget, profileSampling } from "./profile-sampling";
 
 // Vertex API requires OAuth2; apiKey holds service-account JSON.
 const VERTEX_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
@@ -206,7 +207,8 @@ export async function reviewWithVertex(
     VERTEX_MAX_OUTPUT_TOKENS,
     VERTEX_DEFAULT_OUTPUT_TOKENS,
   );
-  const thinkingBudget = geminiThinkingBudgetTokens(answerBudget);
+  const sampling = profileSampling(model);
+  const thinkingBudget = geminiThinkingBudget(sampling, geminiThinkingBudgetTokens(answerBudget));
   let currentCeiling = Math.min(
     VERTEX_MAX_OUTPUT_TOKENS,
     answerBudget + thinkingBudget,
@@ -246,8 +248,10 @@ export async function reviewWithVertex(
         // No `responseJsonSchema`: this adapter cannot drop schema mid-flight.
         maxOutputTokens: ceiling,
         ...(includeThinking ? { thinkingConfig: { thinkingBudget } } : {}),
-        // Same models as the Google adapter, so the same value keeps the two paths comparable.
-        temperature: 0.9,
+        // Same models and profiles as the Google adapter, so the two paths send the same sampling.
+        temperature: sampling?.temperature ?? 0.9,
+        ...(sampling?.topP !== undefined ? { topP: sampling.topP } : {}),
+        ...(sampling?.topK !== undefined ? { topK: sampling.topK } : {}),
       },
     });
 

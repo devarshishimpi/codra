@@ -9,7 +9,7 @@
       "displayName": "Google Gemini 3.5 Flash Lite",
       "sampling": {
         "temperature": 0.7,
-        "thinkingBudget": "off"
+        "thinkingBudget": 2048
       },
       "prompts": {
         "style": "balanced",
@@ -57,7 +57,7 @@
       "displayName": "Google Gemini 3.1 Flash Lite",
       "sampling": {
         "temperature": 0.7,
-        "thinkingBudget": "off"
+        "thinkingBudget": 2048
       },
       "prompts": {
         "style": "balanced",
