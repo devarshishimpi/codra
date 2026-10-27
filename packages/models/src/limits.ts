@@ -83,7 +83,7 @@ export function reviewOutputBudgetTokens(input: {
   fileCount: number;
 }): number {
   const files = Math.max(1, input.fileCount);
-  const findings = Math.max(1, input.findingCap);
+  const findings = Math.max(1, input.findingCap) * files;
   return Math.min(
     16_384,
     Math.max(

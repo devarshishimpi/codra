@@ -126,7 +126,7 @@ describe("output contract", () => {
 
     expect(userPrompt).toMatch(/avoid subjective style feedback/);
 
-    expect(systemBase).toMatch(/at most priority 3, never 0 or 1/);
+    expect(systemBase).toMatch(/Set priority honestly; do not inflate/);
   });
 });
 
@@ -157,8 +157,8 @@ describe("the generator", () => {
     expect(reviewBreadth(legacy)).toBe(
       generatorFindingCap(defaultRepoConfig.review.max_comments),
     );
-    expect(generatorFindingCap(10)).toBe(20);
-    expect(generatorFindingCap(1)).toBe(2);
+    expect(generatorFindingCap(10)).toBe(14);
+    expect(generatorFindingCap(1)).toBe(8);
   });
 });
 

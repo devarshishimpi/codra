@@ -206,9 +206,9 @@ describe("parseBatchReviewResponse", () => {
       { maxCommentsPerFile: 5 },
     );
 
-    // generatorFindingCap(5) = 10.
-    expect(result.reviews.get("src/a.ts")!.comments).toHaveLength(10);
-    expect(result.stats.overCap).toBe(20);
+    // generatorFindingCap(5) = 8 (Math.max(8, Math.round(5 * 1.4))).
+    expect(result.reviews.get("src/a.ts")!.comments).toHaveLength(8);
+    expect(result.stats.overCap).toBe(22);
     expect(result.reviews.get("src/a.ts")!.fileSummary).toContain("over-cap");
     expect(result.reviews.get("src/b.ts")!.comments).toHaveLength(1);
   });

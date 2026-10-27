@@ -1,7 +1,6 @@
 import {
   defaultRepoConfig,
   reviewSettingsSchema,
-  type ParsedReviewComment,
   type RepoConfig,
   type ReviewSettings,
 } from "@codraoss/schema";
@@ -13,6 +12,12 @@ import type {
   PersistedReviewJob,
   ReviewRuntime,
 } from "../src/ports";
+import {
+  createMockFormatter,
+  createMockGitHub,
+  createMockModel,
+  TokenTrackerStub,
+} from "./in-memory-mocks";
 
 export type Recorded = {
   /** Every port write, in order, so a test can assert on the sequence rather than the end state. */
@@ -180,17 +185,6 @@ export function createInMemoryRuntime(
     withheld_counts: {},
     batch_size: null,
   });
-
-  const findingsFor = (path: string): ParsedReviewComment[] =>
-    (model.findingsByPath?.[path] ?? []).map((finding) => ({
-      path,
-      line: finding.line,
-      title: finding.title,
-      body: finding.body,
-      severity: "P1" as const,
-      confidenceScore: 90,
-      evidence: finding.evidence,
-    })) as ParsedReviewComment[];
 
   const runtime: ReviewRuntime = {
     kv: {
@@ -382,130 +376,9 @@ export function createInMemoryRuntime(
     },
 
     createTokenTracker: () => new TokenTrackerStub() as never,
-    createGitHub: () => ({
-      getPullRequest: async () => ({
-        number: job.prNumber,
-        title: job.prTitle,
-        body: "Adds a retry helper.",
-        draft: false,
-        head: { sha: job.commitSha, ref: "feature" },
-        base: { sha: "b".repeat(40), ref: "main" },
-        user: { login: job.prAuthor ?? "octocat" },
-      }),
-      getPullRequestDiff: async () => {
-        record("getPullRequestDiff");
-        return SAMPLE_DIFF;
-      },
-      getCompareDiff: async () => SAMPLE_DIFF,
-      createCheckRun: async (_o, _r, params) => {
-        recorded.checkRuns.push({ title: params.title });
-        return { id: 555 };
-      },
-      updateCheckRun: async (_o, _r, _id, params) => {
-        recorded.checkRuns.push({
-          title: params.title,
-          status: params.status,
-          conclusion: params.conclusion,
-        });
-        return undefined;
-      },
-      createReview: async (_o, _r, _pr, params) => {
-        record("createReview");
-        recorded.postedReviews.push({
-          body: params.body,
-          comments: params.comments.map((c) => ({
-            path: c.path,
-            body: c.body,
-          })),
-        });
-        return {
-          id: 999,
-          postedIndices: params.comments.map((_c, index) => index),
-        };
-      },
-      findBotReviewForCommit: async () => null,
-      ensureLabel: async () => undefined,
-      addIssueLabels: async () => undefined,
-      removeIssueLabelsIfPresent: async () => undefined,
-    }),
-    createModel: () => ({
-      reviewFile: async (params) => {
-        if (model.failEveryCall) throw model.failEveryCall;
-        record(`reviewFile:${params.file.path}`);
-        const comments = findingsFor(params.file.path);
-        return {
-          rawText: JSON.stringify({ comments }),
-          inputTokens: 100,
-          outputTokens: 20,
-          modelUsed: "fake/model",
-          provider: "fake",
-          reviewedLineCount: params.file.lineCount,
-          wasPromptTruncated: false,
-          userPrompt: "prompt",
-          parsed: {
-            comments,
-            verdict: comments.length > 0 ? "comment" : "approve",
-            fileSummary: `Reviewed ${params.file.path}`,
-          },
-        } as never;
-      },
-      reviewFiles: async (params) => {
-        if (model.failEveryCall) throw model.failEveryCall;
-        record(`reviewFiles:${params.files.length}`);
-        const reviews = new Map(
-          params.files.map((file) => {
-            const comments = findingsFor(file.path);
-            return [
-              file.path,
-              {
-                comments,
-                verdict: comments.length > 0 ? "comment" : "approve",
-                fileSummary: `Reviewed ${file.path}`,
-              },
-            ];
-          }),
-        );
-        return {
-          rawText: "batch",
-          inputTokens: 200,
-          outputTokens: 40,
-          modelUsed: "fake/model",
-          provider: "fake",
-          userPrompt: "prompt",
-          batch: { reviews, missing: [] },
-        } as never;
-      },
-      submitReviewBatch: async () => null,
-      pollReviewBatch: async () => ({ status: "pending" as const }),
-      verifyFindings: async (params) => {
-        record(`verifyFindings:${params.candidates.length}`);
-        const results = params.candidates.map((candidate) => ({
-          index: candidate.index,
-          verdict: model.verifyVerdicts?.[candidate.index] ?? "keep",
-          reason: "fake verdict",
-        }));
-        return {
-          rawText: JSON.stringify({ results }),
-          inputTokens: 50,
-          outputTokens: 10,
-          modelUsed: "fake/model",
-          provider: "fake",
-        };
-      },
-    }),
-    createFormatter: () => ({
-      toReviewEvent: (verdict) =>
-        verdict === "approve" ? "APPROVE" : "COMMENT",
-      summarizeVerdict: (comments, hasFailures) => ({
-        verdict: comments.length > 0 || hasFailures ? "comment" : "approve",
-        errors: 0,
-        warnings: comments.length,
-      }),
-      formatInlineComment: (comment) =>
-        `**${comment.title}**\n\n${comment.body}`,
-      formatReviewOverview: ({ commitSha, postedFindings }) =>
-        `### Codra Review\nReviewed ${commitSha.slice(0, 7)}: ${postedFindings} posted`,
-    }),
+    createGitHub: () => createMockGitHub({ job, recorded, record }),
+    createModel: () => createMockModel({ model, record }),
+    createFormatter: () => createMockFormatter(),
 
     githubClients: {
       forInstallation: () => {
@@ -520,20 +393,4 @@ export function createInMemoryRuntime(
   };
 
   return { runtime, recorded, now };
-}
-
-class TokenTrackerStub {
-  incrementSubrequests() {}
-  getSubrequestCount() {
-    return 0;
-  }
-  remainingSafeBudget() {
-    return 40;
-  }
-  getTotalUsage() {
-    return { inputTokens: 0, outputTokens: 0 };
-  }
-  getWasted() {
-    return { calls: 0, inputTokens: 0, outputTokens: 0 };
-  }
 }

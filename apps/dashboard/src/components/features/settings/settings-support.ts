@@ -124,6 +124,15 @@ export type SyncError = {
   error: string;
 };
 
+export const BLANK_NEW_PROVIDER: NewProviderDraft = {
+  preset: "custom-openai",
+  name: "Custom OpenAI",
+  apiFormat: "openai",
+  baseUrl: "",
+  apiKey: "",
+  enabled: true,
+};
+
 export function providerToDraft(provider: LlmProvider): ProviderDraft {
   return { ...provider, apiKey: "" };
 }

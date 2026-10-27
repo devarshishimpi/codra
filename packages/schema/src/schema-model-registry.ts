@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { claimTypes } from "./schema-claims";
 
 export const ModelSamplingConfigSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),

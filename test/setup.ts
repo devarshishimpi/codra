@@ -1,6 +1,9 @@
 import { vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 // Disable telemetry during unit/integration tests to prevent polluting production metrics
 process.env.TELEMETRY_DISABLED = "true";
@@ -58,7 +61,10 @@ function loadTestEnvFromFiles() {
 
   for (const file of TEST_ENV_FILES) {
     try {
-      const content = readFileSync(path.join(process.cwd(), file), "utf8");
+      const filePath = existsSync(path.join(repoRoot, file))
+        ? path.join(repoRoot, file)
+        : path.join(process.cwd(), file);
+      const content = readFileSync(filePath, "utf8");
       for (const line of content.split(/\r?\n/)) {
         const trimmed = line.trim();
         if (!trimmed || trimmed.startsWith("#")) continue;

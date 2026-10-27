@@ -72,10 +72,14 @@ describe("geminiThinkingBudgetTokens", () => {
 });
 
 describe("generatorFindingCap", () => {
-  // Bin size intentionally doesn't divide this cap; measured output stays ~3% of ceiling.
-  it("is 2x max_comments regardless of how many files share the call", () => {
-    expect(generatorFindingCap(10)).toBe(20);
-    expect(generatorFindingCap(1)).toBe(2);
+  it("scales candidate cap with diff size and respects floors", () => {
+    // <= 100 lines (default lineCount = 0): 1.4x, floor 8
+    expect(generatorFindingCap(10)).toBe(14);
+    expect(generatorFindingCap(1)).toBe(8);
+    // > 100 lines: 1.6x, floor 10
+    expect(generatorFindingCap(10, 200)).toBe(16);
+    // > 500 lines: 2.0x, floor 12
+    expect(generatorFindingCap(10, 600)).toBe(20);
   });
 });
 

@@ -102,10 +102,10 @@ export function parseRawBatchPayload(raw: string): RawBatchPayload {
     if (hasReviewKeys(extracted)) {
       jsonExtracted = true;
     }
-  } catch {}
+  } catch { /* ignore */ }
 
   if (jsonExtracted) {
-    let preprocessed = extracted;
+    let preprocessed: string;
     try {
       preprocessed = preprocessJson(extracted);
     } catch {
@@ -115,12 +115,12 @@ export function parseRawBatchPayload(raw: string): RawBatchPayload {
     let repaired = preprocessed;
     try {
       repaired = jsonrepair(preprocessed);
-    } catch {}
+    } catch { /* ignore */ }
 
     let parsedJson: unknown = null;
     try {
       parsedJson = stripNulls(JSON.parse(repaired));
-    } catch {}
+    } catch { /* ignore */ }
 
     const entries = collectBatchEntries(parsedJson);
     const root =
@@ -141,6 +141,16 @@ export function parseRawBatchPayload(raw: string): RawBatchPayload {
       } catch (e) {
         logger.warn("Batched model response failed schema validation, falling back to flat payload", { error: e });
       }
+    }
+
+    if (!entries?.length) {
+      if (Array.isArray(root.findings)) {
+        return { shape: "flat", data: parseRawPayload(raw) };
+      }
+      logger.error("Batched model response contained no recognisable file entries", {
+        parsedJson: truncateJsonForLog(JSON.stringify(parsedJson ?? null)),
+      });
+      throw new Error("Batched response contained no recognisable file entries.");
     }
   }
 

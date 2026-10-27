@@ -176,23 +176,10 @@ export async function verifyFindings(params: {
         continue;
 
       // Verifier verdicts:
-      // Drop if verifier answered "drop".
-      // If result.decidable === false, only drop if the verifier answered "drop" OR if it is a low-severity/low-confidence guess.
-      // High-severity (P0/P1) findings that the verifier kept are protected from being discarded merely due to diff-window truncation.
+      // Drop if verifier answered "drop" or if the claim is not decidable from the diff.
       let verdict: "keep" | "drop";
-      const candidateComment = verifiable[result.index]?.comment;
-      const isHighSev = candidateComment?.severity === "P0" || candidateComment?.severity === "P1";
-
-      if (result.verdict === "drop") {
+      if (result.verdict === "drop" || result.decidable === false) {
         verdict = "drop";
-      } else if (result.decidable === false) {
-        if (result.verdict === "keep") {
-          verdict = "keep";
-        } else if (isHighSev || (typeof result.confidence === "number" && result.confidence >= 0.50)) {
-          verdict = "keep";
-        } else {
-          verdict = "drop";
-        }
       } else {
         verdict = "keep";
       }

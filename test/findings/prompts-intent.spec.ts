@@ -63,7 +63,7 @@ describe("the PR intent block", () => {
 
     expect(prompt).toMatch(/Intent check/);
     expect(prompt).toMatch(
-      /If what you are about to flag IS the stated intent, it is not a finding/,
+      /Intent check: Use the PR INTENT above as background context on the purpose of this change/,
     );
   });
 

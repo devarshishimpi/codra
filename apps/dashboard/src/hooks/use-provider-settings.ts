@@ -13,6 +13,7 @@ import {
   type ModelRouteConfig,
 } from "@client/components/features/models/model-route";
 import {
+  BLANK_NEW_PROVIDER,
   providerDraftDirty,
   providerHasCredential,
   providerIsReady,
@@ -24,15 +25,6 @@ import {
 
 /** Alias for the global route normalizer; `test/api/settings.spec.ts` imports it from this module. */
 export const normalizeGlobalConfig = normalizeModelRoute;
-
-const BLANK_NEW_PROVIDER: NewProviderDraft = {
-  preset: "custom-openai",
-  name: "Custom OpenAI",
-  apiFormat: "openai",
-  baseUrl: "",
-  apiKey: "",
-  enabled: true,
-};
 
 // Every provider, model-catalog and default-route value SettingsPage renders, plus the one batched
 // load that hydrates them. `setLoading` / `setSaving` / `setError` and the review-settings hydrator

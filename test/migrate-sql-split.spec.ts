@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   readDollarQuoteTag,
   splitSqlStatements,
-  // @ts-ignore - No declaration file for this script
+  // @ts-expect-error - No declaration file for this script
 } from "../packages/db/scripts/migrate-sql-split.mjs";
 
 describe("readDollarQuoteTag", () => {
