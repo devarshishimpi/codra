@@ -1,15 +1,15 @@
 {
   "name": "@codraoss/worker",
-  "version": "0.9.13",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "dependencies": {
-    "@codraoss/api": "^0.9.13",
-    "@codraoss/core": "^0.9.13",
-    "@codraoss/db": "^0.9.13",
-    "@codraoss/models": "^0.9.13",
-    "@codraoss/provider-github": "^0.9.13",
-    "@codraoss/schema": "^0.9.13",
+    "@codraoss/api": "^0.10.0",
+    "@codraoss/core": "^0.10.0",
+    "@codraoss/db": "^0.10.0",
+    "@codraoss/models": "^0.10.0",
+    "@codraoss/provider-github": "^0.10.0",
+    "@codraoss/schema": "^0.10.0",
     "hono": "^4.12.34"
   },
   "devDependencies": {

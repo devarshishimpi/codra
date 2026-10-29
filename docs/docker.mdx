@@ -7,27 +7,11 @@ Before starting, ensure you have completed the [Installation Prerequisites](/doc
 
 <h2 id="env-vars">Environment Variables</h2>
 
-For Docker deployments, Codra reads configuration from a `.env.test` file (or your standard environment variables).
-
-```bash
-cp .env.test.example .env.test
-```
-
-Fill in the required GitHub credentials, `LLM_CONFIG_ENCRYPTION_KEY`, and set `APP_URL` to your domain or local tunnel. `DATABASE_URL` and `REDIS_URL` are already configured in the example file to point to the containers defined in the `docker-compose.yml`.
+For Docker deployments, Codra reads configuration from `.env` (or your standard environment variables). Set the required GitHub credentials, `LLM_CONFIG_ENCRYPTION_KEY`, `APP_URL`, `DATABASE_URL`, and `REDIS_URL`. PostgreSQL and Redis are external services and are not included in the Codra image.
 
 <h2 id="local-dev">Local Dev</h2>
 
-Docker is the fastest path for local development. The included `docker-compose.yml` runs PostgreSQL, Redis, and the Codra worker together.
-
-```bash
-docker compose up
-```
-
-Use [ngrok](https://ngrok.com) or [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/) to expose your local instance for GitHub webhook delivery.
-
-<h2 id="build">Build Image</h2>
-
-To build and run the image from source locally:
+To build and run Codra locally, create `.env` with the required settings and ensure your external PostgreSQL and Redis services are reachable from the container.
 
 ```bash
 docker compose build
@@ -37,14 +21,15 @@ docker compose up -d codra
 
 <h2 id="docker-hub">Docker Hub</h2>
 
-To build, tag, and publish your own custom Codra image to Docker Hub:
+To publish the production image for both amd64 and ARM64:
 
 ```bash
-docker build -f apps/node/Dockerfile \
-  -t YOUR_DOCKERHUB_USER/codra:VERSION \
-  -t YOUR_DOCKERHUB_USER/codra:latest .
-docker push YOUR_DOCKERHUB_USER/codra:VERSION
-docker push YOUR_DOCKERHUB_USER/codra:latest
+docker login -u devarshishimpi
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -f apps/node/Dockerfile \
+  -t devarshishimpi/codra:0.10.0 \
+  -t devarshishimpi/codra:latest \
+  --push .
 ```
 
 <h2 id="run-published">Run Published Image</h2>
@@ -52,9 +37,9 @@ docker push YOUR_DOCKERHUB_USER/codra:latest
 To run your published image (or an official one) via docker compose:
 
 ```bash
-CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:VERSION docker compose pull
-CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:VERSION docker compose run --rm codra node packages/db/scripts/migrate.mjs
-CODRA_IMAGE=docker.io/YOUR_DOCKERHUB_USER/codra:VERSION docker compose up -d codra
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose pull
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose run --rm codra node packages/db/scripts/migrate.mjs
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose up -d codra
 ```
 
 <div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">

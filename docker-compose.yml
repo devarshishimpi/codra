@@ -1,13 +1,13 @@
 services:
   codra:
     container_name: codra
-    image: ${CODRA_IMAGE:-codra:0.9.13}
+    image: ${CODRA_IMAGE:-codra:0.10.0}
     network_mode: bridge
     build:
       context: .
       dockerfile: apps/node/Dockerfile
       tags:
-        - codra:0.9.13
+        - codra:0.10.0
         - codra:latest
     ports:
       - "${PORT:-3000}:3000"
@@ -22,7 +22,7 @@ services:
       - 8.8.8.8
     stop_grace_period: 15s
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      test: ["CMD", "/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 30s
       timeout: 3s
       retries: 3

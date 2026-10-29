@@ -1,4 +1,5 @@
-FROM node:20-bookworm-slim AS builder
+FROM --platform=$BUILDPLATFORM node:24-trixie-slim AS builder
+ARG TARGETARCH
 WORKDIR /app
 
 # Install build dependencies if needed
@@ -31,11 +32,13 @@ RUN npm run build:packages
 RUN npx vite build
 RUN npm run build --workspace=@codraoss/node-server
 
-# Prune development dependencies before copying to runner stage
-RUN npm prune --omit=dev
+# Keep only the Node server's production dependency graph in the runtime image.
+RUN rm -f apps/worker/package.json packages/ui/package.json \
+	&& npm pkg delete dependencies \
+	&& npm install --omit=dev --omit=peer --ignore-scripts --os=linux --cpu=${TARGETARCH}
 
 # Build runner stage
-FROM node:20-bookworm-slim AS runner
+FROM gcr.io/distroless/nodejs24-debian13:nonroot AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -69,10 +72,8 @@ COPY --from=builder /app/packages/schema/dist ./packages/schema/dist
 COPY --from=builder /app/packages/db/migrations ./packages/db/migrations
 COPY --from=builder /app/packages/db/scripts ./packages/db/scripts
 
-USER node
-
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=3s CMD node -e "fetch('http://127.0.0.1:3000/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=3s CMD ["/nodejs/bin/node", "-e", "fetch('http://127.0.0.1:3000/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"]
 
-CMD ["node", "apps/node/dist/index.js"]
+CMD ["apps/node/dist/index.js"]
