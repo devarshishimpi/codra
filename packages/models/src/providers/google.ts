@@ -19,6 +19,7 @@ import {
   geminiThinkingBudgetTokens,
   resolveOutputTokenCeiling,
 } from "../limits";
+import { geminiThinkingBudget, profileSampling } from "./profile-sampling";
 
 const GEMINI_TIMEOUT_MS = MODEL_TIMEOUT_MAX_MS;
 const GEMINI_MAX_RETRIES = 2;
@@ -28,82 +29,16 @@ const GEMINI_MAX_RETRY_DELAY_MS = 5_000;
 const DEFAULT_GEMINI_BASE_URL =
   "https://generativelanguage.googleapis.com/v1beta";
 
-function isRetryableGeminiStatus(status: number) {
-  return (
-    status === 408 ||
-    status === 500 ||
-    status === 502 ||
-    status === 503 ||
-    status === 504 ||
-    status === 524
-  );
-}
+import {
+  isRetryableGeminiStatus,
+  defaultRetryDelayMs,
+  retryAfterDelayMs,
+  requestedRetryDelayFromBody,
+  classifySchemaRejection,
+  isRetryableTransportError,
+} from "./google-retry";
 
-function defaultRetryDelayMs(attempt: number) {
-  return Math.pow(2, attempt) * 800 + Math.random() * 400;
-}
-
-function retryAfterDelayMs(value: string | null) {
-  if (!value) return null;
-  const seconds = Number(value);
-  if (Number.isFinite(seconds) && seconds >= 0) {
-    return seconds * 1000;
-  }
-
-  const dateMs = Date.parse(value);
-  if (Number.isFinite(dateMs)) {
-    return Math.max(0, dateMs - Date.now());
-  }
-
-  return null;
-}
-
-function requestedRetryDelayFromBody(message: string): number | null {
-  const match = /retry in ([\d.]+)s/i.exec(message);
-  if (!match) return null;
-  const seconds = Number(match[1]);
-  return Number.isFinite(seconds) ? seconds * 1000 : null;
-}
-
-export function classifySchemaRejection(
-  status: number,
-  message: string,
-): "confident" | "catchall" | null {
-  if (status !== 400) return null;
-  const lower = message.toLowerCase();
-
-  const namesTheGrammar =
-    lower.includes("responsejsonschema") ||
-    lower.includes("response_json_schema") ||
-    lower.includes("responseschema") ||
-    lower.includes("response_schema") ||
-    lower.includes("invalid json payload") ||
-    lower.includes("unknown name") ||
-    lower.includes("schema");
-  if (namesTheGrammar) return "confident";
-
-  const grammarAdjacent =
-    lower.includes("generation_config") ||
-    lower.includes("generationconfig") ||
-    lower.includes("json") ||
-    lower.includes("constrained") ||
-    lower.includes("too many states");
-  if (lower.includes("invalid argument") && grammarAdjacent) return "catchall";
-
-  return null;
-}
-
-function isRetryableTransportError(error: unknown) {
-  if (!(error instanceof Error)) return false;
-  // Skip retrying timeouts.
-  if (
-    error.name === "TimeoutError" ||
-    error.message.toLowerCase().includes("timed out")
-  )
-    return false;
-  if (error.message.includes("fetch failed")) return true;
-  return error instanceof TypeError;
-}
+export { classifySchemaRejection };
 
 export async function reviewWithGoogle(
   config: {
@@ -133,7 +68,8 @@ export async function reviewWithGoogle(
     GEMINI_MAX_OUTPUT_TOKENS,
     GEMINI_DEFAULT_OUTPUT_TOKENS,
   );
-  const thinkingBudget = geminiThinkingBudgetTokens(answerBudget);
+  const sampling = profileSampling(model);
+  const thinkingBudget = geminiThinkingBudget(sampling, geminiThinkingBudgetTokens(answerBudget));
   let currentCeiling = Math.min(
     GEMINI_MAX_OUTPUT_TOKENS,
     answerBudget + thinkingBudget,
@@ -199,8 +135,10 @@ export async function reviewWithGoogle(
               ...(thinkingRejected
                 ? {}
                 : { thinkingConfig: { thinkingBudget } }),
-              // Gemini's temperature scale is 0-2, not 0-1.
-              temperature: 0.9,
+              // The model's registered profile sets sampling; without one, 0.9 (Gemini's scale is 0-2).
+              temperature: sampling?.temperature ?? 0.9,
+              ...(sampling?.topP !== undefined ? { topP: sampling.topP } : {}),
+              ...(sampling?.topK !== undefined ? { topK: sampling.topK } : {}),
             },
           }),
         }),
@@ -360,7 +298,7 @@ export async function reviewWithGoogle(
 
     const data = (await response.json()) as {
       candidates?: Array<{
-        content?: { parts?: Array<{ text?: string }> };
+        content?: { parts?: Array<{ text?: string; thought?: boolean }> };
         finishReason?: string;
       }>;
       usageMetadata?: {
@@ -372,7 +310,14 @@ export async function reviewWithGoogle(
     };
 
     const candidate = data.candidates?.[0];
-    const rawText = candidate?.content?.parts
+    const nonThoughtParts = candidate?.content?.parts?.filter(
+      (part) => !part.thought,
+    );
+    const partsToUse =
+      nonThoughtParts && nonThoughtParts.length > 0
+        ? nonThoughtParts
+        : candidate?.content?.parts;
+    const rawText = partsToUse
       ?.map((part) => part.text ?? "")
       .join("")
       ?.trim();

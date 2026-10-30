@@ -164,6 +164,7 @@ export interface ApiRouterDeps {
   platform: PlatformPort;
   authProvider: AuthProviderPort;
   webhook: WebhookPort;
+  cloudflareAiEnabled?: boolean;
   authz?: AuthzPort;
   checkQuota?: (input: QuotaCheckInput) => Promise<QuotaResult>;
 }

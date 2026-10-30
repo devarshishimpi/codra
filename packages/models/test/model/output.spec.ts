@@ -192,6 +192,41 @@ unescaped newlines",
     expect(result.comments).toHaveLength(0);
     expect(result.verdict).toBe("approve");
   });
+
+  it("auto-wraps a bare finding object without root findings key", () => {
+    const rawOutput = `
+{
+  "title": "Unchecked pointer dereference",
+  "body": "Pointer may be nil before dereference",
+  "priority": 1,
+  "evidence": "new line",
+  "code_location": { "absolute_file_path": "test.ts", "line": 2 }
+}`;
+
+    const result = parseFileReviewResponse(rawOutput, mockFile);
+    expect(result.comments).toHaveLength(1);
+    expect(result.comments[0].title).toBe("Unchecked pointer dereference");
+    expect(result.comments[0].line).toBe(2);
+  });
+
+  it("salvages unescaped nested quotes in json string values", () => {
+    const rawOutput = `
+{
+  "findings": [{
+    "title": "Invalid dict key",
+    "body": "The dict {"key": "value"} is missing validation",
+    "priority": 2,
+    "evidence": "new line",
+    "code_location": { "absolute_file_path": "test.ts", "line": 2 }
+  }],
+  "overall_correctness": "issues found",
+  "overall_explanation": "explanation"
+}`;
+
+    const result = parseFileReviewResponse(rawOutput, mockFile);
+    expect(result.comments).toHaveLength(1);
+    expect(result.comments[0].body).toContain("key");
+  });
 });
 
 describe("dedupeFindings", () => {
@@ -228,5 +263,30 @@ describe("dedupeFindings", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].severity).toBe("P1");
+  });
+
+  it("collapses findings within lineRadius window on the same file with matching normalized title", () => {
+    const result = dedupeFindings(
+      [
+        make({ line: 10, title: "Unescaped SQL query", anchorHash: "aaaa", severity: "P2" }),
+        make({ line: 11, title: "Unescaped SQL query", anchorHash: "bbbb", severity: "P1" }),
+      ],
+      2,
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].severity).toBe("P1");
+  });
+
+  it("preserves separate findings beyond the lineRadius window", () => {
+    const result = dedupeFindings(
+      [
+        make({ line: 10, title: "Unescaped SQL query", anchorHash: "aaaa" }),
+        make({ line: 15, title: "Unescaped SQL query", anchorHash: "bbbb" }),
+      ],
+      2,
+    );
+
+    expect(result).toHaveLength(2);
   });
 });

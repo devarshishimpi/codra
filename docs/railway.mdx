@@ -1,0 +1,103 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="setup">Railway Setup</h2>
+
+Railway can host a managed PostgreSQL database with a one-click plugin, which works well as Codra's production database.
+
+### 1. Create a Project
+
+New to Railway? <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sign up here</a> to get free credit. Log in to the <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Railway dashboard</a> and create a new project. Choose **Provision PostgreSQL** (or add a PostgreSQL service to an existing project).
+
+<DocsScreenshot 
+  src="/assets/docs/docs-railway-prov-db.png" 
+  alt="Railway dashboard showing the Provision PostgreSQL option" 
+  caption="Provision a PostgreSQL database from your Railway project." 
+/>
+
+### 2. Get your Connection String
+
+Open the PostgreSQL service and go to the **Connect** tab. Railway shows an internal connection string (`*.railway.internal`) that only works from other services inside the same Railway project, and a public **TCP Proxy** connection string that works from outside Railway's network.
+
+<DocsScreenshot 
+  src="/assets/docs/docs-railway-connect-db.png" 
+  alt="Railway Connect tab showing the public TCP Proxy connection string" 
+  caption="Copy the public TCP Proxy connection string from the Connect tab." 
+/>
+
+Since Cloudflare Hyperdrive connects from outside Railway's private network, use the public proxy connection string. It will look like this:
+
+```text
+postgresql://postgres:PASSWORD@monorail.proxy.rlwy.net:12345/railway
+```
+
+<Note type="warn">
+  Use the <strong>public TCP Proxy</strong> connection string (the one with a <code>proxy.rlwy.net</code> host), not the <code>*.railway.internal</code> host. The internal host is only reachable from within Railway and will not work with Hyperdrive.
+</Note>
+
+<h2 id="hyperdrive">Cloudflare Hyperdrive</h2>
+
+Hyperdrive makes your existing regional databases feel like they're distributed. it maintains a pool of connections to your database from Cloudflare's network, reducing connection overhead.
+
+### 1. Create a Hyperdrive Config
+
+In your Cloudflare Dashboard, go to **Workers & Pages > Hyperdrive** and create a new configuration using your Railway public connection string.
+
+Alternatively, use wrangler:
+
+```shell
+npx wrangler hyperdrive create codra-db --connection-string="postgresql://postgres:PASSWORD@monorail.proxy.rlwy.net:12345/railway"
+```
+
+<DocsScreenshot 
+  src="/assets/docs/docs-hyperdrive-created-console.png" 
+  alt="Cloudflare dashboard showing a created Hyperdrive configuration" 
+  caption="Create a Hyperdrive configuration using the Railway public connection string." 
+/>
+
+### 2. Get the Hyperdrive ID
+
+Note the ID provided by Cloudflare. You will need to add this to your `wrangler.jsonc`.
+
+<h2 id="connection">Connecting Codra</h2>
+
+Once you have your Railway database and Hyperdrive ID, update your configuration.
+
+### Update wrangler.jsonc
+
+Add your Hyperdrive ID to the configuration:
+
+```jsonc
+"hyperdrive": [
+  {
+    "binding": "HYPERDRIVE",
+    "id": "35b282fa80f24e67adfda063c3a839d1" // Your ID here
+  }
+]
+```
+
+### Set Database Secret
+
+Set the `DATABASE_URL` secret for your production worker. If using Hyperdrive, Cloudflare will automatically route connections through the pooler when you use the binding, but you still need to provide the connection string to the application logic.
+
+```shell
+npx wrangler secret put DATABASE_URL
+```
+
+When prompted, enter your Railway public connection string.
+
+<Note type="info">
+  For local development, you can paste your Railway public connection string directly into <code>.dev.vars</code> as <code>DATABASE_URL</code>.
+</Note>
+
+<Note type="warn">
+  Dashboard-managed provider API keys are stored encrypted in PostgreSQL, so database backups can contain encrypted provider credentials. Keep <code>LLM_CONFIG_ENCRYPTION_KEY</code> stable across deploys; changing it makes saved provider keys undecryptable.
+</Note>
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Tune repository review behavior and model selection.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

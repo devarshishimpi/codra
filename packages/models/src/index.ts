@@ -14,6 +14,8 @@ export * from "./limits";
 export * from "./url-guard";
 export * from "./llm-crypto";
 export * from "./types";
+export * from "./registry/service";
+export * from "./registry/apply-profile";
 export type { CloudflareAiBinding } from "./providers/cloudflare";
 export { reviewWithCloudflare } from "./providers/cloudflare";
 export { reviewWithGoogle } from "./providers/google";

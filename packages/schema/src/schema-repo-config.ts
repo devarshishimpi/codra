@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { reviewSeverities } from "./review-limits";
 import { reviewCategories } from "./schema-enums";
+import { modelPromptStyles } from "./schema-model-registry";
 import {
   claimTypes,
   DEFAULT_DENIED_CLAIM_TYPES,
@@ -45,10 +46,10 @@ export const reviewConfigSchema = z.object({
   large_file_threshold_lines: z.number().int().min(1).max(5_000).default(200),
   max_diff_lines_per_file: z.number().int().min(1).max(5_000).default(800),
   batch_small_files: z.boolean().default(true),
-  max_comments: z.number().int().min(1).max(150).default(10),
+  max_comments: z.number().int().min(1).max(150).default(5),
   review_breadth: z.number().int().min(1).max(150).default(25),
   full_file_context: z.boolean().default(false),
-  min_severity: z.enum(reviewSeverities).default("P3"),
+  min_severity: z.enum(reviewSeverities).default("P2"),
   language_gates: z
     .record(
       z.string(),
@@ -58,7 +59,7 @@ export const reviewConfigSchema = z.object({
       }),
     )
     .default({}),
-  min_confidence: z.number().min(0).max(1).default(0),
+  min_confidence: z.number().min(0).max(1).default(0.65),
   focus: z.array(z.enum(reviewCategories)).default([...reviewCategories]),
   deny_claim_types: z
     .array(z.enum(claimTypes))
@@ -91,6 +92,33 @@ export const reviewConfigSchema = z.object({
       on_file_types: [...DEFAULT_EXEC_FILE_TYPES],
       command: DEFAULT_EXEC_COMMAND,
     }),
+  prompt_style: z.enum(["permissive", "calibrated", "auto"]).default("auto"),
+  verification_radius: z.number().int().min(12).max(60).default(35),
+  dedupe_line_radius: z.number().int().min(0).max(5).default(2),
+  // Per-model tuning resolved from the model registry (applyModelProfile in @codraoss/models), not a
+  // user-facing setting: absent means "no profile", and every consumer then behaves as before.
+  model_tuning: z
+    .object({
+      profile: z.string(),
+      prompt_style: z.enum(modelPromptStyles).optional(),
+      verify: z.boolean().default(true),
+      topology: z.enum(["unified", "chunked"]).optional(),
+      verification_radius: z.number().int().min(12).max(500).optional(),
+    })
+    .optional(),
+  secondary_verifier: z
+    .union([
+      z.string().min(1),
+      z.object({
+        enabled: z.boolean().default(true),
+        provider: z.enum(["mistral", "google", "openai"]).default("mistral"),
+        model: z.string().default("labs-leanstral-1-5-1"),
+        api_key_env: z.string().default("MISTRAL_API_KEY"),
+        confidence_threshold: z.number().min(0).max(1).default(0.6),
+      }),
+    ])
+    .nullable()
+    .default(null),
 });
 
 export const DEFAULT_REVIEW_CONFIG = reviewConfigSchema.parse({});

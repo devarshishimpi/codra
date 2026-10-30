@@ -1,0 +1,54 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Local Development</h2>
+
+Use this guide after completing the [Installation Prerequisites](/docs/installation) and choosing a deployment target. This setup runs Codra locally using Wrangler for fast iteration.
+
+<h2 id="setup">Setup</h2>
+
+If you haven't already, clone your fork and install dependencies from the repository root:
+
+```shell
+npm install
+```
+
+Copy the example environment file:
+
+```shell
+cp .dev.vars.example .dev.vars
+```
+
+Fill in your secrets in `.dev.vars` (GitHub App credentials, database URL, etc.). For the `APP_PRIVATE_KEY`, ensure newlines are properly escaped as `\n`.
+
+<h2 id="dev-server">Dev Server</h2>
+
+Run database migrations, then start the development server:
+
+```shell
+npm run migrate
+npm run dev
+```
+
+The development server runs two processes in parallel:
+- `npm run dev:client` — Builds the Vite React dashboard in watch mode.
+- `npm run dev:worker` — Starts the Cloudflare Worker locally via `wrangler dev`.
+
+<h2 id="local-urls">Local URLs</h2>
+
+Once the server is running, the dashboard and API are available locally:
+
+- **Worker + Dashboard:** `http://127.0.0.1:8787`
+- **OAuth Callback:** `http://127.0.0.1:8787/auth/github/callback`
+
+<h2 id="providers">Next Steps</h2>
+
+After the dashboard is running, navigate to **Settings > LLM Providers** to save provider API keys, refresh model catalogs, and choose the global model route.
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

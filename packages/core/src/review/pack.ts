@@ -47,8 +47,9 @@ const asBin = (files: FileDiff[]): ReviewUnit =>
 
 export function planReviewUnits(
   files: readonly FileDiff[],
-  opts: { enabled: boolean; fullFileContext?: boolean },
+  opts: { enabled: boolean; fullFileContext?: boolean; unified?: boolean },
 ): ReviewUnit[] {
+  if (opts.unified) return [asBin(Array.from(files))];
   if (!opts.enabled) return files.map((file) => ({ kind: "single", file }));
 
   const units: ReviewUnit[] = [];

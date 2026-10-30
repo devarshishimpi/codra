@@ -41,6 +41,7 @@ export function createApiRouterDeps(env: AppBindings, _ctx: ExecutionContext) {
     getSecret: async (key) =>
       (env[key as keyof AppBindings] as string | undefined) ?? null,
     aiBinding: env.AI,
+    cloudflareAiEnabled: true,
     appUrl: env.APP_URL,
     botUsername: env.BOT_USERNAME,
     environment: env.ENVIRONMENT,

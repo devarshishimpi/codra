@@ -1,0 +1,152 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="environment">Environment Variables</h2>
+
+Codra has two different configuration layers: platform/runtime secrets that the Worker needs to boot, and dashboard-managed LLM provider credentials that are saved later from Settings.
+
+### Platform and Runtime Secrets
+
+Set these through Cloudflare Worker secrets, `wrangler.jsonc` vars, or local `.dev.vars` as appropriate for your deployment.
+
+| Name | Purpose |
+| --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key. |
+| `GITHUB_APP_ID` | GitHub App ID used for installation tokens. |
+| `GITHUB_APP_WEBHOOK_SECRET` | Webhook signature verification secret. |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID for dashboard login. |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret. |
+| `APP_KV` | Cloudflare KV binding for OAuth state and sessions. |
+| `HYPERDRIVE` | Optional Hyperdrive binding for pooled PostgreSQL access. |
+| `REVIEW_QUEUE` | Queue binding for review jobs. |
+| `AI` | Workers AI binding used by the Cloudflare native provider. |
+| `CF_ACCOUNT_ID` | Cloudflare account ID for Cloudflare model catalog refresh. |
+| `CF_API_TOKEN` | Cloudflare API token for catalog refresh. |
+| `LLM_CONFIG_ENCRYPTION_KEY` | Required key used to encrypt dashboard-managed provider API keys before database storage. |
+| `TELEMETRY_SECRET` | Shared secret self-hosted instances send when posting anonymous telemetry. |
+| `SESSION_SECRET` | Signs and verifies OAuth state and session cookies. |
+
+For Cloudflare model catalog refresh, `CF_API_TOKEN` needs Account > Workers AI:Read.
+
+### Telemetry
+
+By default, self-hosted instances send anonymous, aggregate usage statistics after each completed review: a random per-instance identifier, review counts, lines/files reviewed, token usage, models used, file extensions, and job durations. No code, diffs, repository names, or other identifying information is ever included. Telemetry is fire-and-forget — reviews behave identically whether it is enabled, disabled, or the endpoint is unreachable.
+
+| Name | Purpose |
+| --- | --- |
+| `TELEMETRY_DISABLED` | Set to `true` (or `1`) to opt out entirely. No instance ID is generated and no network call is made. |
+| `TELEMETRY_API_URL` | Override the ingestion endpoint (defaults to `https://codra.run/api/telemetry`). Useful for forks running their own backend. |
+| `TELEMETRY_SECRET` | Override the default shared secret sent with telemetry events. |
+
+To opt out, set it as a plain var in `wrangler.jsonc` (it is not sensitive):
+
+```jsonc
+"vars": {
+  "TELEMETRY_DISABLED": "true"
+}
+```
+
+### Dashboard-Managed Provider Credentials
+
+Add Google, OpenAI, Anthropic, OpenRouter, and custom provider API keys in **Settings > LLM Providers**. These keys are write-only in the UI, encrypted with `LLM_CONFIG_ENCRYPTION_KEY`, and stored in PostgreSQL as encrypted values.
+
+Cloudflare Workers AI does not use a dashboard API key or base URL. It runs through the Worker `AI` binding at runtime.
+
+<h2 id="repo-config">Repository Configuration</h2>
+
+Repository behavior is stored in your PostgreSQL database and can be edited from the dashboard. The config is validated against the schema in `src/shared/schema.ts`.
+
+### Default Config
+
+```jsonc
+{
+  "review": {
+    "on": ["opened", "synchronize", "ready_for_review", "reopened"],
+    "ignore_drafts": true,
+    "mention_trigger": "@codra-app",
+    "skip_files": [
+      "**/*.lock",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "*.generated.*",
+      "coverage/**"
+    ],
+    "max_files": 15,
+    "large_file_threshold_lines": 200,
+    "max_diff_lines_per_file": 800,
+    "max_total_diff_chars": 150000,
+    "focus": ["security", "bugs", "performance", "correctness", "quality"],
+    "custom_rules": [],
+    "labels": {
+      "p1": "review: needs-attention",
+      "p2": "review: approved",
+      "p3": "review: approved"
+    }
+  },
+  "model": {
+    "main": "primary-review",
+    "fallbacks": ["fast-review", "cloudflare-native-review"],
+    "size_overrides": []
+  }
+}
+```
+
+### Config Field Reference
+
+| Field | Description |
+| --- | --- |
+| `review.on` | Pull request actions that trigger automatic reviews. |
+| `review.ignore_drafts` | Skips draft PRs when true. |
+| `review.mention_trigger` | String that triggers a review from PR issue comments, or false to disable. |
+| `review.skip_files` | Glob patterns excluded from review. Matched against file paths in the diff. |
+| `review.max_files` | Maximum number of files to review from a diff. |
+| `review.large_file_threshold_lines` | Threshold used by diff filtering and model selection decisions. |
+| `review.max_diff_lines_per_file` | Per-file diff size limit in lines. |
+| `review.max_total_diff_chars` | Whole-PR diff character budget. |
+| `review.focus` | Review categories used in prompts: security, bugs, performance, correctness, quality. |
+| `review.custom_rules` | Extra project-specific review instructions passed to the model. |
+| `review.labels` | PR labels to apply per verdict, or false to disable label changes. |
+| `model.main` | Primary model ID to attempt first. |
+| `model.fallbacks` | Ordered fallback model IDs tried if the primary fails. |
+| `model.size_overrides` | Model chains selected when total PR line count is under a configured threshold. |
+
+<h2 id="model-routing">Model Routing</h2>
+
+Model routing chooses stable Codra model IDs from DB-backed model configs. The provider-specific model name is stored in dashboard model configuration and is the value sent to the provider at runtime.
+
+The global model strategy is not initialized automatically. After provider credentials and model configs are ready, choose the global route in Settings. Repository overrides still reference Codra model IDs for `model.main`, `model.fallbacks`, and `model.size_overrides`.
+
+Settings and repository dropdowns list model configs from the database and refreshed provider catalogs, not hardcoded model arrays.
+
+### Optional Rate and Token Limits
+
+RPM, RPD, and TPM limits are optional app-level guardrails on model configs. Leave them blank when no Codra-enforced limit is needed; provider-side quota and throttling can still apply.
+
+### Supported Review Categories
+
+<div className="flex flex-wrap gap-3 my-4">
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-danger">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> security
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-warning">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> bugs
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-info">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> performance
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-success">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> correctness
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-violet-500">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> quality
+  </span>
+</div>
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Providers</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure dashboard-managed providers, encrypted keys, catalogs, and model routing.</p>
+  </div>
+  <Link to="/docs/providers" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Providers <ArrowRight size={16} /></Link>
+</div>

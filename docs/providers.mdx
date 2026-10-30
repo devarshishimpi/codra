@@ -1,0 +1,83 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Overview</h2>
+
+Codra uses dashboard-managed LLM providers instead of hardcoded provider keys in the Worker environment. This keeps self-hosted deployments portable: you can enable the providers you want, add custom endpoints, refresh model catalogs, and route reviews by stable Codra model IDs without locking every repo to one vendor.
+
+Provider API keys are configured in **Settings > LLM Providers** after deployment. Cloudflare Workers AI is the exception: it is a native provider that runs through the Worker `AI` binding.
+
+<h2 id="provider-types">Provider Types</h2>
+
+| Provider | API format | Credential model |
+| --- | --- | --- |
+| Cloudflare | Native Workers AI binding | No dashboard API key or base URL. Runtime calls use `env.AI.run(modelName, payload)`. |
+| Google | Gemini-compatible API | Dashboard API key. |
+| Anthropic | Anthropic-compatible API | Dashboard API key. |
+| OpenAI | OpenAI API | Dashboard API key. |
+| OpenRouter | OpenAI-compatible API | Dashboard API key. |
+| Custom providers | OpenAI-compatible, Anthropic-compatible, or Google/Gemini-compatible | Custom provider name, API format, base URL, and dashboard API key. |
+
+Cloudflare Workers AI still requires the `AI` binding in `wrangler.jsonc`. Catalog refresh for Cloudflare models uses `CF_ACCOUNT_ID` and `CF_API_TOKEN` against the Cloudflare API.
+
+<h2 id="credentials">Credentials</h2>
+
+Provider API keys are entered in the dashboard and are write-only in API responses. Codra encrypts each key with `LLM_CONFIG_ENCRYPTION_KEY` before storing it in PostgreSQL.
+
+Replacing a key overwrites the previous encrypted value. Plaintext provider keys are not returned by dashboard APIs after save.
+
+<Note type="warn">
+Keep <code>LLM_CONFIG_ENCRYPTION_KEY</code> stable across deploys. Changing it makes saved provider keys undecryptable.
+</Note>
+
+<h2 id="model-catalog">Model Catalog</h2>
+
+The LLM Providers settings screen can refresh model catalogs for configured providers. Catalog refresh failures should not necessarily break runtime reviews when existing DB model configs are still present and enabled.
+
+Cloudflare catalog refresh requires:
+
+| Variable | Purpose |
+| --- | --- |
+| `CF_ACCOUNT_ID` | Cloudflare account to query. |
+| `CF_API_TOKEN` | Token used for Cloudflare API catalog calls. |
+
+For `GET /accounts/{account_id}/ai/models/search`, a token with **Account > Workers AI:Read** is enough.
+
+<h2 id="models">Models</h2>
+
+Codra separates the stable model ID used by routing from the provider-specific model name sent at runtime.
+
+| Field | Meaning |
+| --- | --- |
+| Codra model ID | Stable ID used by global model strategy and repository overrides. |
+| Provider model name | Actual model name sent to the provider, such as a Workers AI model slug or vendor model string. |
+| Provider | The enabled provider that owns the model config. |
+| RPM/RPD/TPM | Optional app-level request or token limits. Leave blank when Codra should not enforce a limit. |
+
+Repository-level model routing still references Codra model IDs. Provider-specific model names live in dashboard model configuration.
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+### Cloudflare catalog returns 403
+
+Set `CF_ACCOUNT_ID` and use a `CF_API_TOKEN` with Account > Workers AI:Read.
+
+### Cloudflare binding needs remote runtime
+
+Cloudflare native inference uses `env.AI.run(modelName, payload)`. Local Wrangler tests can fail when the binding requires a remote runtime; test after deploy or with remote bindings.
+
+### No models appear in dropdowns
+
+Refresh the provider catalog or manually add a model config. Settings and repository dropdowns list DB-backed model configs, not hardcoded arrays.
+
+### Provider test returns 429, 503, or 500
+
+Check upstream quota, provider status, and account limits. These responses often indicate provider-side throttling or outage rather than a Codra configuration error.
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Deploy to Neon</p>
+    <p className="text-sm text-foreground/80 mt-1">Set up PostgreSQL and Cloudflare Hyperdrive for production.</p>
+  </div>
+  <Link to="/docs/neon" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Deploy to Neon <ArrowRight size={16} /></Link>
+</div>

@@ -148,4 +148,33 @@ describe("ReviewWorkflow: fresh instance on freshInstance flag", () => {
       }),
     );
   });
+
+  it("re-enqueues a fresh instance when attempt count reaches MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE to prevent CPU limit exhaustion", async () => {
+    const send = vi.fn().mockResolvedValue(undefined);
+    const env = {
+      REVIEW_QUEUE: { send },
+      HYPERDRIVE: { connectionString: "mock" },
+    };
+    for (let i = 0; i < 6; i++) {
+      runReviewJobMock.mockResolvedValueOnce({
+        action: "next_phase",
+        phase: "review",
+        delaySeconds: 8,
+        jobId: "large-pr-job",
+        freshInstance: false,
+      });
+    }
+
+    await runWorkflow(env, { jobId: "large-pr-job", phase: "review" });
+
+    expect(runReviewJobMock).toHaveBeenCalledTimes(6);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jobId: "large-pr-job",
+        phase: "review",
+        forceFreshInstance: true,
+      }),
+    );
+  });
 });

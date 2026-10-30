@@ -1,0 +1,51 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Docker Deployment</h2>
+
+Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository and setting up your GitHub App.
+
+<h2 id="env-vars">Environment Variables</h2>
+
+For Docker deployments, Codra reads configuration from `.env` (or your standard environment variables). Set the required GitHub credentials, `LLM_CONFIG_ENCRYPTION_KEY`, `APP_URL`, `DATABASE_URL`, and `REDIS_URL`. PostgreSQL and Redis are external services and are not included in the Codra image.
+
+<h2 id="local-dev">Local Dev</h2>
+
+To build and run Codra locally, create `.env` with the required settings and ensure your external PostgreSQL and Redis services are reachable from the container.
+
+```bash
+docker compose build
+docker compose run --rm codra node packages/db/scripts/migrate.mjs
+docker compose up -d codra
+```
+
+<h2 id="docker-hub">Docker Hub</h2>
+
+To publish the production image for both amd64 and ARM64:
+
+```bash
+docker login -u devarshishimpi
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -f apps/node/Dockerfile \
+  -t devarshishimpi/codra:0.10.0 \
+  -t devarshishimpi/codra:latest \
+  --push .
+```
+
+<h2 id="run-published">Run Published Image</h2>
+
+To run your published image (or an official one) via docker compose:
+
+```bash
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose pull
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose run --rm codra node packages/db/scripts/migrate.mjs
+CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose up -d codra
+```
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

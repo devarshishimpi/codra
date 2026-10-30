@@ -1,0 +1,93 @@
+import { Link } from 'react-router-dom';
+import { GitBranch, ShieldCheck, Code2, ArrowRight } from 'lucide-react';
+
+<div className="mb-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
+  <div className="flex flex-col gap-3">
+    <div className="text-primary"><GitBranch size={24} strokeWidth={1.75} /></div>
+    <p className="text-base font-medium text-foreground">Open Workflow</p>
+    <p className="text-sm text-foreground/70">Fork, branch, PR. Contributions are welcome from anyone.</p>
+  </div>
+  <div className="flex flex-col gap-3">
+    <div className="text-primary"><Code2 size={24} strokeWidth={1.75} /></div>
+    <p className="text-base font-medium text-foreground">TypeScript First</p>
+    <p className="text-sm text-foreground/70">Full type coverage. Zod for runtime validation boundaries.</p>
+  </div>
+  <div className="flex flex-col gap-3">
+    <div className="text-primary"><ShieldCheck size={24} strokeWidth={1.75} /></div>
+    <p className="text-base font-medium text-foreground">CLA Required</p>
+    <p className="text-sm text-foreground/70">Sign the contributor license agreement before your first PR is merged.</p>
+  </div>
+</div>
+
+<h2 id="workflow">Workflow</h2>
+
+Contributions are welcome. The recommended workflow keeps changes focused and easy to review.
+
+1. **Fork the repository** — Fork <a href="https://github.com/devarshishimpi/codra" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">github.com/devarshishimpi/codra</a> and clone your fork locally.
+2. **Create a focused branch from main** — Name your branch descriptively — fix/webhook-signature or feat/model-config-ui, for example.
+3. **Install dependencies** — `npm install` and copy `.dev.vars.example` to `.dev.vars` with your secrets filled in.
+4. **Make your change** — Keep the scope tight. Prefer existing patterns over new abstractions.
+5. **Run typecheck and tests** — `npm run typecheck` and `npm test` must both pass before opening a PR.
+6. **Open a pull request** — Open your PR against the main branch. Write a clear description of what changed and why, and reference any related issues.
+
+<Note type="info">
+Before opening a PR against <code>main</code>, run <code>npm run typecheck</code> and <code>npm test</code>. Both must pass. PRs that break type coverage or existing tests will not be merged.
+</Note>
+
+<h2 id="conventions">Engineering Conventions</h2>
+
+| Topic | Guideline |
+| --- | --- |
+| Scope | Keep changes focused and intentional. One logical change per PR. |
+| Abstractions | Prefer existing patterns over new abstractions. Read adjacent code before introducing new helpers. |
+| TypeScript | Full type coverage required. Use Zod schemas for runtime data boundaries, especially for external API responses. |
+| Dashboard UI | Keep dashboard pages clear, dense, and operational. Avoid decorative complexity that reduces information density. |
+| Secrets | Do not commit secrets, .dev.vars files, or generated deployment credentials under any circumstances. |
+| Tests | Add or update tests when behavior changes. The suite lives under test/ and uses Vitest. |
+| Migrations | Database schema changes require a new migration file in db/migrations/ following the existing naming convention. |
+
+<h2 id="cla">Contributor License Agreement</h2>
+
+Contributors must sign the Contributor License Agreement before a PR can be merged. The CLA is enforced automatically via a GitHub Actions check on all pull requests.
+
+Signing takes 10 seconds via GitHub OAuth. You retain copyright ownership of your contribution. The CLA grants Codra the rights needed to include your work under its dual-licensing model.
+
+<div className="mt-6">
+  <Link to="/cla" className="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity">Sign the CLA <ArrowRight size={16} /></Link>
+</div>
+
+<h2 id="security">Security Policy</h2>
+
+Please do not open public issues for security vulnerabilities. Report security issues privately so they can be addressed before public disclosure.
+
+### Reporting
+
+| Method | Contact | Description |
+| --- | --- | --- |
+| Email | `me@devarshi.dev` | Preferred channel for vulnerability reports. |
+| GitHub | Private reporting | Use GitHub's private security advisory feature if enabled on the repository. |
+
+### Security-Sensitive Areas
+
+- GitHub webhook signature verification
+- GitHub App private key handling
+- OAuth state and session storage in Cloudflare KV
+- Dashboard user allowlist enforcement
+- CSRF protection on unsafe dashboard/API requests
+- Dashboard-managed LLM provider key encryption
+- Cloudflare API token scope for model catalog refresh
+- Database connection string handling
+
+### License
+
+Codra is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. If you modify Codra and run it as a network service, the AGPL requires you to make the corresponding source available to users of that service. Contributions are licensed under the same AGPL-3.0 terms, with the additional grants described in the CLA.
+
+The maintainer reserves the right to provide separately licensed hosted editions where permitted by contributor agreements.
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Back to the beginning</p>
+    <p className="text-sm text-foreground/80 mt-1">Start fresh from the overview — architecture, features, and tech stack.</p>
+  </div>
+  <Link to="/docs" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Overview <ArrowRight size={16} /></Link>
+</div>

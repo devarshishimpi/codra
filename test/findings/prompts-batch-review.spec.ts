@@ -75,7 +75,7 @@ describe("buildBatchReviewPrompts", () => {
     const uniform = build([file("src/a.ts", ["a"]), file("src/b.ts", ["b"])]);
     expect(uniform.systemPrompt).not.toContain("{{MAX_COMMENTS}}");
     expect(uniform.systemPrompt).toContain(
-      `at most ${reviewBreadth(defaultRepoConfig.review)} findings PER FILE`,
+      `at most ${reviewBreadth(defaultRepoConfig.review)} findings`,
     );
     expect(uniform.systemPrompt).toMatch(
       /^You are a world-class professional senior code reviewer as .+\./,

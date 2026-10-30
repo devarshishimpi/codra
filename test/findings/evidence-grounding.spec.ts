@@ -233,7 +233,9 @@ describe("evidence grounding", () => {
   });
 
   // gate only fires on typeof === 'number', so undefined would bypass a threshold 0.1 would fail
-  it("scores a missing confidence as 0 rather than leaving it unset", () => {
+  // Unset, not 0: GLM and the Nemotrons never emit a confidence, and scoring that as 0 made every one of
+  // their findings fail min_confidence. The confidence gate skips a finding with no score.
+  it("leaves a missing confidence unset rather than scoring it 0", () => {
     const raw = JSON.stringify({
       findings: [
         {
@@ -248,9 +250,9 @@ describe("evidence grounding", () => {
       overall_explanation: "explanation",
     });
 
-    expect(parseFileReviewResponse(raw, file).comments[0].confidenceScore).toBe(
-      0,
-    );
+    expect(
+      parseFileReviewResponse(raw, file).comments[0].confidenceScore,
+    ).toBeUndefined();
   });
 
   it("maps priority 4 to nit so the severity gate has something to act on", () => {

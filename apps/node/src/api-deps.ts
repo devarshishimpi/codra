@@ -1,4 +1,5 @@
 import { createSharedApiDeps } from "@codraoss/api";
+import { getOrFetchRawDiffForCompletedJob } from "@codraoss/core";
 import type { NodeAppBindings } from "./env";
 import { logger } from "@codraoss/api/logger";
 import { createReviewRuntime } from "./runtime";
@@ -36,11 +37,12 @@ export function createNodeApiDeps(env: NodeAppBindings) {
     },
     scheduleBestEffortJobMaintenance: () => {},
     createReviewRuntime: () => createReviewRuntime(env),
-    getOrFetchRawDiffForCompletedJob: async () => "",
+    getOrFetchRawDiffForCompletedJob,
     logger,
     getSecret: async (key) => process.env[key] ?? null,
 
     aiBinding: undefined,
+    cloudflareAiEnabled: false,
     appUrl: env.APP_URL,
     botUsername: env.BOT_USERNAME,
     environment: env.ENVIRONMENT,

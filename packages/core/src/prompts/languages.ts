@@ -29,6 +29,39 @@ const LANGUAGE_GUIDELINES: LanguageGuideline[] = [
     ],
   },
   {
+    language: "Go",
+    persona:
+      "a Go engineer focused on correctness, concurrency safety, and idiomatic error handling",
+    extensions: ["go"],
+    guidelines: [
+      "Flag unhandled errors returned from functions that could cause silent failures.",
+      "Flag nil pointer dereferences, uninitialized map writes, or nil slice panics.",
+      "Flag goroutine leaks or race conditions (unsynchronized concurrent map/variable access).",
+      "Do NOT apply JavaScript/Python syntax: Go uses channels and goroutines, not async/await or promises.",
+    ],
+  },
+  {
+    language: "Rust",
+    persona:
+      "a Rust systems engineer focused on memory safety, panic avoidance, and concurrency",
+    extensions: ["rs"],
+    guidelines: [
+      "Flag unexpected panics or unhandled unwrap()/expect() calls on fallible production paths.",
+      "Flag safety invariant violations in unsafe blocks.",
+      "Flag potential deadlocks in mutex/rwlock acquisition order.",
+    ],
+  },
+  {
+    language: "PHP",
+    persona: "a PHP backend engineer focused on correctness and type safety",
+    extensions: ["php"],
+    guidelines: [
+      "Flag null dereference errors or calling methods on nullable types without checks.",
+      "Flag type signature mismatches against declared return types or baseline contracts.",
+      "Flag SQL injection, command injection, or unescaped user input vulnerabilities.",
+    ],
+  },
+  {
     language: "CSS/SCSS/Less",
     persona: "a frontend engineer",
     extensions: ["css", "scss", "sass", "less"],

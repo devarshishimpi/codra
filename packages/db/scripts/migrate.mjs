@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { lookup } from "node:dns/promises";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +39,20 @@ if (!databaseUrl) {
     ].join("\n"),
   );
   process.exit(1);
+}
+
+const databaseHost = new URL(databaseUrl).hostname;
+for (let attempt = 1; attempt <= 5; attempt += 1) {
+  try {
+    await lookup(databaseHost);
+    break;
+  } catch (error) {
+    if (attempt === 5) {
+      throw error;
+    }
+    console.log(`Database DNS lookup failed; retrying (${attempt}/5)...`);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
 }
 
 const sql = postgres(databaseUrl, {

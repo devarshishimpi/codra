@@ -1,0 +1,190 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Cloudflare Workers Deployment</h2>
+
+Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository, setting up your GitHub App, and provisioning a PostgreSQL database.
+
+<h2 id="automated-setup">Automated Setup (Recommended)</h2>
+
+Codra includes an interactive setup script that will configure all your Cloudflare resources automatically.
+
+1. First, make sure you are logged into Cloudflare via Wrangler:
+   ```shell
+   npx wrangler login
+   ```
+2. Run the interactive setup script:
+   ```shell
+   npm run setup:cloudflare
+   ```
+
+This script will guide you through:
+* Creating required KV Namespaces for sessions.
+* Creating the Jobs Queue.
+* Configuring a Hyperdrive instance using your Database URL.
+* Modifying your `wrangler.jsonc` file with the correct binding IDs.
+* Setting up custom domains and application variables.
+* Uploading all necessary encrypted secrets (`APP_PRIVATE_KEY`, `GITHUB_APP_ID`, `DATABASE_URL`, etc.).
+
+<h2 id="deployment">Deployment</h2>
+
+Once the setup script finishes, you can build, apply database migrations, and deploy to Cloudflare with a single command:
+
+```shell
+npm run deploy
+```
+
+This runs:
+```shell
+npm run build
+npm run migrate
+wrangler deploy
+```
+
+### Configure GitHub Auto Deployment
+
+In the Cloudflare dashboard, go to **Workers & Pages**, connect your forked GitHub repository with Workers Builds, and configure the deployment from your fork. Override the deploy command so Cloudflare runs Codra's build, migration, and Wrangler deploy sequence.
+
+| Setting | Value |
+| --- | --- |
+| Repository | YOUR_ORG_OR_USER/codra |
+| Production branch | `main` |
+| Root directory | Repository root |
+| Build command | `npm run build` |
+| Deploy command override | `npm run deploy` |
+
+<figure class="my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+  <img src="/assets/docs/cloudflare-dashboard-config-auto-deployment.png" alt="Cloudflare dashboard showing Workers Git auto-deployment configuration" loading="lazy" class="block w-full bg-secondary/20" />
+  <figcaption class="border-t border-border/60 bg-secondary/20 px-4 py-2 text-xs font-medium text-muted-foreground">
+    Connect your fork and override the deploy command so pushes to main deploy through Codra's deploy script.
+  </figcaption>
+</figure>
+
+---
+
+<h2 id="advanced-manual">Advanced / Manual Setup</h2>
+
+If you prefer to manually configure your environment variables, Cloudflare resources, and secrets without using the interactive script, follow these steps.
+
+### Environment Variables
+
+Codra reads platform and runtime bootstrap configuration from the Cloudflare Worker environment. For production, these are managed via secrets or the `vars` block in `wrangler.jsonc`.
+
+#### Required Secrets
+
+| Name | Description |
+| --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key in PEM format. In .dev.vars, keep newlines escaped as \n. |
+| `GITHUB_APP_ID` | Numeric GitHub App ID. |
+| `GITHUB_APP_WEBHOOK_SECRET` | Webhook secret configured on the GitHub App. |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID for dashboard login. |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret. |
+| `LLM_CONFIG_ENCRYPTION_KEY` | Required encryption key for dashboard-managed provider API keys stored in PostgreSQL. |
+| `DATABASE_URL` | PostgreSQL connection string (supports Hyperdrive). Used by migrations. |
+| `CF_API_TOKEN` | Cloudflare API token for Cloudflare model catalog refresh. |
+| `CF_ACCOUNT_ID` | Cloudflare account ID for Cloudflare model catalog refresh. |
+
+#### Recommended Production Variables
+
+| Name | Description |
+| --- | --- |
+| `APP_URL` | Public dashboard URL used in links and review formatting. |
+| `AUTH_CALLBACK_URL` | OAuth callback URL, e.g. https://YOUR_WORKER_URL/auth/github/callback. |
+| `DASHBOARD_ALLOWED_USERS` | Comma-separated GitHub usernames allowed to access the dashboard. |
+| `BOT_USERNAME` | GitHub bot username or mention handle. |
+| `GITHUB_APP_SLUG` | GitHub App slug. Used to build the installation-management URL. |
+| `ENVIRONMENT` | Runtime label, e.g. production. |
+
+
+### Manual Cloudflare Setup
+
+Update your `wrangler.jsonc` to bind Codra to your Cloudflare resources manually.
+
+<div class="my-6 space-y-6">
+  <div class="space-y-4">
+    <p class="text-sm font-semibold text-foreground uppercase tracking-wider">Resource Bindings</p>
+
+```jsonc
+"hyperdrive": [{
+  "binding": "HYPERDRIVE",
+  "id": "your-hyperdrive-id"
+}],
+"kv_namespaces": [{
+  "binding": "APP_KV",
+  "id": "your-kv-id"
+}],
+"ai": { "binding": "AI" }
+```
+
+  </div>
+  <div class="space-y-4">
+    <p class="text-sm font-semibold text-foreground uppercase tracking-wider">Queue Consumer</p>
+
+```jsonc
+"queues": {
+  "producers": [{ 
+    "binding": "REVIEW_QUEUE", 
+    "queue": "codra-review-jobs" 
+  }],
+  "consumers": [{
+    "queue": "codra-review-jobs",
+    "max_batch_size": 1,
+    "max_concurrency": 1
+  }]
+}
+```
+
+  </div>
+</div>
+
+#### Compatibility Flags
+
+Codra requires the `nodejs_compat` flag to be enabled. While this is defined in your `wrangler.jsonc`, you should also verify it in the Cloudflare Dashboard:
+
+<p class="text-sm font-medium text-foreground bg-secondary/30 p-3 rounded-md border border-border/50">
+Workers &amp; Pages &rarr; [Your Worker] &rarr; Settings &rarr; Compatibility Flags &rarr; Configure &rarr; nodejs_compat
+</p>
+
+<figure class="my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+  <img src="/assets/docs/cloudflare-dashboard-nodejs-compat.png" alt="Cloudflare dashboard showing nodejs_compat compatibility flag settings" loading="lazy" class="block w-full bg-secondary/20" />
+  <figcaption class="border-t border-border/60 bg-secondary/20 px-4 py-2 text-xs font-medium text-muted-foreground">
+    Enable the nodejs_compat compatibility flag for the Worker.
+  </figcaption>
+</figure>
+
+### Manual Database Migrations
+
+Set `DATABASE_URL` in your `.dev.vars` or shell, then run:
+
+```shell
+npm run migrate
+```
+
+### Manual Deployment and Secrets
+
+Set all required secrets via Wrangler:
+
+```shell
+npx wrangler secret put APP_PRIVATE_KEY
+npx wrangler secret put GITHUB_APP_ID
+npx wrangler secret put GITHUB_APP_WEBHOOK_SECRET
+npx wrangler secret put GITHUB_CLIENT_ID
+npx wrangler secret put GITHUB_CLIENT_SECRET
+npx wrangler secret put LLM_CONFIG_ENCRYPTION_KEY
+npx wrangler secret put DATABASE_URL
+npx wrangler secret put CF_API_TOKEN
+npx wrangler secret put CF_ACCOUNT_ID
+```
+
+Then manually deploy using:
+```shell
+wrangler deploy
+```
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Local Development</p>
+    <p className="text-sm text-foreground/80 mt-1">Test your Codra deployment locally before going to production.</p>
+  </div>
+  <Link to="/docs/local-dev" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Local Development <ArrowRight size={16} /></Link>
+</div>

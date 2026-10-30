@@ -37,7 +37,7 @@ export function renderIntentBlock(input: {
           clip(changelog, CHANGELOG_EXCERPT_CHARS),
         ]
       : []),
-    "Behaviour that serves this stated intent is deliberate. Do not report it as an accident, an oversight, or a regression.",
+    "PR Context: Understand the intended changes to better analyze the modified logic.",
   ].join("\n");
 }
 
@@ -125,4 +125,4 @@ export function renderFileContext(
 }
 
 export const INTENT_CHECK_INSTRUCTION =
-  "Intent check: every finding must survive a comparison with the PR INTENT above. If what you are about to flag IS the stated intent, it is not a finding - drop it. Otherwise open the `body` with one line saying how the problem differs from what the author set out to do.";
+  "Intent check: Use the PR INTENT above as background context on the purpose of this change.";

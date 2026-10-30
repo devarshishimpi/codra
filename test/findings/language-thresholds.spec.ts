@@ -33,6 +33,7 @@ const comment = (over: Partial<ParsedReviewComment>): ParsedReviewComment => ({
   category: "quality",
   title: "A finding",
   body: "body",
+  confidenceScore: 0.8,
   fingerprint: Math.random().toString(36).slice(2),
   ...over,
 });
@@ -46,7 +47,12 @@ const run = (
     job,
     config: {
       ...defaultRepoConfig,
-      review: { ...defaultRepoConfig.review, ...review },
+      review: {
+        ...defaultRepoConfig.review,
+        min_severity: "P3",
+        min_confidence: 0,
+        ...review,
+      },
     },
     files: [],
     model,

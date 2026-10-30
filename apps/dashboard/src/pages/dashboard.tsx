@@ -48,6 +48,8 @@ export function DashboardPage() {
       setRecentJobs(jobsRes.jobs);
     } catch (e: any) {
       setError(e.message || "Failed to load jobs");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -133,7 +135,7 @@ export function DashboardPage() {
             <EmptyState
               icon={<GitPullRequest />}
               title="No jobs yet"
-              description="Your pull request reviews will appear here"
+              description="Your pull request analysis logs will appear here"
               hints={[
                 "Once you open a PR in any of the connected repos, analysis triggers automatically",
                 "To trigger manually, comment @codra on any PR",

@@ -22,7 +22,7 @@
     |
     <a href="https://codra.run/docs/installation">Installation (Cloudflare)</a>
     |
-    <a href="./docs/deployment/docker.md">Installation (Docker / Self-Hosted)</a>
+    <a href="https://codra.run/docs/installation#alt-deployment">Installation (Docker / Self-Hosted)</a>
     |
     <a href="https://github.com/devarshishimpi/codra/issues">Issues</a>
     |

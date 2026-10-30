@@ -2,6 +2,7 @@ export {
   runReview,
   type ReviewJobRunResult,
   FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE,
   NextPhaseError,
   failJobAndCheckRun,
   extractReviewRequest,
@@ -26,3 +27,4 @@ export {
 } from "./review";
 
 export * from "./ports";
+export * from "./review/model-gates";

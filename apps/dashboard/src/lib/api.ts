@@ -79,7 +79,11 @@ async function request<T>(input: string, init?: RequestInit) {
     return undefined as T;
   }
 
-  return (await response.json()) as T;
+  const data = (await response.json()) as T;
+  if (!SAFE_METHODS.has(method) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("codra:data-changed"));
+  }
+  return data;
 }
 
 async function requestWithMeta<T>(input: string, init?: RequestInit) {
@@ -126,12 +130,16 @@ async function requestWithMeta<T>(input: string, init?: RequestInit) {
     throw new Error(payload?.error ?? `Request failed with ${response.status}`);
   }
 
+  const data = (await response.json()) as T;
+  if (!SAFE_METHODS.has(method) && typeof window !== "undefined") {
+    window.dispatchEvent(new Event("codra:data-changed"));
+  }
   return {
     status: response.status,
     etag,
     lastModified,
     notModified: false as const,
-    data: (await response.json()) as T,
+    data,
   };
 }
 

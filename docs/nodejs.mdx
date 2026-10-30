@@ -1,0 +1,57 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Node.js Deployment</h2>
+
+Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository, setting up your GitHub App, and provisioning a PostgreSQL database. 
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+To run Codra on a Node.js server, you need:
+- Node.js 24 LTS
+- An existing PostgreSQL database
+- A Redis instance (used by BullMQ for background jobs)
+
+<h2 id="env-vars">Environment Variables</h2>
+
+Set these variables in your deployment environment. They match the Cloudflare secrets, but add `REDIS_URL`.
+
+| Name | Description |
+| --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key in PEM format. Keep newlines properly escaped. |
+| `GITHUB_APP_ID` | Numeric GitHub App ID. |
+| `GITHUB_APP_WEBHOOK_SECRET` | Webhook secret configured on the GitHub App. |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID for dashboard login. |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret. |
+| `LLM_CONFIG_ENCRYPTION_KEY` | Required encryption key for dashboard-managed provider API keys stored in PostgreSQL. |
+| `DATABASE_URL` | PostgreSQL connection string. |
+| `REDIS_URL` | Redis connection string for BullMQ. |
+| `APP_URL` | Public dashboard URL used in links and review formatting. |
+
+<h2 id="deploy">Deploy</h2>
+
+You can build, migrate, and start the server with a single command:
+
+```bash
+npm ci
+npm run deploy:node
+```
+
+This builds the dashboard and the Node.js server, runs database migrations, and starts both the API and the BullMQ worker on port `3000`.
+
+<h2 id="processes">Process Split</h2>
+
+To scale the API and background workers independently, you can run them as separate processes using environment flags:
+
+```bash
+START_WORKER=false npm run start -w @codraoss/node-server  # Runs API only
+START_API=false npm run start -w @codraoss/node-server      # Runs Worker only
+```
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

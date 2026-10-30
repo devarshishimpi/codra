@@ -11,6 +11,7 @@ import type { ReviewModel, ReviewRuntime } from "../ports";
 import { loadSuppressedFingerprints } from "./telemetry";
 import { reviewBreadth } from "../prompts/file-review";
 import { getLanguageForFile } from "../prompts/languages";
+import { compositeRank } from "./model-gates";
 
 export async function applyFindingGates(params: {
   env: Pick<ReviewRuntime, "fileReviews">;
@@ -150,14 +151,23 @@ export async function applyFindingGates(params: {
   });
 
   const beforeVerifyList = finalComments;
-  const verify = await verifyFindings({
-    job,
-    config,
-    files,
-    comments: finalComments,
-    model,
-    maxCandidates: reviewBreadth(config.review),
-  });
+  // A profile can switch the verifier off for a model whose self-verification discards real defects.
+  const verify =
+    config.review.model_tuning?.verify === false
+      ? {
+          comments: finalComments,
+          dropped: [],
+          reasons: new Map<ParsedReviewComment, string>(),
+          skipped: "disabled_by_profile" as const,
+        }
+      : await verifyFindings({
+          job,
+          config,
+          files,
+          comments: finalComments,
+          model,
+          maxCandidates: reviewBreadth(config.review),
+        });
   finalComments = verify.comments;
   const droppedByVerification = verify.dropped.length;
   for (const drop of verify.dropped)
@@ -166,13 +176,16 @@ export async function applyFindingGates(params: {
     if (comment.fingerprint) verifyReasons.set(comment.fingerprint, reason);
   }
 
+  // The cap keeps findings in compositeRank order, for every model.
+  finalComments = [...finalComments].sort((a, b) => compositeRank(a) - compositeRank(b));
   const beforeCapList = finalComments;
   const beforeCap = finalComments.length;
-  if (finalComments.length > effectiveMaxComments) {
-    finalComments = finalComments.slice(0, effectiveMaxComments);
+  const cap = effectiveMaxComments;
+  if (finalComments.length > cap) {
+    finalComments = finalComments.slice(0, cap);
   }
   const droppedByCap = beforeCap - finalComments.length;
-  recordDisposition(beforeCapList.slice(effectiveMaxComments), "cap");
+  recordDisposition(beforeCapList.slice(cap), "cap");
   const omittedCount = reviewedComments.length - finalComments.length;
   const droppedByFilters =
     omittedCount - droppedBySuppression - droppedByVerification - droppedByCap;

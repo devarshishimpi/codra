@@ -32,7 +32,8 @@ export function SidebarOnboarding({
       return;
     }
 
-    Promise.all([api.getRepos(), api.getModelConfigs()])
+    const refresh = () =>
+      Promise.all([api.getRepos(), api.getModelConfigs()])
       .then(([reposRes, modelsRes]) => {
         const hasRepos =
           Array.isArray(reposRes?.repos) && reposRes.repos.length > 0;
@@ -75,6 +76,21 @@ export function SidebarOnboarding({
       .finally(() => {
         setLoading(false);
       });
+
+    const handleDataChanged = () => {
+      void refresh();
+    };
+    const handleWindowFocus = () => {
+      void refresh();
+    };
+    window.addEventListener("codra:data-changed", handleDataChanged);
+    window.addEventListener("focus", handleWindowFocus);
+    document.addEventListener("visibilitychange", handleWindowFocus);
+    return () => {
+      window.removeEventListener("codra:data-changed", handleDataChanged);
+      window.removeEventListener("focus", handleWindowFocus);
+      document.removeEventListener("visibilitychange", handleWindowFocus);
+    };
   }, [user, onVisibleChange, navigate]);
 
   const handleDismiss = () => {

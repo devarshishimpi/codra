@@ -193,9 +193,10 @@ describe("ModelRunner: request shape and response handling", () => {
         .spyOn(globalThis, "fetch")
         .mockImplementation(async (_url, init) => {
           const schema = JSON.parse(String(init?.body)).generationConfig
-            .responseJsonSchema;
+            ?.responseJsonSchema;
           sent.push(schema);
-          return schema?.properties?.files
+          // Refuse the very first call (the batch review grammar)
+          return sent.length === 1
             ? new Response(
                 JSON.stringify({
                   error: {
@@ -232,12 +233,10 @@ describe("ModelRunner: request shape and response handling", () => {
       expect(review.degraded).toBeUndefined();
       // probe + retry, one schemaless call, then the review grammar still attempted.
       expect(fetchMock).toHaveBeenCalledTimes(4);
-      expect(sent.filter((schema) => schema?.properties?.files)).toHaveLength(
-        1,
-      );
-      expect(
-        sent.filter((schema) => schema?.properties?.findings),
-      ).toHaveLength(1);
+      expect(sent[0]?.properties?.files).toBeDefined();
+      expect(sent[1]).toBeUndefined();
+      expect(sent[2]).toBeUndefined();
+      expect(sent[3]?.properties?.findings).toBeDefined();
     });
   });
 });

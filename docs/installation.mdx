@@ -1,0 +1,139 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight, CheckCircle2 } from 'lucide-react';
+
+<h2 id="prerequisites">Prerequisites</h2>
+
+Before starting, you'll need accounts and tools from a few providers. Codra is intentionally designed around a small set of external services.
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+  <div class="flex gap-3 p-4 rounded-md border border-border/50">
+    <div>
+      <p class="text-sm font-medium text-foreground">Cloudflare Account</p>
+      <p class="text-sm text-foreground/70 mt-1">Workers, Queues, Workflows, KV, AI, and an API token for model catalog refresh.</p>
+    </div>
+  </div>
+  <div class="flex gap-3 p-4 rounded-md border border-border/50">
+    <div>
+      <p class="text-sm font-medium text-foreground">PostgreSQL Database</p>
+      <p class="text-sm text-foreground/70 mt-1">Any PostgreSQL 13+ instance for job history and config storage.</p>
+    </div>
+  </div>
+  <div class="flex gap-3 p-4 rounded-md border border-border/50">
+    <div>
+      <p class="text-sm font-medium text-foreground">GitHub App</p>
+      <p class="text-sm text-foreground/70 mt-1">Used for webhooks, PR reviews, and dashboard OAuth login.</p>
+    </div>
+  </div>
+  <div class="flex gap-3 p-4 rounded-md border border-border/50">
+    <div>
+      <p class="text-sm font-medium text-foreground">LLM Provider Access</p>
+      <p class="text-sm text-foreground/70 mt-1">Provider keys are added after deploy in Settings &gt; LLM Providers.</p>
+    </div>
+  </div>
+</div>
+
+<h2 id="fork">1. Fork the Repository</h2>
+
+Start by forking Codra into the GitHub account or organization that will own the deployment. Cloudflare's Git integration should point at your fork, not the upstream repository.
+
+After forking, clone your fork locally and install dependencies:
+
+```shell
+git clone https://github.com/YOUR_ORG_OR_USER/codra.git
+cd codra
+npm install
+```
+
+<h2 id="github-app">2. GitHub App Setup</h2>
+
+Codra uses a single GitHub App for both repository automation (webhooks, reviews, labels) and dashboard login (OAuth). Create a new GitHub App from **GitHub Developer Settings**.
+
+### General App Settings
+
+| Field | Value |
+| --- | --- |
+| Homepage URL | https://YOUR_WORKER_URL |
+| Callback URL | https://YOUR_WORKER_URL/auth/github/callback |
+| Webhook URL | https://YOUR_WORKER_URL/webhook |
+| Webhook secret | A strong random string (save this for later) |
+
+<figure class="my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+  <img src="/assets/docs/github-dev-app-settings-1.png" alt="GitHub developer settings showing Codra GitHub App general configuration" loading="lazy" class="block w-full bg-secondary/20" />
+  <figcaption class="border-t border-border/60 bg-secondary/20 px-4 py-2 text-xs font-medium text-muted-foreground">
+    Configure the GitHub App URLs and webhook endpoint for your Worker.
+  </figcaption>
+</figure>
+
+<figure class="my-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+  <img src="/assets/docs/github-dev-app-settings-2.png" alt="GitHub developer settings showing additional Codra GitHub App configuration" loading="lazy" class="block w-full bg-secondary/20" />
+  <figcaption class="border-t border-border/60 bg-secondary/20 px-4 py-2 text-xs font-medium text-muted-foreground">
+    Finish the GitHub App settings before copying credentials.
+  </figcaption>
+</figure>
+
+### OAuth Credentials
+
+Once the App is created, note down your **Client ID** and generate a **Client Secret**.
+
+### Subscribe to Events
+
+Subscribe to **Pull request** and **Issue comment** events.
+
+### Repository Permissions
+
+| Permission | Access | Why |
+| --- | --- | --- |
+| Metadata | Read-only | Required by GitHub for repository access. |
+| Contents | Read-only | Allows reading repository files when needed. |
+| Pull requests | Read & write | Fetch PRs/diffs and create PR reviews. |
+| Checks | Read & write | Create and update Codra check runs. |
+| Issues | Read & write | Add and remove labels on pull requests. |
+
+### Note Down App Details
+
+For the installation setup later, make sure to keep track of:
+1. The **GitHub App ID**.
+2. A generated **Private Key** (downloaded as a `.pem` file).
+3. The **Client ID** and **Client Secret**.
+4. The **Webhook Secret**.
+
+<div class="my-6 p-4 rounded-md border border-primary/30 bg-primary/5 text-foreground/90 text-sm leading-relaxed">
+Sessions are stored in Cloudflare KV. The <code>DASHBOARD_ALLOWED_USERS</code> check happens on every authenticated route.
+</div>
+
+<h2 id="database">3. Database Setup</h2>
+
+Codra uses PostgreSQL for persistence.
+
+### Prepare your Database
+
+Create a database in your preferred PostgreSQL provider (e.g., Neon, Railway, Supabase, Aiven, or a custom VPS). Ensure it is accessible via a standard connection string:
+
+```text
+postgresql://<user>:<password>@<host>:<port>/<db>?sslmode=require
+```
+
+Keep this connection string handy, as the setup script will use it to automatically configure a **Cloudflare Hyperdrive** connection pool for you.
+
+<h2 id="next-steps">Choose Your Deployment Target</h2>
+
+<div className="grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
+  <Link to="/docs/cloudflare" className="group flex flex-col gap-3 p-5 rounded-lg border border-border/50 hover:bg-secondary/20 transition-colors">
+    <div>
+      <p className="text-base font-medium text-foreground group-hover:text-primary transition-colors">Cloudflare Workers</p>
+      <p className="text-sm text-foreground/70 mt-1">Recommended serverless deployment</p>
+    </div>
+  </Link>
+  <Link to="/docs/nodejs" className="group flex flex-col gap-3 p-5 rounded-lg border border-border/50 hover:bg-secondary/20 transition-colors">
+    <div>
+      <p className="text-base font-medium text-foreground group-hover:text-primary transition-colors">Node.js</p>
+      <p className="text-sm text-foreground/70 mt-1">Self-hosted server with BullMQ</p>
+    </div>
+  </Link>
+  <Link to="/docs/docker" className="group flex flex-col gap-3 p-5 rounded-lg border border-border/50 hover:bg-secondary/20 transition-colors">
+    <div>
+      <p className="text-base font-medium text-foreground group-hover:text-primary transition-colors">Docker</p>
+      <p className="text-sm text-foreground/70 mt-1">Compose local or Docker Hub image</p>
+    </div>
+  </Link>
+</div>

@@ -114,6 +114,15 @@ export function createModelsRouter() {
     }
 
     const input = parsed.data;
+    if (
+      input.apiFormat === "cloudflare-workers-ai" &&
+      c.env.deps.cloudflareAiEnabled === false
+    ) {
+      return jsonError(
+        "Cloudflare Workers AI is available only in the Cloudflare Workers runtime.",
+        400,
+      );
+    }
     if (requiresExplicitBaseUrl(input.apiFormat, input.baseUrl)) {
       return jsonError(
         "Vertex AI requires a base URL with your GCP project ID and region, e.g. https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1",
@@ -166,6 +175,15 @@ export function createModelsRouter() {
     }
 
     const input = parsed.data;
+    if (
+      input.apiFormat === "cloudflare-workers-ai" &&
+      c.env.deps.cloudflareAiEnabled === false
+    ) {
+      return jsonError(
+        "Cloudflare Workers AI is available only in the Cloudflare Workers runtime.",
+        400,
+      );
+    }
     if (requiresExplicitBaseUrl(input.apiFormat, input.baseUrl)) {
       return jsonError(
         "Vertex AI requires a base URL with your GCP project ID and region, e.g. https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1",

@@ -1,0 +1,110 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="review-lifecycle">Review Lifecycle</h2>
+
+### Pull Request Events
+
+For supported `pull_request` events, Codra creates a review job during webhook intake. Supported actions are `opened`, `synchronize`, `ready_for_review`, and `reopened`.
+
+`closed` PR events are used for label cleanup when labels are configured. They do not create review jobs.
+
+### Mention Reviews
+
+For `issue_comment` events, Codra triggers a review only when: the comment was created, the issue is a pull request, and the comment body includes the configured `review.mention_trigger` string (default: `@codra-app`).
+
+### Job Steps
+
+1. Preparation — job created, check run opened on GitHub.
+2. Reviewing Files — diff fetched, files filtered, each file reviewed through the model chain.
+3. Generating Summary — overall findings aggregated into a PR review body.
+4. Completing — PR review posted, labels applied, check run finished, job marked done.
+
+### Job Supersession
+
+When a newer job is created for the same repository, PR, and a newer head commit, older pending or running jobs are marked `superseded`. This keeps review results relevant to the latest push.
+
+### Stale Job Recovery
+
+Before each queue batch, Codra marks jobs left in `running` for more than 20 minutes as `failed`. This prevents crashed Worker invocations from leaving jobs permanently in progress.
+
+### GitHub Output
+
+For each completed job, Codra posts:
+- A GitHub check run named "Codra" with pass/fail status.
+- A pull request review body with the overall summary.
+- Inline comments on diff positions when GitHub accepts them.
+- Optional PR labels based on the review verdict.
+
+<Note type="info">
+If GitHub rejects inline comments with a validation error, Codra retries review creation without inline comments. The PR still receives the summary review even when inline comments fail.
+</Note>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+### Webhooks return 401
+
+- `GITHUB_APP_WEBHOOK_SECRET` matches the GitHub App webhook secret.
+- GitHub is sending the `x-hub-signature-256` header.
+- The webhook URL points to `/webhook`.
+
+### Webhooks accepted but no job appears
+
+- The event is `pull_request` or `issue_comment`.
+- The PR action is enabled in `review.on`.
+- The PR is not a draft when `ignore_drafts` is true.
+- The repository is enabled in Codra and has been synced.
+- The GitHub App installation ID is present in the payload.
+
+### Mention reviews do not trigger
+
+- The comment is on a pull request, not a regular issue.
+- `review.mention_trigger` is not `false`.
+- The comment body includes the trigger string exactly.
+- The `issue_comment` event is enabled on the GitHub App.
+
+### Dashboard login fails
+
+- `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are correct.
+- `AUTH_CALLBACK_URL` exactly matches the OAuth App callback URL.
+- Your GitHub login is included in `DASHBOARD_ALLOWED_USERS`.
+- `APP_KV` is bound correctly for OAuth state and sessions.
+
+### Repository sync fails
+
+- `APP_PRIVATE_KEY` is valid PEM text with newlines properly set.
+- `GITHUB_APP_ID` is correct.
+- The GitHub App is installed on at least one repository.
+- The app has metadata read access (required by GitHub).
+
+### Reviews fail at provider calls
+
+- The provider is enabled in Settings > LLM Providers.
+- Dashboard-keyed providers have a saved API key. Cloudflare native uses the Worker `AI` binding instead.
+- The Codra model ID resolves to an enabled DB model config with a valid provider model name.
+- Provider quotas and optional RPM/RPD/TPM limits are sufficient for the review volume.
+- Fallback chains include at least one currently available model from an enabled provider.
+- Cloudflare native model tests may require a deployed or remote Worker runtime.
+
+Transient upstream failures such as 429, 503, or 500 responses do not always mean Codra is misconfigured. Configure fallback chains across providers when you want reviews to continue during provider throttling or outages.
+
+Review failures record provider and model context where possible, so use the failed job details before rotating keys or changing routes.
+
+### Inline comments are missing
+
+- GitHub accepts inline comments only when positions match the submitted diff.
+- Codra retries summary-only review creation if inline comments are rejected.
+- A summary review will appear on the PR even when inline comments fail.
+
+
+### Migrations cannot find the database URL
+
+`scripts/migrate.mjs` reads `DATABASE_URL` from (in order): your shell environment, `.dev.vars`, `.env.local`, or `.env`. Cloudflare Worker secrets are not accessible to the local migration script.
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Contributing</p>
+    <p className="text-sm text-foreground/80 mt-1">How to contribute to Codra — workflow, conventions, and security reporting.</p>
+  </div>
+  <Link to="/docs/contributing" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Contributing <ArrowRight size={16} /></Link>
+</div>

@@ -1,6 +1,6 @@
 {
   "name": "codra",
-  "version": "0.9.13",
+  "version": "0.10.0",
   "description": "Open-source code review engine",
   "private": true,
   "author": "Devarshi Shimpi",
@@ -21,9 +21,11 @@
   "scripts": {
     "build": "vite build && npm run cf-typegen",
     "build:packages": "npm run build -w @codraoss/schema && npm run build -w @codraoss/core && npm run build -w @codraoss/provider-github && npm run build -w @codraoss/db && npm run build -w @codraoss/models && npm run build -w @codraoss/api && npm run build -w @codraoss/ui && npm run build -w @codraoss/node-adapters",
+    "build:node": "npm run build:packages && vite build && npm run build -w @codraoss/node-server",
     "build:all": "npm run build --workspaces --if-present",
     "cf-typegen": "cd apps/worker && wrangler types ./src/worker-env.d.ts",
     "deploy": "npm run build && npm run migrate && cd apps/worker && wrangler deploy",
+    "deploy:node": "npm run build:node && npm run migrate && npm run start -w @codraoss/node-server",
     "dev": "concurrently -k -n CLIENT,WORKER -c cyan,green \"npm:dev:client\" \"npm:dev:worker\"",
     "dev:client": "vite build --watch --mode development",
     "dev:node": "npm run dev -w @codraoss/node-server",
@@ -72,13 +74,13 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@codraoss/api": "^0.9.13",
-    "@codraoss/core": "^0.9.13",
-    "@codraoss/db": "^0.9.13",
-    "@codraoss/models": "^0.9.13",
-    "@codraoss/provider-github": "^0.9.13",
-    "@codraoss/schema": "^0.9.13",
-    "@codraoss/ui": "^0.9.13",
+    "@codraoss/api": "^0.10.0",
+    "@codraoss/core": "^0.10.1",
+    "@codraoss/db": "^0.10.0",
+    "@codraoss/models": "^0.10.0",
+    "@codraoss/provider-github": "^0.10.0",
+    "@codraoss/schema": "^0.10.0",
+    "@codraoss/ui": "^0.10.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "hono": "^4.12.34",
@@ -106,6 +108,7 @@
     "unrs-resolver@1.12.2": true,
     "workerd@1.20260918.1": true,
     "workerd@1.20260921.1": true,
+    "workerd@1.20261023.1": true,
     "msgpackr-extract@3.0.4": true
   }
 }

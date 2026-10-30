@@ -126,7 +126,7 @@ describe("output contract", () => {
 
     expect(userPrompt).toMatch(/avoid subjective style feedback/);
 
-    expect(systemBase).toMatch(/at most priority 3, never 0 or 1/);
+    expect(systemBase).toMatch(/Set priority honestly; do not inflate/);
   });
 });
 
@@ -157,8 +157,8 @@ describe("the generator", () => {
     expect(reviewBreadth(legacy)).toBe(
       generatorFindingCap(defaultRepoConfig.review.max_comments),
     );
-    expect(generatorFindingCap(10)).toBe(20);
-    expect(generatorFindingCap(1)).toBe(2);
+    expect(generatorFindingCap(10)).toBe(14);
+    expect(generatorFindingCap(1)).toBe(8);
   });
 });
 
@@ -214,5 +214,22 @@ describe("rejected exemplars", () => {
     expect(included.length).toBeGreaterThan(0);
     expect(included.length).toBeLessThan(20);
     expect(prompt).not.toContain("Rejected finding number 99");
+  });
+});
+
+describe("prompt_style configuration", () => {
+  it("injects permissive calibration instructions when prompt_style is permissive", () => {
+    const { systemPrompt } = buildFileReviewPrompts({
+      file: fileAt("src/app.ts"),
+      prTitle: "PR",
+      prDescription: null,
+      config: {
+        ...defaultRepoConfig.review,
+        prompt_style: "permissive",
+      },
+    });
+
+    expect(systemPrompt).toContain("balanced, constructive technical reviewer");
+    expect(systemPrompt).toContain("Do not artificially suppress genuine defects");
   });
 });

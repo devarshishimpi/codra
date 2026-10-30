@@ -29,8 +29,17 @@ export default {
   async scheduled(
     _controller: ScheduledController,
     env: AppBindings,
-    _ctx: ExecutionContext,
+    ctx: ExecutionContext,
   ) {
+    // Model profiles registry refresh (Zero DB impact: pure HTTP + memory)
+    if ((env as any).CODRA_MODEL_REGISTRY_URL) {
+      ctx.waitUntil(
+        import("@codraoss/models").then(({ ModelRegistryService }) =>
+          ModelRegistryService.getInstance().refreshFromRemote((env as any).CODRA_MODEL_REGISTRY_URL)
+        )
+      );
+    }
+
     // Gate on KV flag: avoids waking the serverless DB every 2min tick when nothing's pending.
     try {
       const active = await env.APP_KV.get("system:active_jobs");

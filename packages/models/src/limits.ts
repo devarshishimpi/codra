@@ -84,9 +84,12 @@ export function reviewOutputBudgetTokens(input: {
 }): number {
   const files = Math.max(1, input.fileCount);
   const findings = Math.max(1, input.findingCap) * files;
-  return Math.max(
-    OUTPUT_TOKENS_FLOOR,
-    findings * OUTPUT_TOKENS_PER_FINDING + files * OUTPUT_TOKENS_PER_FILE_ENTRY,
+  return Math.min(
+    16_384,
+    Math.max(
+      OUTPUT_TOKENS_FLOOR,
+      findings * OUTPUT_TOKENS_PER_FINDING + files * OUTPUT_TOKENS_PER_FILE_ENTRY,
+    ),
   );
 }
 
