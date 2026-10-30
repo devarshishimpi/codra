@@ -25,6 +25,7 @@ export function runReviewJob(
 // specs that name that specifier keep working unchanged.
 export {
   FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE,
   NextPhaseError,
   failJobAndCheckRun,
   extractReviewRequest,

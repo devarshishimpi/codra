@@ -1,6 +1,6 @@
 {
   "name": "@codraoss/core",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "The Codra review engine: pure, transport- and platform-agnostic code review logic behind ports.",
   "author": "Devarshi Shimpi",
   "license": "AGPL-3.0-only",

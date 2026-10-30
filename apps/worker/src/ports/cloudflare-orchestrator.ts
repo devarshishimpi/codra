@@ -1,6 +1,9 @@
 import type { JobOrchestrator } from "@codraoss/core";
 import type { ReviewJobMessage } from "@codraoss/schema";
-import { FRESH_INVOCATION_YIELD_SECONDS } from "@codraoss/core";
+import {
+  FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE,
+} from "@codraoss/core";
 import { runReviewJob } from "../core/review";
 import { setJobWorkflowInstance } from "@codraoss/db/jobs";
 import { logger } from "@codraoss/core/logger";
@@ -111,7 +114,10 @@ export class CloudflareOrchestrator implements JobOrchestrator {
       }
 
       if (result.action === "next_phase") {
-        if (result.freshInstance) {
+        if (
+          result.freshInstance ||
+          attempt >= MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE
+        ) {
           const nextJobId = result.jobId ?? jobId;
           if (nextJobId) {
             const nextPhase = result.phase;
@@ -132,6 +138,20 @@ export class CloudflareOrchestrator implements JobOrchestrator {
           FRESH_INVOCATION_YIELD_SECONDS,
         );
       } else if (result.action === "retry") {
+        if (attempt >= MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE) {
+          const nextJobId = jobId;
+          if (nextJobId) {
+            await step.do(`enqueue-fresh-retry-${phase}-${attempt}`, async () => {
+              await env.REVIEW_QUEUE.send({
+                jobId: nextJobId,
+                deliveryId: crypto.randomUUID(),
+                phase,
+                forceFreshInstance: true,
+              });
+            });
+            break;
+          }
+        }
         delaySeconds = result.delaySeconds ?? 60;
       } else {
         break;

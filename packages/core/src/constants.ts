@@ -28,6 +28,7 @@ export const ASYNC_BATCH_POLL_DELAY_SECONDS = 20;
 export const MAX_RETRYABLE_FILE_REVIEW_FAILURES = 6;
 export const MAX_JOB_CONTINUATIONS = 20;
 export const MAX_FINALIZE_CONTINUATIONS = 3;
+export const MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE = 6;
 
 // Budget & Attempts
 export const FILE_FIXED_SUBREQUESTS = 2;

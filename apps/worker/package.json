@@ -1,11 +1,11 @@
 {
   "name": "@codraoss/worker",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "private": true,
   "type": "module",
   "dependencies": {
     "@codraoss/api": "^0.10.0",
-    "@codraoss/core": "^0.10.0",
+    "@codraoss/core": "^0.10.1",
     "@codraoss/db": "^0.10.0",
     "@codraoss/models": "^0.10.0",
     "@codraoss/provider-github": "^0.10.0",

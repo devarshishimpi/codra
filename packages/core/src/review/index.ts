@@ -36,7 +36,10 @@ export {
 export { extractReviewRequest, type ReviewRequest } from "./request";
 
 // workflows/review.ts floors its inter-phase sleep here; the eslint barrel guard stops it
-export { FRESH_INVOCATION_YIELD_SECONDS } from "../constants";
+export {
+  FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE,
+} from "../constants";
 
 import {
   type PersistedReviewJob,

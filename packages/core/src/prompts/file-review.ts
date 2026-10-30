@@ -54,21 +54,29 @@ const SINGLE_FILE_SCHEMA_FORMAT = `{
 }`;
 
 const MULTI_FILE_SCHEMA_FORMAT = `{
-  "findings": [
+  "files": [
     {
-      "evidence": "<the exact line of code from the diff this finding is about>",
-      "code_location": {
-        "absolute_file_path": "<exact repo-relative file path containing this finding>",
-        "line": number,
-        "line_range": { "start": number, "end": number }
-      },
-      "claim_type": "<one of the claim types listed above>",
-      "title": "<Plain title, NO tags/emoji>",
-      "body": "<Explanation of the concrete defect and its impact>",
-      "priority": 0 | 1 | 2 | 3 | 4,
-      "code_suggestion": "Optional replacement code"
+      "absolute_file_path": "<exact path of one of the files listed below, copied character-for-character>",
+      "findings": [
+        {
+          "evidence": "<the exact line of code from THIS file's diff this finding is about>",
+          "code_location": {
+            "absolute_file_path": "<the same path as above>",
+            "line": number,
+            "line_range": { "start": number, "end": number }
+          },
+          "claim_type": "<one of the claim types listed above>",
+          "title": "<Plain title, NO tags/emoji>",
+          "body": "<Explanation of the concrete defect and its impact>",
+          "priority": 0 | 1 | 2 | 3 | 4,
+          "code_suggestion": "Optional replacement code"
+        }
+      ],
+      "overall_explanation": "Summary for THIS file",
+      "overall_correctness": "patch is correct" | "patch is incorrect"
     }
-  ]
+  ],
+  "overall_confidence_score": number (0 to 1)
 }`;
 
 export function buildFileReviewSystemPromptBase(opts?: {
@@ -311,11 +319,11 @@ export function buildBatchReviewPrompts(input: {
   const userPrompt = [
     intentBlock,
     ...(exemplars ? [exemplars] : []),
-    `You are reviewing ${files.length} files in this pull request:\n${pathList}`,
+    `You are reviewing ${files.length} files in ONE response. Return exactly ${files.length} entries in "files", one per path, in this order:\n${pathList}`,
     ...(uniformLanguage ? [renderLanguageGuidelines(files[0].path)] : []),
     renderCustomRules(input.config),
     "Review ONLY the diffs shown below. You cannot see the rest of any file or the repository - do not report something as undefined, unimported, unused, or missing just because it is not in a diff. If a diff note says it was truncated, do not infer issues from omitted lines.",
-    "File scoping: For each finding, set `code_location.absolute_file_path` to the exact repo-relative file path where the defect occurs, and quote evidence from that file's diff.",
+    "File scoping: each finding belongs to exactly ONE file. Put it inside that file's entry in `files`, set that file's path in `absolute_file_path`, and quote evidence from that file's diff only. Never report a finding about one file inside another file's entry, and never quote a line from a different file. For any file with no defects, you MUST still include its entry in `files` with an empty \"findings\": [] array and overall_correctness set to \"patch is correct\".",
     "Line numbers: every diff line below is prefixed with two columns - the OLD file line number, then the NEW file line number. Always report `line` (and `line_range`) using the NEW (second, right-hand) number, and only ever cite a line that appears in that file's diff. For a removed line, cite the nearest NEW line number shown next to it.",
     "Evidence: every finding must carry an `evidence` string containing the exact code of the line it is about, copied character-for-character from its own file's diff below. Strip the two leading line-number columns and the +/-/space marker - quote only the code itself. A finding whose evidence does not appear in that file's diff will be discarded.",
     INTENT_CHECK_INSTRUCTION,

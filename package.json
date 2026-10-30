@@ -75,7 +75,7 @@
   "dependencies": {
     "@base-ui/react": "^1.6.0",
     "@codraoss/api": "^0.10.0",
-    "@codraoss/core": "^0.10.0",
+    "@codraoss/core": "^0.10.1",
     "@codraoss/db": "^0.10.0",
     "@codraoss/models": "^0.10.0",
     "@codraoss/provider-github": "^0.10.0",
