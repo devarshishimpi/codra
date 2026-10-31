@@ -22,15 +22,19 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
     path: '/docs',
     title: 'Codra Documentation',
     description:
-      'Learn how to self-host, configure, operate, and extend Codra, an open-source pull request review engine for Cloudflare Workers.',
+      'Learn how to self-host, configure, operate, and extend Codra, an open-source pull request review engine supporting Cloudflare Workers, Node.js 24, and Docker.',
     h1: 'Codra documentation',
     sections: [
       {
         heading: 'Why should I choose Codra for code review?',
         body:
-          'Codra is engineered for teams who want total ownership of their review engine and AI model choices. It gives you a private job history, full control of your GitHub App, and your own Cloudflare Worker and PostgreSQL database.',
+          'Codra is engineered for teams who want total ownership of their review engine and AI model choices. It gives you a private job history, full control of your GitHub App, and your choice of deployment runtime: serverless on Cloudflare Workers or self-hosted on Node.js 24 and Docker with BullMQ and Redis.',
         links: [
           { label: 'Installation guide', href: '/docs/installation' },
+          { label: 'Deploy to Cloudflare Workers', href: '/docs/cloudflare' },
+          { label: 'Deploy with Docker', href: '/docs/docker' },
+          { label: 'Deploy on Node.js', href: '/docs/nodejs' },
+          { label: 'Local Development', href: '/docs/local-dev' },
           { label: 'Configuration guide', href: '/docs/configuration' },
           { label: 'Providers guide', href: '/docs/providers' },
           { label: 'Operations guide', href: '/docs/operations' },
@@ -42,7 +46,7 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
       {
         heading: 'What topics are covered in the documentation?',
         body:
-          'The documentation covers initial installation, environment variable setup, repository review policies, provider management, encrypted API keys, fallback model routing, and deploying across multiple hosting platforms.',
+          'The documentation covers initial installation, environment variable setup, repository review policies, provider management, encrypted API keys, fallback model routing, containerized deployment, and operating across multiple platforms.',
       },
     ],
   },
@@ -50,22 +54,22 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
     path: '/docs/installation',
     title: 'Install Codra | Prerequisites',
     description:
-      'Set up the prerequisites to deploy Codra: clone the repository, configure a GitHub App, and provision a PostgreSQL database.',
+      'Set up the prerequisites to deploy Codra: configure a GitHub App, provision a PostgreSQL database, and choose between Cloudflare Workers, Node.js, or Docker.',
     h1: 'Install Codra',
     sections: [
       {
         heading: 'What are the installation prerequisites for Codra?',
         body:
-          'You need a provisioned PostgreSQL database, a registered GitHub App, and an encryption key for dashboard-managed provider credentials.',
+          'All deployments require a provisioned PostgreSQL 13+ database, a registered GitHub App with PR and check-run permissions, and an encryption key for dashboard-managed provider credentials. Cloudflare Workers deployments require a Cloudflare account; Node.js and Docker deployments require Redis 6+ for BullMQ job queues.',
       },
       {
         heading: 'What are the deployment targets for Codra?',
         body:
-          'Once the prerequisites are complete, you can deploy Codra to Cloudflare Workers (the primary serverless target), run it on a Node.js server, or run it via Docker Compose.',
+          'Codra supports three first-class deployment targets: Cloudflare Workers for edge serverless deployments, Node.js 24 LTS for Linux and bare-metal hosts, and hardened Distroless Docker containers using Docker Compose or official Docker Hub images.',
         links: [
           { label: 'Cloudflare Workers', href: '/docs/cloudflare' },
-          { label: 'Node.js', href: '/docs/nodejs' },
-          { label: 'Docker', href: '/docs/docker' },
+          { label: 'Docker Deployment', href: '/docs/docker' },
+          { label: 'Node.js Deployment', href: '/docs/nodejs' },
           { label: 'Local Development', href: '/docs/local-dev' },
         ],
       },
@@ -87,74 +91,92 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
           { label: 'Configure Codra', href: '/docs/configuration' },
           { label: 'Deploy to Neon', href: '/docs/neon' },
         ],
-      }
+      },
     ],
   },
   {
     path: '/docs/nodejs',
     title: 'Deploy Codra on Node.js',
     description:
-      'Run Codra on a Node.js server with BullMQ and Redis. Configure environment variables and deploy with a single command.',
+      'Run Codra natively on Node.js 24 LTS with BullMQ and Redis. Configure environment variables, run migrations, and deploy as a systemd service or with PM2.',
     h1: 'Node.js deployment',
     sections: [
       {
         heading: 'How do I run Codra on a Node.js server?',
         body:
-          'Provide a REDIS_URL along with the standard database and GitHub App credentials, then build and start the server. You can also run the API and background workers as separate processes for independent scaling.',
+          'Provide DATABASE_URL and REDIS_URL along with standard GitHub App credentials, build workspace packages, and launch with npm run deploy:node. Codra natively supports both PKCS#1 and PKCS#8 private keys, provides built-in database DNS retry resilience, and handles graceful shutdowns.',
         links: [
           { label: 'Installation prerequisites', href: '/docs/installation' },
           { label: 'Configure Codra', href: '/docs/configuration' },
+          { label: 'Docker deployment', href: '/docs/docker' },
         ],
-      }
+      },
+      {
+        heading: 'Can I scale the API and background review workers separately?',
+        body:
+          'Yes. Use START_WORKER=false to run a dedicated HTTP API server behind your reverse proxy, and START_API=false to run dedicated BullMQ review workers that scale with pull-request volume.',
+      },
     ],
   },
   {
     path: '/docs/docker',
     title: 'Deploy Codra with Docker',
     description:
-      'Run Codra with Docker Compose for local development or self-hosted deployments. Build and publish custom images to Docker Hub.',
+      'Deploy Codra using the official devarshishimpi/codra image or Docker Compose. Hardened Distroless Node.js 24 runtime with non-root security.',
     h1: 'Docker deployment',
     sections: [
       {
         heading: 'How do I run Codra using Docker?',
         body:
-          'Use the provided docker-compose.yml to run PostgreSQL, Redis, and the Codra worker together locally. For production, you can build a custom image or pull a published image from Docker Hub.',
+          'Pull the official multi-arch image devarshishimpi/codra from Docker Hub or use the repository docker-compose.yml. Codra runs on Google Distroless Node.js 24 as a non-root user, connecting to external PostgreSQL and Redis with built-in container health checks.',
         links: [
+          { label: 'Official Docker Hub image', href: 'https://hub.docker.com/r/devarshishimpi/codra' },
           { label: 'Installation prerequisites', href: '/docs/installation' },
           { label: 'Configure Codra', href: '/docs/configuration' },
+          { label: 'Node.js deployment', href: '/docs/nodejs' },
         ],
-      }
+      },
+      {
+        heading: 'How do I scale Codra in containerized environments?',
+        body:
+          'Scale your cluster by running separate API and worker containers using START_API and START_WORKER environment flags. Active review jobs complete safely during rolling updates thanks to a 15-second graceful shutdown grace period.',
+      },
     ],
   },
   {
     path: '/docs/local-dev',
     title: 'Codra Local Development',
     description:
-      'Run Codra locally with wrangler dev. Set up .dev.vars, run migrations, and start the development server.',
+      'Run Codra locally with Node.js watch mode, Cloudflare Workers via Wrangler, or Docker Compose. Fast local development workflows for all runtimes.',
     h1: 'Local development',
     sections: [
       {
         heading: 'How do I run the Codra development server?',
         body:
-          'Copy the example environment variables, set up your secrets, run migrations, and start the parallel development server. The dashboard and API run together locally via wrangler dev.',
+          'Choose your workflow: run npm run dev:node for live TypeScript watch mode on Node.js, npm run dev for Cloudflare Workers simulation with Wrangler, or docker compose up -d for containerized testing. All workflows share the same PostgreSQL migrations and database schema.',
         links: [
           { label: 'Installation prerequisites', href: '/docs/installation' },
           { label: 'Configure Codra', href: '/docs/configuration' },
         ],
-      }
+      },
+      {
+        heading: 'How do I test GitHub webhooks locally?',
+        body:
+          'Expose your local development port (3000 for Node/Docker, 8787 for Wrangler) using Cloudflare Quick Tunnels (cloudflared tunnel --url) or ngrok, then set the generated HTTPS URL as your GitHub App webhook endpoint.',
+      },
     ],
   },
   {
     path: '/docs/configuration',
     title: 'Configure Codra',
     description:
-      'Configure Codra Worker secrets, repository review settings, dashboard-managed providers, fallbacks, and DB-backed model routing.',
+      'Configure Codra runtime secrets, repository review settings, dashboard-managed providers, fallbacks, and DB-backed model routing.',
     h1: 'Configure Codra',
     sections: [
       {
         heading: 'How do I configure Codra environment variables?',
         body:
-          'Codra separates core platform secrets (GitHub credentials, Cloudflare API keys) from dashboard-managed LLM provider credentials. This ensures infrastructure variables stay isolated and secure across your production deployment.',
+          'Codra separates platform runtime secrets (GitHub App credentials, database connections, Redis URLs) from dashboard-managed LLM provider keys. This keeps infrastructure configuration isolated across Cloudflare Workers, Node.js, and Docker.',
       },
       {
         heading: 'How do I manage repository review settings?',
@@ -182,7 +204,7 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
       {
         heading: 'What types of AI providers does Codra support?',
         body:
-          'Codra supports Cloudflare native Workers AI, Google Gemini, Anthropic, OpenAI, and OpenRouter. Custom endpoints matching the OpenAI, Anthropic, or Gemini spec formats are also supported.',
+          'Codra supports Cloudflare native Workers AI (on Cloudflare Workers), Google Gemini, Anthropic, OpenAI, and OpenRouter across all runtimes. Custom endpoints matching the OpenAI, Anthropic, or Gemini spec formats are also supported.',
         links: [{ label: 'Configuration guide', href: '/docs/configuration' }],
       },
       {
@@ -206,18 +228,18 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
     path: '/docs/neon',
     title: 'Deploy With Neon',
     description:
-      'Set up a serverless Neon PostgreSQL database and connect Codra to it through Cloudflare Hyperdrive for production deployments.',
+      'Set up a serverless Neon PostgreSQL database and connect Codra to it through Cloudflare Hyperdrive or direct connection pooling.',
     h1: 'Deploy Codra with Neon',
     sections: [
       {
         heading: 'How do I set up a Neon PostgreSQL database?',
         body:
-          'Create a Neon project and choose a region close to your users. Retrieve the pooled connection string and use it as NEON_DATABASE_URL for Codra.',
+          'Create a Neon project and choose a region close to your users. Retrieve the pooled connection string and use it as DATABASE_URL (or NEON_DATABASE_URL) for Codra.',
       },
       {
         heading: 'How do I configure Cloudflare Hyperdrive with Neon?',
         body:
-          'Use Cloudflare Hyperdrive to pool and accelerate database connections from the Worker runtime. After configuring the pool, bind the Hyperdrive ID in your wrangler config to finalize the connection.',
+          'For Cloudflare Workers deployments, use Cloudflare Hyperdrive to pool and accelerate database connections. On Node.js and Docker, connect directly using the connection string with pooled mode.',
         links: [
           { label: 'Installation guide', href: '/docs/installation' },
           { label: 'Deploy with Railway', href: '/docs/railway' },
@@ -229,7 +251,7 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
     path: '/docs/railway',
     title: 'Deploy With Railway',
     description:
-      'Provision a Railway PostgreSQL database and connect Codra to it through Cloudflare Hyperdrive for production deployments.',
+      'Provision a Railway PostgreSQL database and connect Codra to it for production deployments.',
     h1: 'Deploy Codra with Railway',
     sections: [
       {
@@ -238,9 +260,9 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
           'Provision a PostgreSQL service on Railway, then retrieve the public TCP proxy connection string and configure it as DATABASE_URL for Codra.',
       },
       {
-        heading: 'How do I configure Cloudflare Hyperdrive with Railway?',
+        heading: 'How do I configure database pooling with Railway?',
         body:
-          'Use Cloudflare Hyperdrive to pool and accelerate database connections from your Worker runtime. Once configured, bind the generated Hyperdrive ID into your wrangler config.',
+          'On Cloudflare Workers, use Cloudflare Hyperdrive to accelerate queries. On Node.js and Docker, Codra connects directly using the PostgreSQL connection string.',
         links: [{ label: 'Installation guide', href: '/docs/installation' }],
       },
     ],
@@ -260,7 +282,7 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
       {
         heading: 'How do I troubleshoot Codra operational issues?',
         body:
-          'The operations guide covers resolving webhook failures, missing jobs, and mention review issues. It details fixing dashboard login problems, repository sync errors, provider call failures, and dead-letter queue access.',
+          'The operations guide covers resolving webhook failures, missing jobs, and mention review issues. It details fixing dashboard login problems, BullMQ queue connectivity, Redis TLS configuration, container health checks, and database DNS retries.',
         links: [{ label: 'Contributing guide', href: '/docs/contributing' }],
       },
       {

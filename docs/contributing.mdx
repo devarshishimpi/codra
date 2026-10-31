@@ -28,10 +28,10 @@ Contributions are welcome. The recommended workflow keeps changes focused and ea
 3. **Install dependencies** — `npm install` and copy `.dev.vars.example` to `.dev.vars` with your secrets filled in.
 4. **Make your change** — Keep the scope tight. Prefer existing patterns over new abstractions.
 5. **Run typecheck and tests** — `npm run typecheck` and `npm test` must both pass before opening a PR.
-6. **Open a pull request** — Open your PR against the main branch. Write a clear description of what changed and why, and reference any related issues.
+6. **Open a pull request** — Open your PR against the `dev` branch. Write a clear description of what changed and why, and reference any related issues.
 
 <Note type="info">
-Before opening a PR against <code>main</code>, run <code>npm run typecheck</code> and <code>npm test</code>. Both must pass. PRs that break type coverage or existing tests will not be merged.
+Before opening a PR against <code>dev</code>, run <code>npm run typecheck</code> and <code>npm test</code>. Both must pass. PRs that break type coverage or existing tests will not be merged.
 </Note>
 
 <h2 id="conventions">Engineering Conventions</h2>
@@ -45,6 +45,20 @@ Before opening a PR against <code>main</code>, run <code>npm run typecheck</code
 | Secrets | Do not commit secrets, .dev.vars files, or generated deployment credentials under any circumstances. |
 | Tests | Add or update tests when behavior changes. The suite lives under test/ and uses Vitest. |
 | Migrations | Database schema changes require a new migration file in db/migrations/ following the existing naming convention. |
+| Documentation | Docs live in `docs/*.mdx`. Use `<h2 id="...">` for headings, `<Note>` for callouts, and keep `docs/docs-seo.ts` updated. |
+
+<h2 id="docs-contributions">Contributing to Documentation</h2>
+
+All documentation content for [codra.run/docs](https://codra.run/docs) is stored in the public `docs/` folder in the Codra repository.
+
+Even though the frontend hosting is managed separately in a private repo, documentation content is 100% open source. When changes are merged into the `dev` branch, an automated GitHub Actions workflow copies the updated MDX files and deploys them to the website.
+
+### Guidelines for Docs
+* **Files & Routing**: Stored in `docs/<page>.mdx` mapping directly to `https://codra.run/docs/<page>`.
+* **Headings with IDs**: Use `<h2 id="my-section">Title</h2>` for major headings to maintain URL anchors and sidebar highlight states.
+* **Callout Notes**: Use `<Note type="info">`, `<Note type="tip">`, or `<Note type="warn">` for highlighted admonitions.
+* **Code Blocks**: Specify language tags (e.g. `bash`, `ini`, `json`, `yaml`) on all code blocks.
+* **SEO Metadata**: Update `docs/docs-seo.ts` when adding or significantly updating guides.
 
 <h2 id="cla">Contributor License Agreement</h2>
 

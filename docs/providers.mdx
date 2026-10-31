@@ -20,6 +20,10 @@ Provider API keys are configured in **Settings > LLM Providers** after deploymen
 
 Cloudflare Workers AI still requires the `AI` binding in `wrangler.jsonc`. Catalog refresh for Cloudflare models uses `CF_ACCOUNT_ID` and `CF_API_TOKEN` against the Cloudflare API.
 
+<Note type="info">
+<strong>Runtime Support:</strong> Cloudflare Workers AI requires the Cloudflare Workers runtime and its native <code>AI</code> binding. When running Codra on Node.js or Docker, use external API providers (Google Gemini, OpenAI, Anthropic, OpenRouter, or custom OpenAI/Anthropic/Gemini-compatible endpoints).
+</Note>
+
 <h2 id="credentials">Credentials</h2>
 
 Provider API keys are entered in the dashboard and are write-only in API responses. Codra encrypts each key with `LLM_CONFIG_ENCRYPTION_KEY` before storing it in PostgreSQL.

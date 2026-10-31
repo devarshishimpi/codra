@@ -3,48 +3,37 @@ import { ArrowRight } from 'lucide-react';
 
 <h2 id="environment">Environment Variables</h2>
 
-Codra has two different configuration layers: platform/runtime secrets that the Worker needs to boot, and dashboard-managed LLM provider credentials that are saved later from Settings.
+Codra has two configuration layers:
+1. **Platform and Runtime Secrets**: Environment variables or secrets provided at boot (e.g. GitHub credentials, database strings, Redis URLs).
+2. **Dashboard-Managed LLM Provider Credentials**: API keys configured securely through **Settings > LLM Providers** and encrypted in PostgreSQL.
 
-### Platform and Runtime Secrets
+### Runtime Configuration Comparison
 
-Set these through Cloudflare Worker secrets, `wrangler.jsonc` vars, or local `.dev.vars` as appropriate for your deployment.
+| Setting | Cloudflare Workers | Node.js & Docker | Purpose |
+| --- | --- | --- | --- |
+| Database | `HYPERDRIVE` binding or `DATABASE_URL` | `DATABASE_URL` | Connection string to PostgreSQL 13+. |
+| Queue / Sessions | `REVIEW_QUEUE` & `APP_KV` | `REDIS_URL` | Storage for review jobs and user sessions. |
+| Process Roles | Always unified serverless | `START_API`, `START_WORKER` | Option to decouple API and background workers. |
+| Redis TLS | N/A | `REDIS_INSECURE_TLS` | Allows self-signed certificates with `rediss://`. |
+| Port | Handled by Cloudflare edge | `PORT` (default `3000`) | Internal HTTP binding port. |
+| AI Binding | `AI` binding (Workers AI) | Disabled (use API keys) | Cloudflare-native model execution. |
 
-| Name | Purpose |
-| --- | --- |
-| `APP_PRIVATE_KEY` | GitHub App private key. |
-| `GITHUB_APP_ID` | GitHub App ID used for installation tokens. |
-| `GITHUB_APP_WEBHOOK_SECRET` | Webhook signature verification secret. |
-| `GITHUB_CLIENT_ID` | GitHub OAuth client ID for dashboard login. |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret. |
-| `APP_KV` | Cloudflare KV binding for OAuth state and sessions. |
-| `HYPERDRIVE` | Optional Hyperdrive binding for pooled PostgreSQL access. |
-| `REVIEW_QUEUE` | Queue binding for review jobs. |
-| `AI` | Workers AI binding used by the Cloudflare native provider. |
-| `CF_ACCOUNT_ID` | Cloudflare account ID for Cloudflare model catalog refresh. |
-| `CF_API_TOKEN` | Cloudflare API token for catalog refresh. |
-| `LLM_CONFIG_ENCRYPTION_KEY` | Required key used to encrypt dashboard-managed provider API keys before database storage. |
-| `TELEMETRY_SECRET` | Shared secret self-hosted instances send when posting anonymous telemetry. |
-| `SESSION_SECRET` | Signs and verifies OAuth state and session cookies. |
+### Core Platform Secrets
 
-For Cloudflare model catalog refresh, `CF_API_TOKEN` needs Account > Workers AI:Read.
+These variables are shared across all deployment targets:
 
-### Telemetry
-
-By default, self-hosted instances send anonymous, aggregate usage statistics after each completed review: a random per-instance identifier, review counts, lines/files reviewed, token usage, models used, file extensions, and job durations. No code, diffs, repository names, or other identifying information is ever included. Telemetry is fire-and-forget — reviews behave identically whether it is enabled, disabled, or the endpoint is unreachable.
-
-| Name | Purpose |
-| --- | --- |
-| `TELEMETRY_DISABLED` | Set to `true` (or `1`) to opt out entirely. No instance ID is generated and no network call is made. |
-| `TELEMETRY_API_URL` | Override the ingestion endpoint (defaults to `https://codra.run/api/telemetry`). Useful for forks running their own backend. |
-| `TELEMETRY_SECRET` | Override the default shared secret sent with telemetry events. |
-
-To opt out, set it as a plain var in `wrangler.jsonc` (it is not sensitive):
-
-```jsonc
-"vars": {
-  "TELEMETRY_DISABLED": "true"
-}
-```
+| Name | Purpose | Format |
+| --- | --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key. Accepts both PKCS#1 (`BEGIN RSA PRIVATE KEY`) and PKCS#8 (`BEGIN PRIVATE KEY`). | PEM string with escaped `\n` or multiline text |
+| `GITHUB_APP_ID` | Numeric GitHub App ID used to issue installation tokens. | Number |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret used to verify GitHub webhook HMAC-SHA256 signatures. | String |
+| `GITHUB_CLIENT_ID` | OAuth Client ID for dashboard authentication. | String |
+| `GITHUB_CLIENT_SECRET` | OAuth Client Secret for dashboard authentication. | String |
+| `AUTH_CALLBACK_URL` | OAuth redirect endpoint (e.g. `https://codra.example.com/api/auth/callback`). | URL |
+| `APP_URL` | Public base URL of your Codra deployment. | URL |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hexadecimal encryption key for securing provider API keys stored in PostgreSQL. Generate with `openssl rand -hex 32`. | 64-character hex |
+| `DASHBOARD_ALLOWED_USERS` | Comma-separated list of GitHub usernames permitted to log into the dashboard. | String |
+| `BOT_USERNAME` | Bot name mentioned in PR comments (defaults to `codra-app`). | String |
 
 ### Dashboard-Managed Provider Credentials
 

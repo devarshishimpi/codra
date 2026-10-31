@@ -3,31 +3,31 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react';
 
 <h2 id="prerequisites">Prerequisites</h2>
 
-Before starting, you'll need accounts and tools from a few providers. Codra is intentionally designed around a small set of external services.
+Before starting, choose your deployment target. Codra supports **Cloudflare Workers** (serverless) as well as **Node.js 24** and **Docker** (self-hosted).
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
   <div class="flex gap-3 p-4 rounded-md border border-border/50">
     <div>
-      <p class="text-sm font-medium text-foreground">Cloudflare Account</p>
-      <p class="text-sm text-foreground/70 mt-1">Workers, Queues, Workflows, KV, AI, and an API token for model catalog refresh.</p>
+      <p class="text-sm font-medium text-foreground">PostgreSQL Database (Required)</p>
+      <p class="text-sm text-foreground/70 mt-1">Any PostgreSQL 13+ instance (e.g. Neon, Supabase, AWS RDS, or self-hosted) for jobs, review history, and config.</p>
     </div>
   </div>
   <div class="flex gap-3 p-4 rounded-md border border-border/50">
     <div>
-      <p class="text-sm font-medium text-foreground">PostgreSQL Database</p>
-      <p class="text-sm text-foreground/70 mt-1">Any PostgreSQL 13+ instance for job history and config storage.</p>
+      <p class="text-sm font-medium text-foreground">GitHub App (Required)</p>
+      <p class="text-sm text-foreground/70 mt-1">Used for PR review webhooks, check-run updates, and dashboard OAuth login.</p>
     </div>
   </div>
   <div class="flex gap-3 p-4 rounded-md border border-border/50">
     <div>
-      <p class="text-sm font-medium text-foreground">GitHub App</p>
-      <p class="text-sm text-foreground/70 mt-1">Used for webhooks, PR reviews, and dashboard OAuth login.</p>
+      <p class="text-sm font-medium text-foreground">Cloudflare Account (For Workers Deployments)</p>
+      <p class="text-sm text-foreground/70 mt-1">Workers, Queues, KV, Hyperdrive, and optionally Workers AI for serverless deployments.</p>
     </div>
   </div>
   <div class="flex gap-3 p-4 rounded-md border border-border/50">
     <div>
-      <p class="text-sm font-medium text-foreground">LLM Provider Access</p>
-      <p class="text-sm text-foreground/70 mt-1">Provider keys are added after deploy in Settings &gt; LLM Providers.</p>
+      <p class="text-sm font-medium text-foreground">Redis 6+ (For Node.js / Docker Deployments)</p>
+      <p class="text-sm text-foreground/70 mt-1">Used by BullMQ for background job queueing and session cache in non-Cloudflare runtimes.</p>
     </div>
   </div>
 </div>
@@ -98,7 +98,7 @@ For the installation setup later, make sure to keep track of:
 4. The **Webhook Secret**.
 
 <div class="my-6 p-4 rounded-md border border-primary/30 bg-primary/5 text-foreground/90 text-sm leading-relaxed">
-Sessions are stored in Cloudflare KV. The <code>DASHBOARD_ALLOWED_USERS</code> check happens on every authenticated route.
+Sessions are stored in Cloudflare KV (on Cloudflare Workers) or in Redis (on Node.js and Docker). The <code>DASHBOARD_ALLOWED_USERS</code> check happens on every authenticated route.
 </div>
 
 <h2 id="database">3. Database Setup</h2>

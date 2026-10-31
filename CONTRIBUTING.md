@@ -102,6 +102,20 @@ npm run typecheck
 
 ---
 
+## 📝 Contributing to Documentation
+
+All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `dev`.
+
+### MDX Guidelines
+- **Files & Routes**: Each file in `docs/*.mdx` maps directly to a route (e.g. `docs/docker.mdx` -> `codra.run/docs/docker`).
+- **Headings with IDs**: Use explicit HTML `<h2 id="section-id">Heading</h2>` for major sections to ensure working anchor links and sidebar navigation. Use standard markdown `###` for subheadings.
+- **Callouts**: Use `<Note type="info">`, `<Note type="tip">`, or `<Note type="warn">` (standard blockquotes `> ` also render as info callouts).
+- **Code Blocks**: Always specify language identifiers on fenced blocks (e.g. `bash`, `ini`, `json`, `yaml`).
+- **Links**: Use `<Link to="/docs/target">Text</Link>` for internal doc navigation, and standard markdown `[Text](https://...)` for external links.
+- **SEO Metadata**: When creating or significantly updating documentation, update the corresponding route entry in `docs/docs-seo.ts`.
+
+---
+
 ## 🚀 Pull Request Process
 
 Contributions are merged into `dev` first and reach `main` when a release is cut, so `main` always

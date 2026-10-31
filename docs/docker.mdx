@@ -3,49 +3,166 @@ import { ArrowRight } from 'lucide-react';
 
 <h2 id="overview">Docker Deployment</h2>
 
-Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository and setting up your GitHub App.
+Codra provides a hardened, production-ready container image published on Docker Hub at [**devarshishimpi/codra**](https://hub.docker.com/r/devarshishimpi/codra).
+
+Built on Google's **Distroless Node.js 24** (`gcr.io/distroless/nodejs24-debian13:nonroot`), the image runs as a non-root user (`nonroot`) with zero shell utilities or package managers in the final runtime stage, providing a minimal attack surface and small footprint.
+
+Codra uses a decoupled architecture: the application container connects to external **PostgreSQL** (for persistence and migrations) and **Redis** (for BullMQ queues and sessions). You can connect to managed services (such as Neon, Supabase, AWS RDS, or Upstash) or run them alongside Codra using Docker Compose.
 
 <h2 id="env-vars">Environment Variables</h2>
 
-For Docker deployments, Codra reads configuration from `.env` (or your standard environment variables). Set the required GitHub credentials, `LLM_CONFIG_ENCRYPTION_KEY`, `APP_URL`, `DATABASE_URL`, and `REDIS_URL`. PostgreSQL and Redis are external services and are not included in the Codra image.
+Codra reads configuration from `.env` (or standard environment variables passed to the container).
 
-<h2 id="local-dev">Local Dev</h2>
+### Required Settings
 
-To build and run Codra locally, create `.env` with the required settings and ensure your external PostgreSQL and Redis services are reachable from the container.
+| Variable | Description | Example |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string. | `postgresql://user:pass@postgres:5432/codra?sslmode=disable` |
+| `REDIS_URL` | Redis connection string for BullMQ queues and sessions. | `redis://redis:6379` or `rediss://...` |
+| `APP_PRIVATE_KEY` | GitHub App private key. Both PKCS#1 and PKCS#8 formats are supported. | `-----BEGIN RSA PRIVATE KEY-----\n...` |
+| `GITHUB_APP_ID` | Numeric GitHub App ID from developer settings. | `123456` |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret configured on your GitHub App webhook. | `your_webhook_secret` |
+| `GITHUB_CLIENT_ID` | OAuth Client ID for dashboard authentication. | `Iv1.abc123xyz` |
+| `GITHUB_CLIENT_SECRET` | OAuth Client Secret for dashboard authentication. | `secret_oauth_token` |
+| `AUTH_CALLBACK_URL` | Public OAuth callback endpoint. Must match GitHub Developer settings. | `https://codra.example.com/api/auth/callback` |
+| `APP_URL` | Public base URL of your Codra instance. | `https://codra.example.com` |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hexadecimal key used to encrypt provider API keys in PostgreSQL. Generate with `openssl rand -hex 32`. | `64_character_hex_string` |
 
-```bash
-docker compose build
-docker compose run --rm codra node packages/db/scripts/migrate.mjs
-docker compose up -d codra
+### Optional Settings
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PORT` | `3000` | Port the internal HTTP server binds to (`0.0.0.0`). |
+| `START_API` | `true` | When set to `false`, disables the HTTP server (useful for dedicated worker nodes). |
+| `START_WORKER` | `true` | When set to `false`, disables the BullMQ review worker (useful for dedicated API nodes). |
+| `DASHBOARD_ALLOWED_USERS` | `devarshishimpi` | Comma-separated list of GitHub logins allowed to log into the dashboard. |
+| `BOT_USERNAME` | `codra-app` | Bot username mentioned in PR review comments. |
+| `REDIS_INSECURE_TLS` | `false` | Set to `true` to disable TLS certificate verification for self-signed Redis endpoints. |
+| `ENVIRONMENT` | `production` | Runtime environment name (`production` or `development`). |
+
+### Ready-to-use `.env` Template
+
+Create a `.env` file in your repository root:
+
+```ini
+# Database & Queues
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/codra?sslmode=disable
+REDIS_URL=redis://localhost:6379
+
+# GitHub App Integration
+GITHUB_APP_ID=123456
+GITHUB_APP_WEBHOOK_SECRET=your_webhook_secret_here
+GITHUB_CLIENT_ID=your_oauth_client_id
+GITHUB_CLIENT_SECRET=your_oauth_client_secret
+APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----"
+
+# Application URLs
+APP_URL=http://localhost:3000
+AUTH_CALLBACK_URL=http://localhost:3000/api/auth/callback
+PORT=3000
+
+# Security & Access Control
+LLM_CONFIG_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+DASHBOARD_ALLOWED_USERS=your_github_username
+BOT_USERNAME=codra-app
+ENVIRONMENT=production
 ```
 
-<h2 id="docker-hub">Docker Hub</h2>
+<Note type="tip">
+Codra's auth layer automatically parses and unwraps both traditional PKCS#1 keys (<code>-----BEGIN RSA PRIVATE KEY-----</code>) and modern PKCS#8 keys (<code>-----BEGIN PRIVATE KEY-----</code>).
+</Note>
 
-To publish the production image for both amd64 and ARM64:
+<h2 id="local-dev">Running with Docker Compose</h2>
+
+The repository includes a production-tuned `docker-compose.yml` preconfigured with health checks, persistent restart behavior, external DNS fallbacks (`1.1.1.1` and `8.8.8.8`) for reliable webhook intake, and a `15s` graceful shutdown period for BullMQ tasks.
+
+To run with the included compose file:
 
 ```bash
-docker login -u devarshishimpi
+# 1. Run database migrations
+docker compose run --rm codra node packages/db/scripts/migrate.mjs
+
+# 2. Start Codra in detached mode
+docker compose up -d codra
+
+# 3. View live container logs
+docker compose logs -f codra
+```
+
+<h2 id="docker-hub">Official Docker Hub Images</h2>
+
+Pre-built multi-architecture images (`linux/amd64` and `linux/arm64`) are hosted on Docker Hub at [**devarshishimpi/codra**](https://hub.docker.com/r/devarshishimpi/codra):
+
+* `devarshishimpi/codra:latest`
+* `devarshishimpi/codra:0.10.0`
+
+### Running Directly with Docker CLI
+
+You can run the official image directly without cloning the repository:
+
+```bash
+# 1. Pull the official image
+docker pull devarshishimpi/codra:latest
+
+# 2. Run database migrations
+docker run --rm --env-file .env devarshishimpi/codra:latest node packages/db/scripts/migrate.mjs
+
+# 3. Start the application container
+docker run -d \
+  --name codra \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  --env-file .env \
+  devarshishimpi/codra:latest
+```
+
+<h2 id="build">Building from Source</h2>
+
+If you want to build custom container images from source, the multi-stage `apps/node/Dockerfile` handles TypeScript compilation, the Vite dashboard build, and the Distroless packaging:
+
+```bash
+# Local build
+docker build -f apps/node/Dockerfile -t devarshishimpi/codra:latest .
+
+# Multi-arch build with buildx
 docker buildx build --platform linux/amd64,linux/arm64 \
   -f apps/node/Dockerfile \
-  -t devarshishimpi/codra:0.10.0 \
   -t devarshishimpi/codra:latest \
+  -t devarshishimpi/codra:0.10.0 \
   --push .
 ```
 
-<h2 id="run-published">Run Published Image</h2>
+<h2 id="processes">Process Separation & Scaling</h2>
 
-To run your published image (or an official one) via docker compose:
+In production setups with high pull-request volume, you can scale the web API and background analysis workers independently by adjusting the process environment variables:
+
+* **Dedicated API Server**: Set `START_WORKER=false` (scales horizontally behind a reverse proxy or load balancer to handle webhooks and dashboard traffic).
+* **Dedicated Review Worker**: Set `START_API=false` (scale worker replicas to consume the BullMQ queue concurrently).
 
 ```bash
-CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose pull
-CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose run --rm codra node packages/db/scripts/migrate.mjs
-CODRA_IMAGE=docker.io/devarshishimpi/codra:0.10.0 docker compose up -d codra
+# Run a dedicated worker instance with Docker CLI
+docker run -d \
+  --name codra-worker \
+  --restart unless-stopped \
+  --env-file .env \
+  -e START_API=false \
+  -e START_WORKER=true \
+  devarshishimpi/codra:latest
+```
+
+<h2 id="health-checks">Health Checks & Monitoring</h2>
+
+Codra exposes a `/health` endpoint that returns HTTP `200 OK`. The container includes an internal health check probe that monitors the server:
+
+```bash
+# Inspect container health status
+docker inspect --format='{{json .State.Health}}' codra
 ```
 
 <div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
   <div className="flex-1">
-    <p className="text-base font-medium text-foreground">Next: Configuration</p>
-    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+    <p className="text-base font-medium text-foreground">Next: Node.js Deployment</p>
+    <p className="text-sm text-foreground/80 mt-1">Learn how to run Codra natively on Linux or bare-metal servers using Node.js 24.</p>
   </div>
-  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+  <Link to="/docs/nodejs" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Node.js Guide <ArrowRight size={16} /></Link>
 </div>

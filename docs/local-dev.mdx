@@ -3,47 +3,107 @@ import { ArrowRight } from 'lucide-react';
 
 <h2 id="overview">Local Development</h2>
 
-Use this guide after completing the [Installation Prerequisites](/docs/installation) and choosing a deployment target. This setup runs Codra locally using Wrangler for fast iteration.
+Codra supports three local development workflows depending on your preferred runtime:
+1. **Node.js Native (`npm run dev:node`)**: Fastest iteration with hot recompilation via `tsup`, local PostgreSQL, and Redis.
+2. **Cloudflare Workers Runtime (`npm run dev`)**: Local Workers simulation via Wrangler and Miniflare.
+3. **Docker Compose (`docker compose up`)**: Containerized local environment matching production.
 
 <h2 id="setup">Setup</h2>
 
-If you haven't already, clone your fork and install dependencies from the repository root:
+Clone your fork and install dependencies from the repository root:
 
 ```shell
+git clone https://github.com/YOUR_ORG_OR_USER/codra.git
+cd codra
 npm install
 ```
 
-Copy the example environment file:
+### Environment Configuration
+
+Depending on your target runtime, create your local configuration file:
+
+* **For Node.js & Docker**: Copy `.env.example` to `.env`
+* **For Cloudflare Workers**: Copy `.dev.vars.example` to `.dev.vars`
 
 ```shell
+# For Node.js / Docker development
+cp .dev.vars.example .env
+
+# For Cloudflare Workers development
 cp .dev.vars.example .dev.vars
 ```
 
-Fill in your secrets in `.dev.vars` (GitHub App credentials, database URL, etc.). For the `APP_PRIVATE_KEY`, ensure newlines are properly escaped as `\n`.
+Fill in your GitHub App credentials, `DATABASE_URL`, and `LLM_CONFIG_ENCRYPTION_KEY`. For Node.js / Docker, also configure `REDIS_URL=redis://localhost:6379`.
 
-<h2 id="dev-server">Dev Server</h2>
+### Database Migrations
 
-Run database migrations, then start the development server:
+Apply database migrations before starting any development server:
 
 ```shell
 npm run migrate
+```
+
+The migration runner reads credentials from your environment or configuration files, runs all pending SQL migrations, and includes automatic DNS retries.
+
+<h2 id="dev-server">Running the Development Server</h2>
+
+### Option A: Node.js Dev Server (Recommended for Fast Iteration)
+
+```shell
+# 1. Build workspace packages and dashboard client
+npm run build:packages
+npx vite build
+
+# 2. Start the Node.js server in watch mode
+npm run dev:node
+```
+
+The Node.js dev server runs with live TypeScript reloading via `tsup --watch`. When you modify packages or server code, the server automatically restarts in under a second.
+
+### Option B: Cloudflare Workers Dev Server
+
+```shell
 npm run dev
 ```
 
-The development server runs two processes in parallel:
-- `npm run dev:client` — Builds the Vite React dashboard in watch mode.
-- `npm run dev:worker` — Starts the Cloudflare Worker locally via `wrangler dev`.
+This runs two processes concurrently:
+* `npm run dev:client` — Builds the Vite React dashboard in watch mode.
+* `npm run dev:worker` — Runs the Worker locally using Wrangler and Miniflare with bindings from `.dev.vars`.
 
-<h2 id="local-urls">Local URLs</h2>
+### Option C: Docker Compose
 
-Once the server is running, the dashboard and API are available locally:
+```shell
+# Build and run the local container
+docker compose build
+docker compose run --rm codra node packages/db/scripts/migrate.mjs
+docker compose up -d codra
+```
 
-- **Worker + Dashboard:** `http://127.0.0.1:8787`
-- **OAuth Callback:** `http://127.0.0.1:8787/auth/github/callback`
+<h2 id="local-urls">Local Endpoints & Webhooks</h2>
 
-<h2 id="providers">Next Steps</h2>
+### Local Dashboard & API
 
-After the dashboard is running, navigate to **Settings > LLM Providers** to save provider API keys, refresh model catalogs, and choose the global model route.
+* **Node.js / Docker**:
+  * Dashboard & API: `http://localhost:3000`
+  * Health check: `http://localhost:3000/health`
+  * OAuth Callback: `http://localhost:3000/api/auth/callback`
+* **Cloudflare Workers**:
+  * Dashboard & Worker: `http://127.0.0.1:8787`
+  * OAuth Callback: `http://127.0.0.1:8787/auth/github/callback`
+
+### Forwarding GitHub Webhooks
+
+To test pull request webhooks and review triggers locally, expose your local port using a tunnel:
+
+```bash
+# Using Cloudflare Quick Tunnel (no account required)
+cloudflared tunnel --url http://localhost:3000
+
+# Or using ngrok
+ngrok http 3000
+```
+
+Copy the generated HTTPS URL and set it as your **Webhook URL** in GitHub Developer Settings (`https://YOUR_TUNNEL_URL/webhook`).
 
 <div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
   <div className="flex-1">
