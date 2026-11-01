@@ -5,6 +5,49 @@ import { ArrowRight } from 'lucide-react';
 
 Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository, setting up your GitHub App, and provisioning a PostgreSQL database.
 
+You can deploy Codra to Cloudflare Workers using three methods:
+
+* **1-Click Deploy with Appflare (Fastest)**: Deploy directly into your Cloudflare account using Appflare, an open-source self-hosted app manager for Workers.
+* **Automated CLI Setup**: Run the interactive setup script (`npm run setup:cloudflare`) to automatically configure resources via Wrangler.
+* **Manual Setup**: Manually bind KV, Hyperdrive, Queues, and configure Worker secrets.
+
+<h2 id="appflare">1-Click Deploy with Appflare</h2>
+
+[Appflare](https://appflare.dev) is a self-hosted app manager that runs as a single Worker inside your own Cloudflare account. It provides an app store experience for Cloudflare Workers, allowing you to deploy, manage, and update applications with a single click.
+
+[![Install with Appflare](https://appflare.dev/badge.svg)](https://appflare.dev/install/codra/)
+
+Codra is published in the official Appflare catalog at [appflare.dev/apps/codra](https://appflare.dev/apps/codra/).
+
+### What Appflare Handles Automatically
+
+When you click **Install with Appflare**, Appflare provisions and binds all required resources in your Cloudflare account:
+
+* **Worker**: Deploys the Codra Worker runtime for webhook handling and review processing.
+* **KV Namespaces**: Provisions `APP_KV` for session management and OAuth states.
+* **Cloudflare Queues**: Configures `REVIEW_QUEUE` for resilient background PR analysis jobs.
+* **Cloudflare Hyperdrive**: Connects your PostgreSQL database with low-latency connection pooling.
+* **Workers AI & Workflows**: Binds AI inference and background review workflow orchestrators.
+* **Automatic Updates & Rollbacks**: Notifies you when new versions of Codra are published and takes snapshots so you can roll back at any time.
+
+### Configuration
+
+During the installation prompt in your Appflare instance, enter your required GitHub App and database secrets:
+
+| Variable | Description |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string (supports Neon, Supabase, Railway, etc.). |
+| `APP_PRIVATE_KEY` | GitHub App private key in PEM format. |
+| `GITHUB_APP_ID` | Numeric GitHub App ID from developer settings. |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret configured on your GitHub App webhook. |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID for dashboard authentication. |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret. |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hex key for encrypting provider keys. |
+
+<Note type="info">
+  If you don't have Appflare installed yet, clicking the badge guides you through setting up Appflare in your Cloudflare account first. Both Codra and Appflare run on Cloudflare's free Workers plan.
+</Note>
+
 <h2 id="automated-setup">Automated Setup (Recommended)</h2>
 
 Codra includes an interactive setup script that will configure all your Cloudflare resources automatically.
@@ -59,8 +102,6 @@ In the Cloudflare dashboard, go to **Workers & Pages**, connect your forked GitH
     Connect your fork and override the deploy command so pushes to main deploy through Codra's deploy script.
   </figcaption>
 </figure>
-
----
 
 <h2 id="advanced-manual">Advanced / Manual Setup</h2>
 
