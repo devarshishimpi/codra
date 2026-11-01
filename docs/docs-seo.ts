@@ -251,19 +251,31 @@ export const DOCS_SEO_PAGES: DocsSeoPage[] = [
     path: '/docs/railway',
     title: 'Deploy With Railway',
     description:
-      'Provision a Railway PostgreSQL database and connect Codra to it for production deployments.',
+      'Deploy Codra on Railway with a 1-click template, full-stack manual deployment, or standalone PostgreSQL for Cloudflare Workers.',
     h1: 'Deploy Codra with Railway',
     sections: [
       {
-        heading: 'How do I set up a Railway PostgreSQL database?',
+        heading: 'What deployment options are supported on Railway?',
         body:
-          'Provision a PostgreSQL service on Railway, then retrieve the public TCP proxy connection string and configure it as DATABASE_URL for Codra.',
+          'Codra supports three deployment options on Railway: a 1-click public template deploying Codra with PostgreSQL and Redis, a manual full-stack deploy using the official Docker image or source build, and a database-only setup provisioning PostgreSQL with Cloudflare Hyperdrive.',
       },
       {
-        heading: 'How do I configure database pooling with Railway?',
+        heading: 'How do I deploy Codra using the 1-click Railway template?',
         body:
-          'On Cloudflare Workers, use Cloudflare Hyperdrive to accelerate queries. On Node.js and Docker, Codra connects directly using the PostgreSQL connection string.',
-        links: [{ label: 'Installation guide', href: '/docs/installation' }],
+          'Click the Deploy on Railway button to provision PostgreSQL, Redis, and the Codra container with automated database migrations, preconfigured private networking, and health checks.',
+        links: [{ label: '1-Click Template', href: '/docs/railway#one-click' }],
+      },
+      {
+        heading: 'How do I manually deploy Codra with database on Railway?',
+        body:
+          'Create a Railway project, provision PostgreSQL and Redis services, add the Codra service using devarshishimpi/codra:latest or the GitHub repository, set the pre-deploy migration command to node packages/db/scripts/migrate.mjs, and wire reference environment variables.',
+        links: [{ label: 'Manual Deploy', href: '/docs/railway#manual' }],
+      },
+      {
+        heading: 'How do I connect a Railway PostgreSQL database to Cloudflare Workers?',
+        body:
+          'Retrieve the public TCP proxy connection string from the PostgreSQL Connect tab, configure a Cloudflare Hyperdrive pool with npx wrangler hyperdrive create, and update wrangler.jsonc with the Hyperdrive binding ID.',
+        links: [{ label: 'Database Only', href: '/docs/railway#database-only' }],
       },
     ],
   },
