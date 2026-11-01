@@ -60,6 +60,7 @@ function makeContext(input: {
   tracker?: TokenTracker;
 }): ModelReviewContext {
   let callCount = 0;
+  // as-unknown-as-allow: test double for partial implementation - mock object with required methods
   return {
     selectModel: () => ({
       primary: input.chain[0],

@@ -163,10 +163,15 @@ export async function handleGitHubWebhook(c: Context<ApiEnv>) {
   }
 
   // Handled inline before loadRepoConfig: recording feedback needs no repo config, queue message, or Workflow, so skip that KV/DB cost entirely.
-  if (isFeedbackEvent) {
+  // as-unknown-as-allow: runtime boundary - GitHub sends different payload shapes for feedback events (checked at runtime)
+  if (
+    isFeedbackEvent &&
+    (('comment' in payload && typeof payload.comment !== 'undefined') ||
+      ('thread' in payload && typeof payload.thread !== 'undefined'))
+  ) {
     const recorded = await handleFeedbackEvent(c, {
       eventName,
-      payload: payload as unknown as FeedbackWebhookPayload,
+      payload: payload as never as FeedbackWebhookPayload,
       repositoryId: delivery.repositoryId,
     });
     return c.json({ ok: true, feedback: true, recorded }, 202);

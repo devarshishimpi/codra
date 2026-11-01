@@ -3,7 +3,10 @@ import { lookup } from "node:dns/promises";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDatabaseUrlFromEnvFiles } from "./migrate-env.mjs";
+import {
+  readDatabaseUrlFromEnvFiles,
+  shouldPerformDnsLookup,
+} from "./migrate-env.mjs";
 import { splitSqlStatements } from "./migrate-sql-split.mjs";
 
 const rootDir = path.resolve(
@@ -41,17 +44,19 @@ if (!databaseUrl) {
   process.exit(1);
 }
 
-const databaseHost = new URL(databaseUrl).hostname;
-for (let attempt = 1; attempt <= 5; attempt += 1) {
-  try {
-    await lookup(databaseHost);
-    break;
-  } catch (error) {
-    if (attempt === 5) {
-      throw error;
+if (shouldPerformDnsLookup(databaseUrl)) {
+  const databaseHost = new URL(databaseUrl).hostname;
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
+    try {
+      await lookup(databaseHost);
+      break;
+    } catch (error) {
+      if (attempt === 5) {
+        throw error;
+      }
+      console.log(`Database DNS lookup failed; retrying (${attempt}/5)...`);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-    console.log(`Database DNS lookup failed; retrying (${attempt}/5)...`);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 

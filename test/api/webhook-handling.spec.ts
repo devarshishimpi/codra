@@ -31,7 +31,7 @@ describe("Webhook Handling Suite", () => {
           githubRequests.push(url);
         }
       } catch {
-        if (url.includes("github.com")) githubRequests.push(url);
+        // Ignore unparseable URL strings in test spy.
       }
       return originalFetch(input, init);
     }) as typeof fetch;

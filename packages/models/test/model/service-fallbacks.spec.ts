@@ -168,6 +168,7 @@ describe("ModelRunner: chain fallback, budget breakers and provider availability
     await saveTestProviderApiKey(env);
     const service = createTestModelRunner(env);
     // A learned bucket below the prompt size makes skipReason refuse every model.
+    // as-unknown-as-allow: test double for mocking interface members - configuring mock behavior
     (
       service as unknown as { rateLimits: { skipReason: () => string } }
     ).rateLimits.skipReason = () => "prompt too large for its bucket";

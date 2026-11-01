@@ -160,6 +160,7 @@ export async function verifyFindings(
     ),
     userPrompt: buildVerifyPrompt(params.candidates),
     // Must use verify grammar, not file-review.
+    // as-unknown-as-allow: type incompatibility between exported schema type and interface usage across packages
     responseSchema:
       VERIFY_RESPONSE_SCHEMA as unknown as ModelInput["responseSchema"],
     // Truncated list silently withholds findings.

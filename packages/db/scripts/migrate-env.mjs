@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -54,3 +55,45 @@ export async function readDatabaseUrlFromEnvFiles() {
 
   return null;
 }
+
+/**
+ * Determines whether a database connection URL requires a preflight DNS lookup.
+ * Returns false for Unix domain sockets (standard libpq percent-encoded paths),
+ * omitted hosts, IP addresses, and unparseable connection strings.
+ */
+export function shouldPerformDnsLookup(databaseUrl) {
+  if (!databaseUrl) return false;
+  let url;
+  try {
+    url = new URL(databaseUrl);
+  } catch {
+    return false;
+  }
+  const host = url.hostname;
+  if (!host) return false;
+
+  let decodedHost;
+  try {
+    decodedHost = decodeURIComponent(host);
+  } catch {
+    decodedHost = host;
+  }
+
+  // Unix domain sockets in libpq URLs are encoded as %2F... or start with /
+  if (
+    host.startsWith("%2F") ||
+    host.startsWith("/") ||
+    decodedHost.startsWith("/")
+  ) {
+    return false;
+  }
+
+  // IPv4 or IPv6 literals do not require DNS resolution
+  const cleanHost = host.replace(/^\[|\]$/g, "");
+  if (isIP(cleanHost) !== 0) {
+    return false;
+  }
+
+  return true;
+}
+

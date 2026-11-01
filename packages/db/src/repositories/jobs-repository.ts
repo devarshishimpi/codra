@@ -69,6 +69,7 @@ export function makeJobStore(env: DbEnv): JobStore {
     // The one cast in the extraction. The db row type flows INTO core's JobRow freely (it is an
     // object-literal alias, so TS gives it an implicit index signature); only the return leg needs
     // telling that a row core handed back is the same row it was given.
+    // as-unknown-as-allow: runtime type alias between DB row and domain type - object-literal alias typing issue
     mapJob: (row: CoreJobRow) => mapJob(row as unknown as JobRow),
 
     getJobForProcessing: (jobId) => getJobForProcessing(env, jobId),

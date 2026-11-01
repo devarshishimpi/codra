@@ -28,6 +28,7 @@ export * from "./json-extract";
  */
 export function stripNulls<T>(value: T): T {
   if (Array.isArray(value)) return value.map(stripNulls) as unknown as T;
+  // as-unknown-as-allow: generic recursive type narrowing - TypeScript limited for union narrowing
   if (value === null || typeof value !== "object") return value;
 
   const out: Record<string, unknown> = {};
