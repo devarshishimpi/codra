@@ -42,9 +42,9 @@ import { Link } from 'react-router-dom';
 
 Codra is for teams that want code-review automation they can own. Hosted code review products are convenient, but they usually make the review engine, model choices, job history, and operational behavior opaque.
 
-Codra is designed to be self-hosted: your GitHub App, your Cloudflare Worker, your PostgreSQL database, your dashboard-managed provider keys, your dashboard access list, and your review settings. Provider keys are encrypted before database storage, custom endpoints are supported, and model routing stays under your control. No vendor lock-in. No usage caps. No black box.
+Codra is designed to be completely self-hosted: your GitHub App, your runtime environment (**Cloudflare Workers**, **Node.js 24**, or **Docker**), your PostgreSQL database, your dashboard-managed provider keys, your dashboard access list, and your review settings. Provider keys are encrypted before database storage, custom endpoints are supported, and model routing stays under your control. No vendor lock-in. No usage caps. No black box.
 
-Codra is intentionally focused on pull request review infrastructure: fast webhook intake, queue-based background processing, reproducible job records, per-repository review policy, model fallback and size-based routing, inline review comments, check-run status updates, and dashboard visibility.
+Codra is intentionally focused on pull request review infrastructure: fast webhook intake, queue-based background processing (via Cloudflare Queues or BullMQ + Redis), reproducible job records, per-repository review policy, model fallback and size-based routing, inline review comments, check-run status updates, and dashboard visibility.
 
 <h2 id="features">Features</h2>
 
@@ -74,7 +74,7 @@ Codra is intentionally focused on pull request review infrastructure: fast webho
     <div className="mt-1 text-primary"><Layers size={20} strokeWidth={2} /></div>
     <div>
       <h3 className="text-base font-medium text-foreground mb-1">Queue-Backed Processing</h3>
-      <p className="text-sm text-foreground/80 leading-relaxed">Webhook intake is decoupled from review execution via Cloudflare Queues, keeping response times fast.</p>
+      <p className="text-sm text-foreground/80 leading-relaxed">Webhook intake is decoupled from review execution via Cloudflare Queues or BullMQ + Redis, keeping response times fast.</p>
     </div>
   </div>
   <div className="flex gap-4 items-start">

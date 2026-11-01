@@ -3,55 +3,155 @@ import { ArrowRight } from 'lucide-react';
 
 <h2 id="overview">Node.js Deployment</h2>
 
-Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation), including forking the repository, setting up your GitHub App, and provisioning a PostgreSQL database. 
+Codra can run natively on any Linux server, virtual machine, or bare-metal host using **Node.js 24 LTS**.
+
+In this deployment target, Codra runs as a standalone Node.js service (`@codraoss/node-server`) powered by the high-performance [Hono](https://hono.dev/) framework. Instead of Cloudflare Workers and Queues, the Node.js runtime leverages **Redis** for session management and key-value storage, and **BullMQ** for reliable, asynchronous pull-request analysis queues.
 
 <h2 id="prerequisites">Prerequisites</h2>
 
-To run Codra on a Node.js server, you need:
-- Node.js 24 LTS
-- An existing PostgreSQL database
-- A Redis instance (used by BullMQ for background jobs)
+Before starting, ensure you have completed the [Installation Prerequisites](/docs/installation) to prepare your GitHub App, PostgreSQL database, and Redis instance:
+
+* **Node.js 24 LTS** (`node -v` >= 24.0.0) and **npm 10+**
+* **PostgreSQL 13+** (Self-hosted or managed via Neon, Supabase, AWS RDS, etc.)
+* **Redis 6+** (Self-hosted or managed via Upstash, Redis Cloud, etc.)
+* **GitHub App** credentials and permissions
 
 <h2 id="env-vars">Environment Variables</h2>
 
-Set these variables in your deployment environment. They match the Cloudflare secrets, but add `REDIS_URL`.
+Set these variables in your deployment environment or in a `.env` file at the root of the repository:
 
-| Name | Description |
-| --- | --- |
-| `APP_PRIVATE_KEY` | GitHub App private key in PEM format. Keep newlines properly escaped. |
-| `GITHUB_APP_ID` | Numeric GitHub App ID. |
-| `GITHUB_APP_WEBHOOK_SECRET` | Webhook secret configured on the GitHub App. |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID for dashboard login. |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret. |
-| `LLM_CONFIG_ENCRYPTION_KEY` | Required encryption key for dashboard-managed provider API keys stored in PostgreSQL. |
-| `DATABASE_URL` | PostgreSQL connection string. |
-| `REDIS_URL` | Redis connection string for BullMQ. |
-| `APP_URL` | Public dashboard URL used in links and review formatting. |
+### Required Variables
 
-<h2 id="deploy">Deploy</h2>
+| Variable | Description | Example |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string. | `postgresql://user:pass@localhost:5432/codra?sslmode=require` |
+| `REDIS_URL` | Redis connection string for BullMQ and session storage. | `redis://localhost:6379` or `rediss://...` |
+| `APP_PRIVATE_KEY` | GitHub App private key. Both PKCS#1 and PKCS#8 formats are supported. | `-----BEGIN RSA PRIVATE KEY-----\n...` |
+| `GITHUB_APP_ID` | Numeric GitHub App ID. | `123456` |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret configured on the GitHub App webhook. | `your_webhook_secret` |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID for dashboard authentication. | `Iv1.abc123xyz` |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret. | `secret_oauth_token` |
+| `AUTH_CALLBACK_URL` | Public OAuth callback endpoint. Must match GitHub Developer settings. | `https://codra.example.com/api/auth/callback` |
+| `APP_URL` | Public base URL of your Codra instance. | `https://codra.example.com` |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hex key for encrypting provider keys in PostgreSQL. | `64_character_hex_string` |
 
-You can build, migrate, and start the server with a single command:
+### Optional Variables
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `PORT` | `3000` | Port the internal HTTP server binds to (`0.0.0.0`). |
+| `START_API` | `true` | Set to `false` to disable HTTP server on background worker nodes. |
+| `START_WORKER` | `true` | Set to `false` to disable the BullMQ worker on web API nodes. |
+| `DASHBOARD_ALLOWED_USERS` | `devarshishimpi` | Comma-separated list of GitHub logins allowed into dashboard. |
+| `BOT_USERNAME` | `codra-app` | Bot username referenced in PR review comments. |
+| `REDIS_INSECURE_TLS` | `false` | Set to `true` to disable TLS verification for self-signed Redis. |
+| `ENVIRONMENT` | `production` | Runtime environment name. |
+
+<Note type="info">
+<strong>Key Format Support:</strong> Codra's authentication adapter contains automatic DER/PEM conversion utilities. You can safely provide your GitHub App private key in either <code>PKCS#1</code> format (<code>-----BEGIN RSA PRIVATE KEY-----</code>) or <code>PKCS#8</code> format (<code>-----BEGIN PRIVATE KEY-----</code>).
+</Note>
+
+<h2 id="deploy">Building & Deploying</h2>
+
+Codra is organized as a modular TypeScript monorepo. You can build all packages, run database migrations, and launch the server in a single command:
 
 ```bash
+# 1. Install dependencies
 npm ci
+
+# 2. Build packages, run migrations, and start server
 npm run deploy:node
 ```
 
-This builds the dashboard and the Node.js server, runs database migrations, and starts both the API and the BullMQ worker on port `3000`.
+The `deploy:node` script performs three steps:
+1. `npm run build:node`: Compiles workspace packages (`@codraoss/schema`, `@codraoss/core`, `@codraoss/api`, etc.), builds the Vite React dashboard into `dist/client`, and bundles the Node server via `tsup`.
+2. `npm run migrate`: Connects to `DATABASE_URL` with built-in DNS retry resilience (up to 5 attempts) and executes schema migrations.
+3. `npm run start -w @codraoss/node-server`: Starts the Hono HTTP server and BullMQ background worker on port `3000`.
 
-<h2 id="processes">Process Split</h2>
+### Production Service Management
 
-To scale the API and background workers independently, you can run them as separate processes using environment flags:
+#### Option A: systemd Service
+
+Create `/etc/systemd/system/codra.service`:
+
+```ini
+[Unit]
+Description=Codra Code Review Engine
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=simple
+User=codra
+WorkingDirectory=/var/www/codra
+EnvironmentFile=/var/www/codra/.env
+ExecStart=/usr/bin/npm run start -w @codraoss/node-server
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
 
 ```bash
-START_WORKER=false npm run start -w @codraoss/node-server  # Runs API only
-START_API=false npm run start -w @codraoss/node-server      # Runs Worker only
+sudo systemctl daemon-reload
+sudo systemctl enable --now codra
+sudo systemctl status codra
 ```
+
+#### Option B: PM2 Process Manager
+
+You can manage Codra processes using PM2:
+
+```bash
+npm install -g pm2
+pm2 start "npm run start -w @codraoss/node-server" --name codra
+pm2 save
+pm2 startup
+```
+
+<h2 id="processes">Process Splitting & Scaling</h2>
+
+By default, Codra runs in combined mode with both the HTTP API server and the BullMQ background worker running in the same process.
+
+For high-throughput environments or cluster deployments, you can split and scale the API and worker processes independently:
+
+```bash
+# Process 1: Dedicated Web API (scale horizontally behind reverse proxy/load balancer)
+START_WORKER=false npm run start -w @codraoss/node-server
+
+# Process 2: Dedicated Review Worker (scale across multiple instances or worker nodes)
+START_API=false npm run start -w @codraoss/node-server
+```
+
+### Graceful Shutdown
+
+Codra intercepts `SIGTERM` and `SIGINT` signals:
+1. Stops accepting new incoming HTTP requests.
+2. Awaits completion of in-flight review analysis jobs on the BullMQ worker.
+3. Closes Redis and database connection pools cleanly before exiting.
+
+<h2 id="monitoring">Health Checks & Monitoring</h2>
+
+Codra exposes a lightweight health endpoint at `/health`:
+
+```bash
+curl -I http://localhost:3000/health
+# HTTP/1.1 200 OK
+```
+
+* **Healthcheck**: Returns HTTP `200 OK` when the process is responsive.
+* **BullMQ Logging**: Worker lifecycle events (`completed`, `failed`) are automatically logged through the centralized `@codraoss/api` logger.
+* **Automatic Model Registry**: An unreferenced background timer refreshes available model catalogs every hour with zero impact on database connection pools.
 
 <div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
   <div className="flex-1">
-    <p className="text-base font-medium text-foreground">Next: Configuration</p>
-    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+    <p className="text-base font-medium text-foreground">Next: Docker Deployment</p>
+    <p className="text-sm text-foreground/80 mt-1">Prefer containerized deployment? Explore our hardened Distroless Docker image.</p>
   </div>
-  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+  <Link to="/docs/docker" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Docker Guide <ArrowRight size={16} /></Link>
 </div>

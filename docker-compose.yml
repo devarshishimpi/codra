@@ -1,14 +1,14 @@
 services:
   codra:
     container_name: codra
-    image: ${CODRA_IMAGE:-codra:0.10.0}
+    image: ${CODRA_IMAGE:-devarshishimpi/codra:latest}
     network_mode: bridge
     build:
       context: .
       dockerfile: apps/node/Dockerfile
       tags:
-        - codra:0.10.0
-        - codra:latest
+        - devarshishimpi/codra:0.10.0
+        - devarshishimpi/codra:latest
     ports:
       - "${PORT:-3000}:3000"
     env_file:

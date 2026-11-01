@@ -68,7 +68,20 @@ If GitHub rejects inline comments with a validation error, Codra retries review 
 - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are correct.
 - `AUTH_CALLBACK_URL` exactly matches the OAuth App callback URL.
 - Your GitHub login is included in `DASHBOARD_ALLOWED_USERS`.
-- `APP_KV` is bound correctly for OAuth state and sessions.
+- `APP_KV` is bound correctly for OAuth state and sessions (on Cloudflare Workers) or `REDIS_URL` is accessible (on Node.js and Docker).
+
+### BullMQ jobs not processing (Node.js & Docker)
+
+- `START_WORKER` is not set to `false`.
+- Redis connection is healthy (`redis-cli ping` returns `PONG`).
+- If connecting over TLS (`rediss://`) with self-signed certificates, ensure `REDIS_INSECURE_TLS=true` is set.
+- Check worker logs for `[Worker] Job <id> completed` or `[Worker] Job <id> failed`.
+
+### Container health check failing (Docker)
+
+- Ensure the internal service has completed startup and `/health` returns `200 OK`.
+- Check database connectivity — the server will wait for initial database connection setup.
+- If running under Docker Compose, ensure `dns: [1.1.1.1, 8.8.8.8]` is configured if your host network restricts DNS queries.
 
 ### Repository sync fails
 
