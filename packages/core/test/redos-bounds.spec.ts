@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { extractJson } from "../src/model-output/json";
+import { extractJson, sanitizeInnerQuotes } from "../src/model-output/json";
+import { parseVerifyResponse } from "../src/prompts/verify";
 import { refuteUndecidableClaim } from "../src/claim-checks";
 
 // Validates regex polynomial-redos fixes maintain parsing parity while capping execution time.
@@ -94,5 +95,28 @@ describe("claim-check regexes: bounded, and unchanged for realistic input", () =
     expect(
       claim(`If getThing${" ".repeat(50)}() fails, the error is not caught.`),
     ).toBe("callee-errors");
+  });
+});
+
+describe("sanitizeInnerQuotes: polynomial backtracking eliminated", () => {
+  it("does not degrade on sanitizeInnerQuotes with trailing whitespace runs", () => {
+    expect(
+      timed(() => sanitizeInnerQuotes('"fix": ""' + " ".repeat(40_000) + "x")),
+    ).toBeLessThan(BUDGET_MS);
+  });
+});
+
+describe("parseVerifyResponse: balanced braces scan eliminates backtracking", () => {
+  it("does not degrade on unclosed nested braces or repeated results keys", () => {
+    const malicious = '} ' + '{"results": 1, '.repeat(2_000);
+    expect(
+      timed(() => {
+        try {
+          parseVerifyResponse(malicious);
+        } catch {
+          // expected parse failure
+        }
+      }),
+    ).toBeLessThan(BUDGET_MS);
   });
 });

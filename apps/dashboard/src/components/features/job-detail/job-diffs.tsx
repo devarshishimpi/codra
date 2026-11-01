@@ -101,15 +101,26 @@ export function JobDiffs({ job }: JobDiffsProps) {
     return map;
   }, [files]);
 
+  const totals = useMemo(() => {
+    let adds = 0;
+    let dels = 0;
+    for (const s of statsByPath.values()) {
+      adds += s.adds;
+      dels += s.dels;
+    }
+    return { adds, dels };
+  }, [statsByPath]);
+
   const [viewedFiles, setViewedFiles] = useState<Set<string>>(() => new Set());
   // Open state is an override on top of a default rule, so late-arriving files still get sensible defaults.
   const [openOverrides, setOpenOverrides] = useState<Map<string, boolean>>(
     () => new Map(),
   );
-  const isLargePr = files.length > AUTO_EXPAND_FILE_LIMIT;
+  const isMassivePr = files.length > 20 || totals.adds + totals.dels > 2500;
+  const isLargePr = files.length > AUTO_EXPAND_FILE_LIMIT || isMassivePr;
   const isOpen = (file: FileReviewRecord) =>
     openOverrides.get(file.id) ??
-    (!isLargePr || file.parsedComments.length > 0);
+    (isMassivePr ? false : (!isLargePr || file.parsedComments.length > 0));
 
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(
     () => new Set(),
@@ -120,16 +131,6 @@ export function JobDiffs({ job }: JobDiffsProps) {
   const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const tree = useMemo(() => buildTree(files), [files]);
-
-  const totals = useMemo(() => {
-    let adds = 0;
-    let dels = 0;
-    for (const s of statsByPath.values()) {
-      adds += s.adds;
-      dels += s.dels;
-    }
-    return { adds, dels };
-  }, [statsByPath]);
 
   const setOpen = (id: string, open: boolean) =>
     setOpenOverrides((current) => new Map(current).set(id, open));
@@ -224,6 +225,7 @@ export function JobDiffs({ job }: JobDiffsProps) {
             selectedFileId={
               singleFileMode ? (currentFile?.id ?? null) : selectedFileId
             }
+            statsByPath={statsByPath}
             onToggleDir={toggleDir}
             onSelectFile={jumpToFile}
           />
@@ -315,6 +317,7 @@ export function JobDiffs({ job }: JobDiffsProps) {
             open
             viewed={viewedFiles.has(currentFile.id)}
             diffsLoading={diffsLoading}
+            stats={statsByPath.get(currentFile.filePath)}
             onOpenChange={() => {}}
             onToggleViewed={(viewed) => {
               setViewed(currentFile.id, viewed);
@@ -341,6 +344,7 @@ export function JobDiffs({ job }: JobDiffsProps) {
                 open={isOpen(file)}
                 viewed={viewedFiles.has(file.id)}
                 diffsLoading={diffsLoading}
+                stats={statsByPath.get(file.filePath)}
                 onOpenChange={(open) => setOpen(file.id, open)}
                 onToggleViewed={(viewed) => setViewed(file.id, viewed)}
               />

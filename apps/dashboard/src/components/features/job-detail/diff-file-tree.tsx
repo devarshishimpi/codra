@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Check, FileText, Folder, FolderOpen } from "lucide-react";
 import { type TreeNode } from "@codraoss/ui/file-tree";
 import { diffStats } from "@codraoss/ui/prompt-diff";
@@ -9,15 +10,17 @@ export interface TreeProps {
   collapsedDirs: Set<string>;
   viewedFiles: Set<string>;
   selectedFileId: string | null;
+  statsByPath?: Map<string, { adds: number; dels: number }>;
   onToggleDir: (path: string) => void;
   onSelectFile: (file: FileReviewRecord) => void;
 }
 
-export function FileTree({
+export const FileTree = memo(function FileTree({
   nodes,
   collapsedDirs,
   viewedFiles,
   selectedFileId,
+  statsByPath,
   onToggleDir,
   onSelectFile,
 }: TreeProps) {
@@ -49,6 +52,7 @@ export function FileTree({
                     collapsedDirs={collapsedDirs}
                     viewedFiles={viewedFiles}
                     selectedFileId={selectedFileId}
+                    statsByPath={statsByPath}
                     onToggleDir={onToggleDir}
                     onSelectFile={onSelectFile}
                   />
@@ -58,7 +62,11 @@ export function FileTree({
           );
         }
 
-        const { adds, dels } = diffStats(node.file.diffInput);
+        const stats =
+          statsByPath?.get(node.file.filePath) ??
+          diffStats(node.file.diffInput);
+        const adds = stats.adds;
+        const dels = stats.dels;
         const viewed = viewedFiles.has(node.file.id);
         const selected = selectedFileId === node.file.id;
         return (
@@ -124,4 +132,4 @@ export function FileTree({
       })}
     </ul>
   );
-}
+});

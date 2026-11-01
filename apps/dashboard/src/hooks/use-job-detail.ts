@@ -18,9 +18,14 @@ function readJobCache(id: string): JobDetail | null {
   }
 }
 
+// Serializing multi-MB jobs janks the main thread and throws QuotaExceeded in sessionStorage.
+const MAX_CACHED_CHARS = 1_000_000;
+
 function writeJobCache(id: string, job: JobDetail) {
   try {
-    sessionStorage.setItem(jobCacheKey(id), JSON.stringify(job));
+    const payload = JSON.stringify(job);
+    if (payload.length > MAX_CACHED_CHARS) return;
+    sessionStorage.setItem(jobCacheKey(id), payload);
   } catch {
     // best-effort
   }

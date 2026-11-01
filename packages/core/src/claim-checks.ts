@@ -270,6 +270,16 @@ function absenceSentences(text: string): string[] {
     );
 }
 
+function normalizeDottedCode(code: string): string {
+  if (!code.includes(".")) return code;
+  const parts = code.split(".");
+  for (let i = 0; i < parts.length; i++) {
+    if (i > 0) parts[i] = parts[i].trimStart();
+    if (i < parts.length - 1) parts[i] = parts[i].trimEnd();
+  }
+  return parts.join(".");
+}
+
 export function checkAbsenceClaim(input: {
   title: string;
   body: string;
@@ -305,8 +315,10 @@ export function checkAbsenceClaim(input: {
   }
 
   const occurrences = identifier.includes(".")
-    ? input.index.entries.filter((entry) =>
-        entry.code.replace(/\s*\.\s*/g, ".").includes(identifier),
+    ? input.index.entries.filter(
+        (entry) =>
+          entry.code.includes(".") &&
+          normalizeDottedCode(entry.code).includes(identifier),
       )
     : (input.index.byToken.get(identifier) ?? []);
 

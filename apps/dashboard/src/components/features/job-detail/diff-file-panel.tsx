@@ -1,5 +1,5 @@
 import { Badge } from "@codraoss/ui";
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { StatusBadge } from "./status-badge";
 import {
@@ -20,7 +20,7 @@ import {
   rowKey,
 } from "./diff-file-panel-utils";
 
-function DiffLine({
+const DiffLine = memo(function DiffLine({
   row,
   lang,
 }: {
@@ -66,7 +66,7 @@ function DiffLine({
       </span>
     </div>
   );
-}
+});
 
 export interface FileDiffProps {
   file: FileReviewRecord;
@@ -74,36 +74,52 @@ export interface FileDiffProps {
   viewed: boolean;
   /** The job's diffs are still being fetched (see JobDiffs) - don't yet claim "no diff saved". */
   diffsLoading?: boolean;
+  stats?: { adds: number; dels: number };
   onOpenChange: (open: boolean) => void;
   onToggleViewed: (viewed: boolean) => void;
 }
 
-export function FileDiff({
+export const FileDiff = memo(function FileDiff({
   file,
   open,
   viewed,
   diffsLoading = false,
+  stats,
   onOpenChange,
   onToggleViewed,
 }: FileDiffProps) {
   const lang = useMemo(() => langForPath(file.filePath), [file.filePath]);
-  // Header stats come from a cheap line scan; the full row parse only happens once the panel opens.
+  // Header stats come from precalculated stats or a cheap line scan; the full row parse only happens once the panel opens.
   const { adds, dels } = useMemo(
-    () => diffStats(file.diffInput),
-    [file.diffInput],
+    () => stats ?? diffStats(file.diffInput),
+    [stats, file.diffInput],
   );
   const rows = useMemo(
     () => (open && file.diffInput ? parsePromptDiff(file.diffInput) : NO_ROWS),
     [open, file.diffInput],
   );
 
-  // Files with review comments always render fully, since their anchors must stay visible.
+  // Files with comments can still be truncated if their comments fit within the preview slice.
+  // We calculate the furthest line anchored by a comment so we don't chop off any inline feedback.
+  const maxCommentLine = useMemo(() => {
+    let max = 0;
+    for (const c of file.parsedComments) {
+      if (c.line != null && c.line > max) max = c.line;
+    }
+    return max;
+  }, [file.parsedComments]);
+
+  const previewLimit = useMemo(() => {
+    if (file.parsedComments.length === 0) return PREVIEW_ROWS;
+    return Math.max(PREVIEW_ROWS, maxCommentLine + 20);
+  }, [file.parsedComments.length, maxCommentLine]);
+
   const truncatable =
-    rows.length > LARGE_DIFF_ROWS && file.parsedComments.length === 0;
+    rows.length > LARGE_DIFF_ROWS && rows.length > previewLimit;
   const [showFull, setShowFull] = useState(false);
   const visibleRows = useMemo(
-    () => (truncatable && !showFull ? rows.slice(0, PREVIEW_ROWS) : rows),
-    [rows, truncatable, showFull],
+    () => (truncatable && !showFull ? rows.slice(0, previewLimit) : rows),
+    [rows, truncatable, showFull, previewLimit],
   );
   const hiddenLines = rows.length - visibleRows.length;
 
@@ -153,24 +169,16 @@ export function FileDiff({
   };
 
   return (
-    <details
-      className="ui-panel min-w-0 overflow-hidden scroll-mt-4"
-      open={open}
-      onToggle={(e) => {
-        if (e.currentTarget.open !== open) onOpenChange(e.currentTarget.open);
-      }}
-    >
-      <summary
+    <div className="ui-panel min-w-0 overflow-hidden scroll-mt-4">
+      <div
         className={cn(
-          "flex cursor-pointer list-none items-center gap-3 px-3 py-2.5 sm:px-4 [&::-webkit-details-marker]:hidden",
+          "flex items-center gap-3 px-3 py-2.5 sm:px-4",
           open && "border-b border-ui-line",
         )}
-        onClick={(e) => {
-          e.preventDefault();
-          onOpenChange(!open);
-        }}
       >
-        <div
+        <button
+          type="button"
+          onClick={() => onOpenChange(!open)}
           aria-expanded={open}
           aria-label={`${open ? "Collapse" : "Expand"} diff for ${file.filePath}`}
           className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-ui-subtle transition-colors hover:bg-ui-fill hover:text-ui-default"
@@ -182,14 +190,16 @@ export function FileDiff({
               !open && "-rotate-90",
             )}
           />
-        </div>
+        </button>
 
-        <div
+        <button
+          type="button"
+          onClick={() => onOpenChange(!open)}
           className="ui-font-mono min-w-0 flex-1 truncate text-left text-xs font-medium text-ui-default"
           title={file.filePath}
         >
           {file.filePath}
-        </div>
+        </button>
 
         <span className="ui-font-mono hidden shrink-0 text-[11px] tabular-nums sm:inline">
           <span className="diff-add-fg">+{adds}</span>{" "}
@@ -225,9 +235,10 @@ export function FileDiff({
           </span>
           <span className="hidden sm:inline">Viewed</span>
         </label>
-      </summary>
+      </div>
 
-      <div className="min-w-0">
+      {open && (
+        <div className="min-w-0">
         {rows.length === 0 ? (
           <p className="px-4 py-8 text-center text-xs text-ui-subtle">
             {diffsLoading ? "Loading diff…" : "Diff unavailable for this file."}
@@ -328,7 +339,8 @@ export function FileDiff({
             </div>
           </div>
         )}
-      </div>
-    </details>
+        </div>
+      )}
+    </div>
   );
-}
+});

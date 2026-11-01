@@ -16,7 +16,12 @@ function createDbClient(env: DbEnv): DbClient {
     prepare: false,
     onnotice: () => {},
     ssl: env.HYPERDRIVE.connectionString.includes("sslmode=require")
-      ? { rejectUnauthorized: process.env.NODE_ENV !== "production" }
+      ? {
+          rejectUnauthorized:
+            process.env.DB_INSECURE_TLS === "true"
+              ? false
+              : process.env.NODE_ENV === "production",
+        }
       : false,
   });
 

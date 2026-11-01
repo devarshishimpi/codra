@@ -183,10 +183,10 @@ export async function listProviderModels(input: {
   // Same guard the review adapters apply, so provider sync can't be pointed at a private URL.
   assertPublicBaseUrl(input.baseUrl, input.apiFormat);
 
-  const baseUrl = (input.baseUrl || defaultBaseUrl(input.apiFormat)).replace(
-    /\/+$/,
-    "",
-  );
+  let baseUrl = input.baseUrl || defaultBaseUrl(input.apiFormat);
+  while (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
 
   if (input.apiFormat === "openai") {
     if (!input.apiKey)

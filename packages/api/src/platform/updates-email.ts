@@ -35,19 +35,26 @@ export async function syncUpdatesEmail(
 
   if (await hasUpdatesEmailPreference(kv, githubUserId)) return false;
 
-  const response = await fetch(EMAILS_API_URL, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(EMAILS_API_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  } catch (error) {
+    console.warn("Failed to reach updates email service", {
+      error: error instanceof Error ? error.message : String(error),
+      url: EMAILS_API_URL,
+    });
+    return false;
+  }
 
   if (!response.ok) {
-    // Need to import logger. If it doesn't exist in the current scope, add it.
-    // import { logger } from '../logger'; // Uncomment and adjust path if needed
     console.warn("Failed to sync updates email", {
       status: response.status,
       url: response.url,
-    }); // Using console.warn as a fallback, replace with logger.warn if imported
+    });
     return false;
   }
 

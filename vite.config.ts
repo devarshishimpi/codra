@@ -35,9 +35,38 @@ export default defineConfig(({ mode }) => ({
               return "vendor-lucide";
             }
             if (
-              id.includes("react") ||
-              id.includes("react-dom") ||
-              id.includes("react-router-dom")
+              id.includes("remark") ||
+              id.includes("rehype") ||
+              id.includes("micromark") ||
+              id.includes("markdown") ||
+              id.includes("mdast") ||
+              id.includes("hast") ||
+              id.includes("unist") ||
+              id.includes("vfile") ||
+              id.includes("property-information") ||
+              id.includes("character-entities") ||
+              id.includes("html-void-elements") ||
+              id.includes("space-separated-tokens") ||
+              id.includes("comma-separated-tokens") ||
+              id.includes("ccount") ||
+              id.includes("decode-named-character-reference")
+            ) {
+              return "vendor-markdown";
+            }
+            if (id.includes("sugar-high")) {
+              return "vendor-highlight";
+            }
+            if (
+              id.includes("/react/") ||
+              id.includes("\\react\\") ||
+              id.includes("/react-dom/") ||
+              id.includes("\\react-dom\\") ||
+              id.includes("/react-router/") ||
+              id.includes("\\react-router\\") ||
+              id.includes("/react-router-dom/") ||
+              id.includes("\\react-router-dom\\") ||
+              id.includes("/scheduler/") ||
+              id.includes("\\scheduler\\")
             ) {
               return "vendor-react";
             }
@@ -50,14 +79,6 @@ export default defineConfig(({ mode }) => ({
             }
             if (id.includes("motion")) {
               return "vendor-motion";
-            }
-            if (
-              id.includes("remark") ||
-              id.includes("rehype") ||
-              id.includes("micromark") ||
-              id.includes("markdown")
-            ) {
-              return "vendor-markdown";
             }
             if (id.includes("@base-ui")) {
               return "vendor-base-ui";

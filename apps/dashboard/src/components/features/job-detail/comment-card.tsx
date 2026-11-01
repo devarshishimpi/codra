@@ -1,5 +1,5 @@
 import { CopyButton } from "@codraoss/ui";
-import { useState, type ComponentPropsWithoutRef } from "react";
+import { memo, useState, type ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { FileText, ThumbsDown, ThumbsUp } from "lucide-react";
@@ -25,6 +25,37 @@ const DISPOSITION_LABEL: Record<string, string> = {
     "Could not be verified - no diff context was available",
 };
 
+// No syntax highlighting: findings read better as quiet monospace blocks on the tinted severity card.
+const markdownComponents = {
+  code({
+    className,
+    children,
+    ...props
+  }: ComponentPropsWithoutRef<"code"> & { className?: string }) {
+    const text = String(children ?? "");
+    const isBlock =
+      /language-[\w+-]+/.test(className ?? "") || text.includes("\n");
+    if (!isBlock) {
+      return (
+        <code
+          className="ui-font-mono rounded border border-ui-line bg-ui-fill/60 px-1 py-0.5 text-[0.85em] text-ui-strong"
+          {...props}
+        >
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="ui-font-mono block whitespace-pre text-[12px] leading-relaxed"
+        {...props}
+      >
+        {text.replace(/\n+$/, "")}
+      </code>
+    );
+  },
+} as const;
+
 interface CommentCardProps {
   comment: ParsedReviewComment;
   filePath: string;
@@ -32,7 +63,11 @@ interface CommentCardProps {
   jobId?: string;
 }
 
-export function CommentCard({ comment, filePath, jobId }: CommentCardProps) {
+export const CommentCard = memo(function CommentCard({
+  comment,
+  filePath,
+  jobId,
+}: CommentCardProps) {
   const sev = severityConfig[comment.severity] ?? severityConfig.nit;
   const SevIcon = sev.icon;
 
@@ -40,6 +75,7 @@ export function CommentCard({ comment, filePath, jobId }: CommentCardProps) {
   // button warns about that before it's pressed.
   const [label, setLabel] = useState(comment.humanLabel ?? null);
   const [saving, setSaving] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
 
   const apply = async (next: "marked_right" | "marked_wrong") => {
     if (!jobId || !comment.fingerprint || saving) return;
@@ -63,37 +99,6 @@ export function CommentCard({ comment, filePath, jobId }: CommentCardProps) {
   };
 
   const canLabel = Boolean(jobId && comment.fingerprint);
-
-  // No syntax highlighting: findings read better as quiet monospace blocks on the tinted severity card.
-  const markdownComponents = {
-    code({
-      className,
-      children,
-      ...props
-    }: ComponentPropsWithoutRef<"code"> & { className?: string }) {
-      const text = String(children ?? "");
-      const isBlock =
-        /language-[\w+-]+/.test(className ?? "") || text.includes("\n");
-      if (!isBlock) {
-        return (
-          <code
-            className="ui-font-mono rounded border border-ui-line bg-ui-fill/60 px-1 py-0.5 text-[0.85em] text-ui-strong"
-            {...props}
-          >
-            {children}
-          </code>
-        );
-      }
-      return (
-        <code
-          className="ui-font-mono block whitespace-pre text-[12px] leading-relaxed"
-          {...props}
-        >
-          {text.replace(/\n+$/, "")}
-        </code>
-      );
-    },
-  } as const;
 
   return (
     <article className="ui-font-sans rounded-md border border-ui-line bg-ui-base p-4 sm:p-5">
@@ -209,20 +214,27 @@ export function CommentCard({ comment, filePath, jobId }: CommentCardProps) {
       {/* Collapsed, not removed: migration 003 nulls diff_input and the KV cache is only 6h, so this
           is the last surviving copy of the diff context once judged. */}
       {comment.contextSnippet && (
-        <details className="mb-4 text-xs">
+        <details
+          className="mb-4 text-xs"
+          onToggle={(e) => setShowDiff(e.currentTarget.open)}
+        >
           <summary
             onClick={preventToggleOnTextSelection}
             className="cursor-pointer text-ui-subtle hover:text-foreground"
           >
             Diff context
           </summary>
-          <div className="mt-2 flex justify-end">
-            <CopyButton value={comment.contextSnippet} label="Copy diff" />
-          </div>
-          <ContextSnippet
-            snippet={comment.contextSnippet}
-            filePath={filePath}
-          />
+          {showDiff && (
+            <>
+              <div className="mt-2 flex justify-end">
+                <CopyButton value={comment.contextSnippet} label="Copy diff" />
+              </div>
+              <ContextSnippet
+                snippet={comment.contextSnippet}
+                filePath={filePath}
+              />
+            </>
+          )}
         </details>
       )}
 
@@ -252,4 +264,4 @@ export function CommentCard({ comment, filePath, jobId }: CommentCardProps) {
       )}
     </article>
   );
-}
+});

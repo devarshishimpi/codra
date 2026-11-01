@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CheckCircle2, ClipboardList, TriangleAlert } from "lucide-react";
@@ -10,24 +11,30 @@ interface JobReviewOverviewProps {
   job: JobDetail;
 }
 
-export function JobReviewOverview({ job }: JobReviewOverviewProps) {
+export const JobReviewOverview = memo(function JobReviewOverview({
+  job,
+}: JobReviewOverviewProps) {
   const hasOverview = !!(
     job.summaryMarkdown ||
     job.overallCorrectness ||
     (job.overallConfidenceScore !== undefined &&
       job.overallConfidenceScore !== null)
   );
-  if (!hasOverview) return null;
 
-  const allComments = job.files.flatMap((f) => f.parsedComments);
-  const sevCounts = Object.fromEntries(
-    reviewSeverities.map((s) => [
-      s,
-      allComments.filter((c) => c.severity === s).length,
-    ]),
-  );
+  const sevCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const s of reviewSeverities) counts[s] = 0;
+    for (const f of job.files) {
+      for (const c of f.parsedComments) {
+        if (counts[c.severity] !== undefined) {
+          counts[c.severity]++;
+        }
+      }
+    }
+    return counts;
+  }, [job.files]);
 
-  const renderSummary = () => {
+  const summaryMarkdown = useMemo(() => {
     if (!job.summaryMarkdown) return "";
     const content = job.summaryMarkdown
       .replace(/^(✅ \*\*Approved\*\*|💬 \*\*Comments posted\*\*)\n\n/, "")
@@ -53,7 +60,9 @@ export function JobReviewOverview({ job }: JobReviewOverviewProps) {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
     return `Here are some automated review suggestions for this pull request.\n\n**Reviewed commit:** \`${shortSha}\`\n\n<details>\n<summary>ℹ️ About Codra</summary>\n\n<br/>\n\n[Your team has set up Codra to review pull requests in this repo](${baseUrl}/repos). Reviews are triggered when you:\n\n- **Open** a pull request for review\n- **Mark** a draft as ready\n- **Comment** "@codra-app review"\n\nIf Codra has suggestions, it will comment; otherwise it will react with 👍.\n\nCodra can also answer questions or update the PR. Try commenting "@codra-app address that feedback".\n\n</details>\n\n---\n\n${content}`;
-  };
+  }, [job.summaryMarkdown, job.commitSha]);
+
+  if (!hasOverview) return null;
 
   return (
     <div className="ui-panel ui-font-sans min-w-0 overflow-hidden p-3.5">
@@ -106,7 +115,7 @@ export function JobReviewOverview({ job }: JobReviewOverviewProps) {
             remarkPlugins={[remarkGfm]}
             rehypePlugins={safeRehypePlugins}
           >
-            {renderSummary()}
+            {summaryMarkdown}
           </ReactMarkdown>
         </div>
       </div>
@@ -138,4 +147,4 @@ export function JobReviewOverview({ job }: JobReviewOverviewProps) {
       </div>
     </div>
   );
-}
+});

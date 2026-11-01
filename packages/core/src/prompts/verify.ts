@@ -167,6 +167,36 @@ export function renderDiffSnippet(
     .join("\n");
 }
 
+function scanBalancedBraces(raw: string, startIdx: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = startIdx; i < raw.length; i++) {
+    const char = raw[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === "\\") {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (char === "{") depth++;
+    else if (char === "}") {
+      depth--;
+      if (depth === 0) return raw.slice(startIdx, i + 1);
+    }
+  }
+  return null;
+}
+
 export function parseVerifyResponse(raw: string): VerifyResult[] {
   const trimmed = raw.trim();
   const start = trimmed.indexOf("{");
@@ -183,9 +213,17 @@ export function parseVerifyResponse(raw: string): VerifyResult[] {
     try {
       json = JSON.parse(jsonrepair(candidate));
     } catch {
-      const match = trimmed.match(/\{[\s\S]*"results"[\s\S]*\}/);
-      if (match) {
-        json = JSON.parse(jsonrepair(match[0]));
+      const resultsIdx = trimmed.indexOf('"results"');
+      const objectStart =
+        resultsIdx !== -1 ? trimmed.lastIndexOf("{", resultsIdx) : -1;
+      const balanced =
+        objectStart !== -1 ? scanBalancedBraces(trimmed, objectStart) : null;
+      if (balanced) {
+        try {
+          json = JSON.parse(jsonrepair(balanced));
+        } catch {
+          throw new Error("Could not parse verifier response as JSON");
+        }
       } else {
         throw new Error("Could not parse verifier response as JSON");
       }

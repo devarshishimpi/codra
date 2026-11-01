@@ -49,7 +49,7 @@ export function reposReducer(
 ): ReposState {
   switch (action.type) {
     case "load-started":
-      return { ...state, loading: true };
+      return { ...state, loading: true, error: null };
     case "load-succeeded":
       return {
         ...state,
@@ -57,6 +57,7 @@ export function reposReducer(
         globalConfig: action.globalConfig,
         modelOptions: action.modelOptions,
         providerOptions: action.providerOptions,
+        error: null,
         loading: false,
       };
     case "load-failed":

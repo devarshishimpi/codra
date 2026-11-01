@@ -45,8 +45,20 @@ const CALIBRATION = `Severity calibration, applied literally:
 - 4 (nit): cosmetic.
 Most true findings are 2 or 3. If you are about to emit more than one 0 or 1 on a single diff, re-read them: at most one is usually right.`;
 
-const PROHIBITIONS =
-  /- You cannot see which files import this one[\s\S]*?there is no unhandled rejection to report\./;
+const START_PROHIBITION = "- You cannot see which files import this one";
+const END_PROHIBITION = "there is no unhandled rejection to report.";
+
+function replaceProhibitions(systemPrompt: string, replacement: string): string {
+  const start = systemPrompt.indexOf(START_PROHIBITION);
+  if (start === -1) return systemPrompt;
+  const end = systemPrompt.indexOf(END_PROHIBITION, start);
+  if (end === -1) return systemPrompt;
+  return (
+    systemPrompt.slice(0, start) +
+    replacement +
+    systemPrompt.slice(end + END_PROHIBITION.length)
+  );
+}
 const GROUNDING =
   "- Ground every finding in a specific modified line. Focus on runtime crashes, unhandled errors, data corruption, resource leaks, and broken invariants.";
 
@@ -87,12 +99,12 @@ export function applyModelPromptStyle(style: Style | undefined, prompts: Prompts
       break;
     case "balanced":
       userPrompt = replaceRestraint(stripLanguageGuidelines(userPrompt), BALANCED_DIRECTIVE);
-      systemPrompt = systemPrompt.replace(PROHIBITIONS, GROUNDING);
+      systemPrompt = replaceProhibitions(systemPrompt, GROUNDING);
       systemPrompt = `${systemPrompt}\n\n### SEVERITY CALIBRATION:\n${CALIBRATION}`;
       break;
     case "trace_then_report":
       userPrompt = replaceRestraint(stripLanguageGuidelines(userPrompt), TRACE_DIRECTIVE);
-      systemPrompt = systemPrompt.replace(PROHIBITIONS, GROUNDING);
+      systemPrompt = replaceProhibitions(systemPrompt, GROUNDING);
       systemPrompt = `${systemPrompt}\n\n### SEVERITY CALIBRATION:\n${CALIBRATION}`;
       break;
     default:

@@ -1,4 +1,4 @@
-﻿// DO NOT SPLIT THE REVIEW-SETTINGS TESTS OUT OF THIS FILE.
+// DO NOT SPLIT THE REVIEW-SETTINGS TESTS OUT OF THIS FILE.
 //
 // The settings suites here read-modify-write the same singleton `global_settings` row set. In
 // separate files they race, because `fileParallelism` is on and no unique row name can isolate a
@@ -442,6 +442,15 @@ describe("Dashboard API: auth, session and account", () => {
         body: JSON.stringify({ email: "user@example.com" }),
       }),
     );
+  });
+
+  it("returns false and gracefully handles network failure when syncing updates email", async () => {
+    const env = createTestEnv();
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new TypeError("fetch failed"));
+
+    await expect(
+      syncUpdatesEmail(env.APP_KV, 999, "network-error@example.com"),
+    ).resolves.toBe(false);
   });
 
   it("subscribes the user-entered updates email and persists it", async () => {

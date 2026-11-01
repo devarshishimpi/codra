@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { FileText } from "lucide-react";
-import type { JobDetail } from "@codraoss/schema";
+import type { JobDetail, ParsedReviewComment } from "@codraoss/schema";
 import { reviewSeverities } from "@codraoss/schema/review-limits";
 import { Tabs, TabsList, TabsTrigger } from "@codraoss/ui/motion";
 import { FileFinding } from "./file-finding";
@@ -40,25 +40,52 @@ export function JobFindingsList({ job }: JobFindingsListProps) {
   const [viewBy, setViewBy] = useState<"files" | "severity">("files");
 
   // Only surface files with something to report - findings or a failed review.
-  const filesWithIssues = job.files.filter(
-    (f) => f.parsedComments.length > 0 || f.fileStatus === "failed",
-  );
+  const { filesWithIssues, failedFiles, findingCount, postedCount, filteredCount } =
+    useMemo(() => {
+      const issues = [];
+      const failed = [];
+      let totalFindings = 0;
+      let postedFindings = 0;
 
-  const failedFiles = job.files.filter((f) => f.fileStatus === "failed");
+      for (const file of job.files) {
+        const commentCount = file.parsedComments.length;
+        if (commentCount > 0 || file.fileStatus === "failed") {
+          issues.push(file);
+        }
+        if (file.fileStatus === "failed") {
+          failed.push(file);
+        }
+        totalFindings += commentCount;
+        for (const c of file.parsedComments) {
+          if (c.posted) postedFindings++;
+        }
+      }
 
-  // Counts FINDINGS, not files, so it agrees with the priority triage totals above it.
-  const findingCount = job.files.reduce(
-    (total, file) => total + file.parsedComments.length,
-    0,
-  );
+      return {
+        filesWithIssues: issues,
+        failedFiles: failed,
+        findingCount: totalFindings,
+        postedCount: postedFindings,
+        filteredCount: totalFindings - postedFindings,
+      };
+    }, [job.files]);
 
-  // State the posted count explicitly whenever it differs, since most findings never reach the PR
-  // (severity/confidence gates, dedupe, verification).
-  const postedCount = job.files.reduce(
-    (total, file) => total + file.parsedComments.filter((c) => c.posted).length,
-    0,
-  );
-  const filteredCount = findingCount - postedCount;
+  // Single-pass grouping by severity for the severity view
+  const commentsBySeverity = useMemo(() => {
+    const map = new Map<string, Array<ParsedReviewComment & { filePath: string }>>();
+    for (const s of reviewSeverities) {
+      map.set(s, []);
+    }
+    for (const file of job.files) {
+      for (const comment of file.parsedComments) {
+        const list = map.get(comment.severity);
+        if (list) {
+          list.push({ ...comment, filePath: file.filePath });
+        }
+      }
+    }
+    return map;
+  }, [job.files]);
 
   return (
     <div className="ui-font-sans">
@@ -146,13 +173,7 @@ export function JobFindingsList({ job }: JobFindingsListProps) {
           )}
 
           {reviewSeverities.map((groupName) => {
-            const comments = job.files.flatMap((f) =>
-              f.parsedComments.flatMap((c) =>
-                c.severity === groupName
-                  ? [{ ...c, filePath: f.filePath }]
-                  : [],
-              ),
-            );
+            const comments = commentsBySeverity.get(groupName) ?? [];
             if (comments.length === 0) return null;
 
             const sev = severityConfig[groupName];

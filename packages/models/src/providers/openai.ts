@@ -30,22 +30,36 @@ export interface OpenAIResponse {
   };
 }
 
+function isEndpointDomain(baseUrl: string, domains: string[]): boolean {
+  try {
+    const host = new URL(baseUrl).hostname.toLowerCase();
+    return domains.some(
+      (domain) => host === domain.toLowerCase() || host.endsWith(`.${domain.toLowerCase()}`),
+    );
+  } catch {
+    return false;
+  }
+}
+
 function resolveOpenAiEndpointTemperature(baseUrl: string, model: string): number {
-  const lowerUrl = baseUrl.toLowerCase();
   const lowerModel = model.toLowerCase();
 
   // Mistral AI native scale: 0.0 to 1.5. Midpoint is 0.75.
-  if (lowerUrl.includes("mistral.ai") || lowerModel.includes("codestral") || lowerModel.includes("ministral")) {
+  if (
+    isEndpointDomain(baseUrl, ["mistral.ai"]) ||
+    lowerModel.includes("codestral") ||
+    lowerModel.includes("ministral")
+  ) {
     return 0.75;
   }
 
   // NVIDIA NIM / Build native scale: 0.0 to 1.0. Midpoint is 0.5.
-  if (lowerUrl.includes("nvidia.com") || lowerUrl.includes("integrate.api.nvidia")) {
+  if (isEndpointDomain(baseUrl, ["nvidia.com"])) {
     return 0.5;
   }
 
   // Z.ai / GLM native scale: 0.0 to 1.0. Midpoint is 0.5.
-  if (lowerUrl.includes("z.ai") || lowerUrl.includes("bigmodel.cn")) {
+  if (isEndpointDomain(baseUrl, ["z.ai", "bigmodel.cn"])) {
     return 0.5;
   }
 
@@ -112,10 +126,12 @@ export async function reviewWithOpenAI(
   const temperature =
     sampling?.temperature ?? resolveOpenAiEndpointTemperature(baseUrl, model);
 
-  const lowerUrl = baseUrl.toLowerCase();
   const lowerModel = model.toLowerCase();
+  const isNvidia = isEndpointDomain(baseUrl, ["nvidia.com"]);
+  const isZai = isEndpointDomain(baseUrl, ["z.ai", "bigmodel.cn"]);
+
   const effectiveCeiling =
-    lowerUrl.includes("nvidia.com") || lowerModel.includes("nemotron")
+    isNvidia || lowerModel.includes("nemotron")
       ? Math.max(outputCeiling, 2048)
       : outputCeiling;
 
@@ -131,7 +147,7 @@ export async function reviewWithOpenAI(
     response_format: { type: "json_object" },
   };
 
-  if (lowerUrl.includes("z.ai") || lowerUrl.includes("bigmodel.cn")) {
+  if (isZai) {
     bodyPayload.thinking = { type: "disabled" };
   }
   // A profile with thinking off: Step-5 takes the same switch as GLM, and NVIDIA serves Nemotron 3.5's

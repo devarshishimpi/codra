@@ -25,7 +25,14 @@ describe("Webhook Handling Suite", () => {
           : input instanceof URL
             ? input.href
             : input.url;
-      if (url.includes("github.com")) githubRequests.push(url);
+      try {
+        const host = new URL(url, "https://codra.test").hostname.toLowerCase();
+        if (host === "github.com" || host.endsWith(".github.com")) {
+          githubRequests.push(url);
+        }
+      } catch {
+        if (url.includes("github.com")) githubRequests.push(url);
+      }
       return originalFetch(input, init);
     }) as typeof fetch;
   });

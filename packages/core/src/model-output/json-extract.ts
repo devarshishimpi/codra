@@ -210,7 +210,7 @@ export function dropStrayKeyFragments(str: string): string {
 
 export function sanitizeInnerQuotes(str: string): string {
   return str.replace(
-    /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote|code_suggestion|fix|replacement|patch|example)"\s*:\s*")(.*)("(?:\s*,?\s*(?:}|\])?\s*\r?))$/gm,
+    /^(\s*"(?:evidence|body|title|summary|description|message|comment|detail|quote|code_suggestion|fix|replacement|patch|example)"\s*:\s*")(.*)("(?:\s*(?:[,}\]]\s*)*\r?))$/gm,
     (m, p1, p2, p3) => p1 + escapeInnerQuotes(p2) + p3,
   );
 }

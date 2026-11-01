@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   SessionStore,
   IdentityProvider,
   KeyValueStore,
@@ -12,7 +12,7 @@ export interface NodeAppBindings {
   IDENTITY_PROVIDER?: IdentityProvider;
   APP_KV: KeyValueStore;
   REVIEW_QUEUE: QueueProducer<ReviewJobMessage>;
-  REVIEW_ORCHESTRATOR: JobOrchestrator;
+  REVIEW_ORCHESTRATOR?: JobOrchestrator;
 
   DATABASE_CONFIG: { connectionString: string };
 
@@ -44,7 +44,7 @@ export function createNodeEnv(stubs: {
 
   return {
     ...stubs,
-    REVIEW_ORCHESTRATOR: stubs.REVIEW_ORCHESTRATOR!,
+    REVIEW_ORCHESTRATOR: stubs.REVIEW_ORCHESTRATOR,
     DATABASE_CONFIG: { connectionString: requireEnv("DATABASE_URL") },
     APP_PRIVATE_KEY: requireEnv("APP_PRIVATE_KEY"),
     GITHUB_APP_ID: requireEnv("GITHUB_APP_ID"),
