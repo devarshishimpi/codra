@@ -1,9 +1,9 @@
-import { useMemo } from 'react';
-import { Activity, ArrowUpRight, Cpu, MessageSquare } from 'lucide-react';
-import { StatsGrid, type StatDelta } from './stats-grid';
-import { fmtStat } from '@codraoss/ui/utils';
-import { useIsDarkMode } from '@codraoss/ui/hooks';
-import type { StatsPayload } from '@codraoss/schema';
+import { useMemo } from "react";
+import { Activity, ArrowUpRight, Cpu, MessageSquare } from "lucide-react";
+import { StatsGrid, type StatDelta } from "./stats-grid";
+import { fmtStat } from "@codraoss/ui/utils";
+import { useIsDarkMode } from "@codraoss/ui/hooks";
+import type { StatsPayload } from "@codraoss/schema";
 
 interface OverviewStatsProps {
   stats: StatsPayload | null;
@@ -11,10 +11,10 @@ interface OverviewStatsProps {
 
 // Bar color is card identity, not status (blue / purple / orange / rose rhythm).
 const ACCENTS = {
-  reviews: { light: '#2563eb', dark: '#3b82f6' },
-  input: { light: '#9333ea', dark: '#a855f7' },
-  output: { light: '#ea580c', dark: '#f97316' },
-  comments: { light: '#dc2626', dark: '#f87171' },
+  reviews: { light: "#2563eb", dark: "#3b82f6" },
+  input: { light: "#9333ea", dark: "#a855f7" },
+  output: { light: "#ea580c", dark: "#f97316" },
+  comments: { light: "#dc2626", dark: "#f87171" },
 } as const;
 
 /**
@@ -28,11 +28,11 @@ function computeDelta(series: number[]): StatDelta | null {
   const recent = series.slice(mid).reduce((sum, v) => sum + v, 0);
 
   if (prev === 0 && recent === 0) return null;
-  if (prev === 0) return { pct: 100, direction: 'up' };
+  if (prev === 0) return { pct: 100, direction: "up" };
 
   const pct = Math.round(((recent - prev) / prev) * 100);
-  if (pct === 0) return { pct: 0, direction: 'flat' };
-  return { pct, direction: pct > 0 ? 'up' : 'down' };
+  if (pct === 0) return { pct: 0, direction: "flat" };
+  return { pct, direction: pct > 0 ? "up" : "down" };
 }
 
 /**
@@ -41,7 +41,8 @@ function computeDelta(series: number[]): StatDelta | null {
  */
 export function OverviewStats({ stats }: OverviewStatsProps) {
   const isDark = useIsDarkMode();
-  const accent = (key: keyof typeof ACCENTS) => (isDark ? ACCENTS[key].dark : ACCENTS[key].light);
+  const accent = (key: keyof typeof ACCENTS) =>
+    isDark ? ACCENTS[key].dark : ACCENTS[key].light;
 
   const series = useMemo(() => {
     const trend = stats?.trend ?? [];
@@ -61,41 +62,41 @@ export function OverviewStats({ stats }: OverviewStatsProps) {
   const items = [
     {
       icon: Activity,
-      label: 'Total reviews',
-      noun: 'Reviews',
+      label: "Total reviews",
+      noun: "Reviews",
       value: jobs?.value ?? null,
       unit: jobs?.unit,
-      color: accent('reviews'),
+      color: accent("reviews"),
       trend: series.jobs,
       delta: computeDelta(series.jobs),
     },
     {
       icon: ArrowUpRight,
-      label: 'Input tokens',
-      noun: 'Input',
+      label: "Input tokens",
+      noun: "Input",
       value: inputTokens?.value ?? null,
       unit: inputTokens?.unit,
-      color: accent('input'),
+      color: accent("input"),
       trend: series.inputTokens,
       delta: computeDelta(series.inputTokens),
     },
     {
       icon: Cpu,
-      label: 'Output tokens',
-      noun: 'Output',
+      label: "Output tokens",
+      noun: "Output",
       value: outputTokens?.value ?? null,
       unit: outputTokens?.unit,
-      color: accent('output'),
+      color: accent("output"),
       trend: series.outputTokens,
       delta: computeDelta(series.outputTokens),
     },
     {
       icon: MessageSquare,
-      label: 'Comments posted',
-      noun: 'Comments',
+      label: "Comments posted",
+      noun: "Comments",
       value: comments?.value ?? null,
       unit: comments?.unit,
-      color: accent('comments'),
+      color: accent("comments"),
       trend: series.comments,
       delta: computeDelta(series.comments),
     },

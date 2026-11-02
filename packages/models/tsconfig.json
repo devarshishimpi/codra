@@ -23,6 +23,7 @@
   "exclude": [
     "test/model/chain-resume.spec.ts",
     "test/model/config-cache.spec.ts",
+    "test/model/service-budget-breakers.spec.ts",
     "test/model/service-chunking.spec.ts",
     "test/model/service-fallbacks.spec.ts",
     "test/model/service-grammar-rejection.spec.ts",

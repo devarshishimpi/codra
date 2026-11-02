@@ -1,17 +1,17 @@
-import { Button, EmptyState, LoadError } from '@codraoss/ui';
-import { useState } from 'react';
-import { api } from '@client/lib/api';
-import type { StatsPayload, JobSummary } from '@codraoss/schema';
-import { ArrowRight, GitPullRequest, Activity } from 'lucide-react';
-import { JobsTable } from '@client/components/shared/jobs-table';
-import { PageHeaderActions } from '@client/components/shared/page-header-actions';
-import { Link } from 'react-router-dom';
+import { Button, EmptyState, LoadError } from "@codraoss/ui";
+import { useState } from "react";
+import { api } from "@client/lib/api";
+import type { StatsPayload, JobSummary } from "@codraoss/schema";
+import { ArrowRight, GitPullRequest, Activity } from "lucide-react";
+import { JobsTable } from "@client/components/shared/jobs-table";
+import { PageHeaderActions } from "@client/components/shared/page-header-actions";
+import { Link } from "react-router-dom";
 
-import { PageHeader } from '@client/components/layout/page-header';
-import { OverviewStats } from '@client/components/features/stats/overview-stats';
-import { useFitRows } from '@client/hooks/use-fit-rows';
-import { usePolling } from '@client/hooks/use-polling';
-import { useStatsRange } from '@client/hooks/use-stats-range';
+import { PageHeader } from "@client/components/layout/page-header";
+import { OverviewStats } from "@client/components/features/stats/overview-stats";
+import { useFitRows } from "@client/hooks/use-fit-rows";
+import { usePolling } from "@client/hooks/use-polling";
+import { useStatsRange } from "@client/hooks/use-stats-range";
 
 export function DashboardPage() {
   const [stats, setStats] = useState<StatsPayload | null>(null);
@@ -32,31 +32,45 @@ export function DashboardPage() {
     setDays(next);
   };
 
-  const load = async (manual = false) => {
-    if (rows === null) return;
-    if (manual) setRefreshing(true);
+  const loadStats = async () => {
     try {
-      const [statsRes, jobsRes] = await Promise.all([
-        api.getStats(days),
-        api.getJobs({ limit: rows }),
-      ]);
+      const statsRes = await api.getStats(days);
       setStats(statsRes.stats);
-      setRecentJobs(jobsRes.jobs);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to refresh dashboard.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    } catch (e: any) {
+      setError(e.message || "Failed to load stats");
     }
   };
 
-  usePolling(load, 15_000, [days, rows]);
+  const loadJobs = async () => {
+    if (rows === null) return;
+    try {
+      const jobsRes = await api.getJobs({ limit: rows });
+      setRecentJobs(jobsRes.jobs);
+    } catch (e: any) {
+      setError(e.message || "Failed to load jobs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const load = async (manual = false) => {
+    if (manual) setRefreshing(true);
+    try {
+      await Promise.all([loadStats(), loadJobs()]);
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to refresh dashboard.");
+    } finally {
+      setLoading(false);
+      if (manual) setRefreshing(false);
+    }
+  };
+
+  usePolling(loadStats, 15_000, [days]);
+  usePolling(loadJobs, 15_000, [rows]);
 
   return (
     <section className="page-enter flex flex-col gap-6">
-
       <PageHeader
         title="Dashboard"
         description="Totals and recent review jobs for the selected time range."
@@ -84,8 +98,14 @@ export function DashboardPage() {
       <div className="ui-panel min-w-0 overflow-hidden">
         <div className="flex items-center justify-between gap-2 border-b border-ui-line px-4 py-3">
           <div className="flex min-w-0 items-center gap-2">
-            <Activity size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
-            <h2 className="truncate text-[13px] font-medium text-ui-default">Recent reviews</h2>
+            <Activity
+              size={15}
+              strokeWidth={2}
+              className="shrink-0 text-ui-default"
+            />
+            <h2 className="truncate text-[13px] font-medium text-ui-default">
+              Recent reviews
+            </h2>
           </div>
           <Link to="/jobs">
             <Button
@@ -104,21 +124,25 @@ export function DashboardPage() {
               then shrank to the fitted count. `useFitRows` measures in a layout effect, so `rows`
               is set before the first paint - this costs no visible delay. */}
           {rows !== null && (loading || recentJobs.length > 0) && (
-            <JobsTable jobs={recentJobs} loading={loading} skeletonRows={rows} />
+            <JobsTable
+              jobs={recentJobs}
+              loading={loading}
+              skeletonRows={rows}
+            />
           )}
 
           {!loading && recentJobs.length === 0 && (
             <EmptyState
               icon={<GitPullRequest />}
               title="No jobs yet"
-              description="Your pull request reviews will appear here"
+              description="Your pull request analysis logs will appear here"
               hints={[
-                'Once you open a PR in any of the connected repos, analysis triggers automatically',
-                'To trigger manually, comment @codra on any PR',
+                "Once you open a PR in any of the connected repos, analysis triggers automatically",
+                "To trigger manually, comment @codra on any PR",
               ]}
               linkAction={{
-                label: 'See how to interact with Codra',
-                href: 'https://github.com/devarshishimpi/codra#readme',
+                label: "See how to interact with Codra",
+                href: "https://github.com/devarshishimpi/codra#readme",
               }}
               className="rounded-none border-0"
             />
@@ -128,4 +152,3 @@ export function DashboardPage() {
     </section>
   );
 }
-

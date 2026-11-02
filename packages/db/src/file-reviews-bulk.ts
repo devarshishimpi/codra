@@ -1,11 +1,11 @@
-import type { DbEnv } from './env';
-import type { BulkFileReviewInput } from '@codraoss/core/ports';
-import { queryRows, queryTransaction } from './client';
+import type { DbEnv } from "./env";
+import type { BulkFileReviewInput } from "@codraoss/core/ports";
+import { queryRows, queryTransaction } from "./client";
 import {
   REVIEW_COMMENT_INSERT_CASTS,
   REVIEW_COMMENT_INSERT_COLUMNS,
   reviewCommentInsertValues,
-} from './review-comment-sql';
+} from "./review-comment-sql";
 
 // `filePaths` must already be filtered to inheritable files with no row yet in the target job.
 export async function bulkInheritFileReviews(
@@ -57,7 +57,11 @@ export async function bulkInheritFileReviews(
           JOIN file_reviews pf ON pf.job_id = $3::uuid AND pf.file_path = nw.file_path
           JOIN review_comments rc ON rc.file_review_id = pf.id
         `,
-        [inserted.map((r) => r.id), inserted.map((r) => r.file_path), input.parentJobId],
+        [
+          inserted.map((r) => r.id),
+          inserted.map((r) => r.file_path),
+          input.parentJobId,
+        ],
       );
     }
 
@@ -65,7 +69,7 @@ export async function bulkInheritFileReviews(
   });
 }
 
-export type { BulkFileReviewInput } from '@codraoss/core/ports';
+export type { BulkFileReviewInput } from "@codraoss/core/ports";
 
 // One transaction: per-file upserts would spend the saved model calls back on DB subrequests. `diff_input` is not written (migration 003 nulls it).
 export async function bulkUpsertFileReviews(
@@ -122,30 +126,71 @@ export async function bulkUpsertFileReviews(
         RETURNING id, file_path
       `,
       (() => {
-        const res: any[] = [jobId, [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []];
+        const res: any[] = [
+          jobId,
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+        ];
         for (const i of inputs) {
-          res[1].push(i.filePath); res[2].push(i.fileStatus); res[3].push(i.modelUsed); res[4].push(i.diffLineCount);
-          res[5].push(i.rawAiOutput); res[6].push(i.inputTokens); res[7].push(i.outputTokens); res[8].push(i.durationMs);
-          res[9].push(i.verdict); res[10].push(i.fileSummary); res[11].push(i.overallCorrectness ?? null); res[12].push(i.confidenceScore ?? null);
-          res[13].push(i.errorMessage); res[14].push(i.modelProvider ?? null); res[15].push(i.withheldCounts ? JSON.stringify(i.withheldCounts) : null); res[16].push(i.degraded ?? null); res[17].push(i.batchSize);
+          res[1].push(i.filePath);
+          res[2].push(i.fileStatus);
+          res[3].push(i.modelUsed);
+          res[4].push(i.diffLineCount);
+          res[5].push(i.rawAiOutput);
+          res[6].push(i.inputTokens);
+          res[7].push(i.outputTokens);
+          res[8].push(i.durationMs);
+          res[9].push(i.verdict);
+          res[10].push(i.fileSummary);
+          res[11].push(i.overallCorrectness ?? null);
+          res[12].push(i.confidenceScore ?? null);
+          res[13].push(i.errorMessage);
+          res[14].push(i.modelProvider ?? null);
+          res[15].push(
+            i.withheldCounts ? JSON.stringify(i.withheldCounts) : null,
+          );
+          res[16].push(i.degraded ?? null);
+          res[17].push(i.batchSize);
         }
         return res;
       })(),
     );
 
-    await tx.query('DELETE FROM review_comments WHERE file_review_id = ANY($1::uuid[])', [inserted.map((r) => r.id)]);
+    await tx.query(
+      "DELETE FROM review_comments WHERE file_review_id = ANY($1::uuid[])",
+      [inserted.map((r) => r.id)],
+    );
 
     // Keyed by file_path, not position: RETURNING order isn't guaranteed to match input order.
     const idByPath = new Map(inserted.map((r) => [r.file_path, r.id]));
-    const withComments = inputs.filter((i) => i.parsedComments.length > 0 && idByPath.has(i.filePath));
+    const withComments = inputs.filter(
+      (i) => i.parsedComments.length > 0 && idByPath.has(i.filePath),
+    );
     if (withComments.length === 0) return;
 
     const flattened = withComments.flatMap((i) => i.parsedComments);
-    const reviewIds = withComments.flatMap((i) => i.parsedComments.map(() => idByPath.get(i.filePath)!));
+    const reviewIds = withComments.flatMap((i) =>
+      i.parsedComments.map(() => idByPath.get(i.filePath)!),
+    );
 
     await tx.query(
       `
-        INSERT INTO review_comments (file_review_id, ${REVIEW_COMMENT_INSERT_COLUMNS.join(', ')})
+        INSERT INTO review_comments (file_review_id, ${REVIEW_COMMENT_INSERT_COLUMNS.join(", ")})
         SELECT * FROM UNNEST($1::uuid[], ${REVIEW_COMMENT_INSERT_CASTS})
       `,
       [reviewIds, ...reviewCommentInsertValues(flattened)],
@@ -157,7 +202,12 @@ export async function bulkUpsertFileReviews(
 export async function bulkRecordRetryableFileReviewFailures(
   env: DbEnv,
   jobId: string,
-  inputs: Array<{ filePath: string; modelUsed: string; diffLineCount: number; errorMessage: string }>,
+  inputs: Array<{
+    filePath: string;
+    modelUsed: string;
+    diffLineCount: number;
+    errorMessage: string;
+  }>,
   // False when the model chain advanced: the retry resumes at the next model, so this deferral is
   // progress rather than a repeated outage and must not spend one of the three allowed attempts.
   // Bin-wide because a bin shares one chain walk. See model-chain-progress.ts.
@@ -166,7 +216,11 @@ export async function bulkRecordRetryableFileReviewFailures(
   if (inputs.length === 0) return [];
 
   return await queryTransaction(env, async (tx) => {
-    const rows = await tx.query<{ id: string; file_path: string; transient_error_count: number }>(
+    const rows = await tx.query<{
+      id: string;
+      file_path: string;
+      transient_error_count: number;
+    }>(
       `
         INSERT INTO file_reviews (
           job_id, file_path, file_status, model_used, diff_line_count, diff_input, error_msg,
@@ -205,9 +259,15 @@ export async function bulkRecordRetryableFileReviewFailures(
     );
 
     // Stale comments would let finalize post findings from a review since marked failed.
-    await tx.query('DELETE FROM review_comments WHERE file_review_id = ANY($1::uuid[])', [rows.map((r) => r.id)]);
+    await tx.query(
+      "DELETE FROM review_comments WHERE file_review_id = ANY($1::uuid[])",
+      [rows.map((r) => r.id)],
+    );
 
-    return rows.map((r) => ({ filePath: r.file_path, transientErrorCount: Number(r.transient_error_count) }));
+    return rows.map((r) => ({
+      filePath: r.file_path,
+      transientErrorCount: Number(r.transient_error_count),
+    }));
   });
 }
 
@@ -227,6 +287,12 @@ export async function bulkMarkFilesFailed(
       FROM UNNEST($4::text[], $5::int[]) AS u(file_path, diff_line_count)
       ON CONFLICT (job_id, file_path) DO NOTHING
     `,
-    [jobId, opts.modelUsed, opts.errorMessage, files.map((f) => f.filePath), files.map((f) => f.diffLineCount)],
+    [
+      jobId,
+      opts.modelUsed,
+      opts.errorMessage,
+      files.map((f) => f.filePath),
+      files.map((f) => f.diffLineCount),
+    ],
   );
 }

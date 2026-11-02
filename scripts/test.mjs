@@ -1,10 +1,19 @@
-import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const envFiles = ['.env.test', '.env.local', '.env', '.dev.vars', '.env.test.example'];
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const envFiles = [
+  ".env.test",
+  ".env.local",
+  ".env",
+  ".dev.vars",
+  ".env.test.example",
+];
 
 function parseEnvValue(value) {
   let trimmed = value.trim();
@@ -15,22 +24,22 @@ function parseEnvValue(value) {
     trimmed = trimmed.slice(1, -1);
   }
 
-  return trimmed.replace(/\\n/g, '\n');
+  return trimmed.replace(/\\n/g, "\n");
 }
 
 function usableEnvValue(value) {
-  return value && value !== 'undefined' && value !== 'null' ? value : null;
+  return value && value !== "undefined" && value !== "null" ? value : null;
 }
 
 function loadEnvFiles() {
   for (const file of envFiles) {
     try {
-      const content = readFileSync(path.join(rootDir, file), 'utf8');
+      const content = readFileSync(path.join(rootDir, file), "utf8");
       for (const line of content.split(/\r?\n/)) {
         const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith('#')) continue;
+        if (!trimmed || trimmed.startsWith("#")) continue;
 
-        const separatorIndex = trimmed.indexOf('=');
+        const separatorIndex = trimmed.indexOf("=");
         if (separatorIndex === -1) continue;
 
         const key = trimmed.slice(0, separatorIndex).trim();
@@ -39,7 +48,7 @@ function loadEnvFiles() {
         }
       }
     } catch (error) {
-      if (error?.code !== 'ENOENT') {
+      if (error?.code !== "ENOENT") {
         throw error;
       }
     }
@@ -50,7 +59,7 @@ function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: rootDir,
     env: process.env,
-    stdio: 'inherit',
+    stdio: "inherit",
   });
 
   if (result.error) {
@@ -64,14 +73,16 @@ function run(command, args) {
 loadEnvFiles();
 
 if (!usableEnvValue(process.env.TEST_DATABASE_URL)) {
-  console.error([
-    'TEST_DATABASE_URL is required to run the full test suite.',
-    'Copy .env.test.example to .env.test and point TEST_DATABASE_URL at a disposable Postgres database.',
-  ].join('\n'));
+  console.error(
+    [
+      "TEST_DATABASE_URL is required to run the full test suite.",
+      "Copy .env.test.example to .env.test and point TEST_DATABASE_URL at a disposable Postgres database.",
+    ].join("\n"),
+  );
   process.exit(1);
 }
 
 process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
 
-run(process.execPath, ['packages/db/scripts/migrate.mjs']);
-run(process.execPath, ['node_modules/vitest/vitest.mjs', 'run']);
+run(process.execPath, ["packages/db/scripts/migrate.mjs"]);
+run(process.execPath, ["node_modules/vitest/vitest.mjs", "run"]);

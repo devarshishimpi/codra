@@ -1,4 +1,9 @@
-import { assertResponseOk, type GitHubRequestContext, repoApiPath, withRetry } from './http';
+import {
+  assertResponseOk,
+  type GitHubRequestContext,
+  repoApiPath,
+  withRetry,
+} from "./http";
 
 /**
  * React to the pull request's opening post -- the author's own comment, which is what a reader sees
@@ -13,17 +18,23 @@ export async function addIssueReaction(
   owner: string,
   repo: string,
   issueNumber: number,
-  content: '+1' | '-1' | 'eyes' | 'rocket' | 'heart',
+  content: "+1" | "-1" | "eyes" | "rocket" | "heart",
 ) {
-  return withRetry(`addIssueReaction ${owner}/${repo}#${issueNumber} ${content}`, async () => {
-    const response = await ctx.request(`${repoApiPath(owner, repo)}/issues/${issueNumber}/reactions`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ content }),
-    });
+  return withRetry(
+    `addIssueReaction ${owner}/${repo}#${issueNumber} ${content}`,
+    async () => {
+      const response = await ctx.request(
+        `${repoApiPath(owner, repo)}/issues/${issueNumber}/reactions`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ content }),
+        },
+      );
 
-    // 200 = the reaction already existed, 201 = created. Both are success.
-    if (response.status === 200 || response.status === 201) return;
-    await assertResponseOk(response, String(issueNumber), 'GitHub reaction');
-  });
+      // 200 = the reaction already existed, 201 = created. Both are success.
+      if (response.status === 200 || response.status === 201) return;
+      await assertResponseOk(response, String(issueNumber), "GitHub reaction");
+    },
+  );
 }

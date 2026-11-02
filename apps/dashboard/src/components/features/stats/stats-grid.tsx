@@ -1,12 +1,12 @@
-import { BarSparkline, Skeleton } from '@codraoss/ui';
-import * as React from 'react';
-import { cn } from '@codraoss/ui/utils';
-import type { LucideIcon } from 'lucide-react';
+import { BarSparkline, Skeleton } from "@codraoss/ui";
+import * as React from "react";
+import { cn } from "@codraoss/ui/utils";
+import type { LucideIcon } from "lucide-react";
 
 export interface StatDelta {
   /** Signed percentage change vs. the previous period. */
   pct: number;
-  direction: 'up' | 'down' | 'flat';
+  direction: "up" | "down" | "flat";
 }
 
 export interface StatsItem {
@@ -36,7 +36,7 @@ export function StatsGrid({ items, className, ...props }: StatsGridProps) {
   return (
     <div
       className={cn(
-        'ui-font-sans grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4',
+        "ui-font-sans grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4",
         className,
       )}
       {...props}
@@ -48,14 +48,25 @@ export function StatsGrid({ items, className, ...props }: StatsGridProps) {
   );
 }
 
-function StatCard({ label, value, unit, icon: Icon, color, noun, trend, delta }: StatsItem) {
+function StatCard({
+  label,
+  value,
+  unit,
+  icon: Icon,
+  color,
+  noun,
+  trend,
+  delta,
+}: StatsItem) {
   const loading = value === null;
 
   return (
     <div className="flex flex-col rounded-lg border border-ui-line bg-white p-3.5 dark:border-[oklch(0.27_0_0)] dark:bg-black">
       <div className="flex items-center gap-2 px-0.5">
         <Icon size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
-        <span className="truncate text-[13px] font-medium text-ui-default">{label}</span>
+        <span className="truncate text-[13px] font-medium text-ui-default">
+          {label}
+        </span>
       </div>
 
       <div className="ui-well mt-3 flex items-center justify-between gap-4 rounded-md px-4 py-3.5">
@@ -73,7 +84,14 @@ function StatCard({ label, value, unit, icon: Icon, color, noun, trend, delta }:
         {loading ? (
           <Skeleton height={44} width={80} borderRadius={4} />
         ) : (
-          trend && <BarSparkline data={trend} color={color} bars={8} className="h-11 shrink-0" />
+          trend && (
+            <BarSparkline
+              data={trend}
+              color={color}
+              bars={8}
+              className="h-11 shrink-0"
+            />
+          )
         )}
       </div>
 
@@ -103,15 +121,17 @@ function StatFooter({
     );
   }
 
-  const flat = !delta || delta.direction === 'flat';
-  const up = delta?.direction === 'up';
+  const flat = !delta || delta.direction === "flat";
+  const up = delta?.direction === "up";
   const toneClass = flat
-    ? 'text-ui-subtle'
+    ? "text-ui-subtle"
     : up
-      ? 'text-emerald-600 dark:text-emerald-400'
-      : 'text-red-600 dark:text-red-400';
-  const prefix = noun ?? 'Value';
-  const label = flat ? `${prefix} unchanged` : `${prefix} ${up ? 'Increased' : 'Decreased'} by`;
+      ? "text-emerald-600 dark:text-emerald-400"
+      : "text-red-600 dark:text-red-400";
+  const prefix = noun ?? "Value";
+  const label = flat
+    ? `${prefix} unchanged`
+    : `${prefix} ${up ? "Increased" : "Decreased"} by`;
 
   return (
     <div className="flex h-7 items-center justify-between gap-2 px-0.5 pt-3 text-xs">
@@ -119,11 +139,16 @@ function StatFooter({
       <span className="flex shrink-0 items-baseline gap-1.5">
         {!flat && (
           <>
-            <span className={cn('text-[0.55rem] leading-none', toneClass)}>
-              {up ? '▲' : '▼'}
+            <span className={cn("text-[0.55rem] leading-none", toneClass)}>
+              {up ? "▲" : "▼"}
             </span>
-            <span className={cn('ui-font-mono text-[11px] font-semibold tabular-nums', toneClass)}>
-              {up ? '+' : '-'}
+            <span
+              className={cn(
+                "ui-font-mono text-[11px] font-semibold tabular-nums",
+                toneClass,
+              )}
+            >
+              {up ? "+" : "-"}
               {Math.abs(delta!.pct)}%
             </span>
           </>

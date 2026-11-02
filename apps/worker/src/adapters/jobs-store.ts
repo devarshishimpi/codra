@@ -1,7 +1,7 @@
-import type { AppBindings } from '../env';
-import type { JobStore } from '@codraoss/core/ports';
-import { makeJobStore as makeDbJobStore } from '@codraoss/db/repositories';
-import type { DbEnv } from '@codraoss/db/env';
+import type { AppBindings } from "../env";
+import type { JobStore } from "@codraoss/core/ports";
+import { makeJobStore as makeDbJobStore } from "@codraoss/db/repositories";
+import type { DbEnv } from "@codraoss/db/env";
 
 export function makeJobStore(env: AppBindings): JobStore {
   const dbEnv: DbEnv = {

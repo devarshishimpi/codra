@@ -1,0 +1,262 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Railway Deployment</h2>
+
+Railway is a cloud platform that provides managed databases, internal private networking, and instant container deployments.
+
+Depending on your architecture, you can deploy Codra to Railway in three ways:
+
+* **1-Click Railway Template**: Deploy Codra, PostgreSQL, and Redis in a single click using Railway's public template.
+* **Manual Full-Stack Deploy**: Step-by-step setup provisioning PostgreSQL, Redis, and Codra using the official Docker image or repository source.
+* **Database Only**: Host a managed PostgreSQL database on Railway and connect it to Cloudflare Workers via Cloudflare Hyperdrive.
+
+<h2 id="one-click">1-Click Railway Template (Full-Stack)</h2>
+
+The fastest way to deploy Codra. The official public Railway template bundles the application container, a managed PostgreSQL database, and a Redis cache into a unified project.
+
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/template/codra)
+
+### What the Template Provisions
+
+1. **Codra Application Service**:
+   * Runs the official Distroless container image (`devarshishimpi/codra:latest`) with both HTTP API and BullMQ queue worker enabled.
+   * Runs schema migrations automatically on pre-deploy (`node packages/db/scripts/migrate.mjs`).
+   * Configured with container health checks on `/health`.
+2. **PostgreSQL Database**:
+   * Dedicated PostgreSQL instance for review history, repository configuration, and encrypted LLM credentials.
+3. **Redis Database**:
+   * Redis instance for BullMQ background review queue scheduling and dashboard session storage.
+
+### Private Networking
+
+Railway automatically configures internal reference variables so communication between Codra, PostgreSQL, and Redis never leaves Railway's private network:
+
+* `DATABASE_URL`: `${{Postgres.DATABASE_URL}}`
+* `REDIS_URL`: `${{Redis.REDIS_URL}}`
+* `APP_URL`: `https://${{RAILWAY_PUBLIC_DOMAIN}}`
+* `AUTH_CALLBACK_URL`: `https://${{RAILWAY_PUBLIC_DOMAIN}}/auth/github/callback`
+
+### Template Setup Variables
+
+When launching the template, Railway will prompt you for the following environment variables:
+
+| Variable | Description | Example |
+| --- | --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key in PEM format (PKCS#1 or PKCS#8). | `-----BEGIN RSA PRIVATE KEY-----\n...` |
+| `GITHUB_APP_ID` | Numeric GitHub App ID from developer settings. | `123456` |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret configured on your GitHub App webhook. | `your_webhook_secret` |
+| `GITHUB_CLIENT_ID` | GitHub OAuth client ID for dashboard authentication. | `Iv1.abc123xyz` |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth client secret. | `secret_oauth_token` |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hexadecimal key for encrypting provider keys. Generate with `openssl rand -hex 32`. | `64_character_hex_string` |
+| `DASHBOARD_ALLOWED_USERS` | Comma-separated list of GitHub logins allowed into the dashboard. | `your_github_username` |
+
+### Post-Deployment: Configure GitHub App
+
+Once deployment finishes:
+
+1. Copy your public domain from the Codra service's **Networking** tab (e.g. `https://codra-production-xxxx.up.railway.app`).
+2. Go to your **GitHub Developer Settings > GitHub Apps** and update the endpoints:
+   * **Homepage URL**: `https://<your-railway-domain>`
+   * **Webhook URL**: `https://<your-railway-domain>/webhook`
+   * **Callback URL**: `https://<your-railway-domain>/auth/github/callback`
+3. Open `https://<your-railway-domain>` and log in with GitHub to access your dashboard.
+
+<Note type="tip">
+  <strong>Publishing your own Template:</strong> If you fork Codra and want to publish your own custom template on Railway, go to your Railway Workspace &gt; <strong>Templates > New Template</strong>, select your project, and click <strong>Publish</strong>.
+</Note>
+
+<h2 id="manual">Manual Full-Stack Deployment</h2>
+
+Follow these steps to set up Codra, PostgreSQL, and Redis manually in a new Railway project.
+
+### 1. Create a Project
+
+New to Railway? <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sign up here</a> to get free credit. Log in to the <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Railway dashboard</a> and create a new project. Choose **Empty project**.
+
+### 2. Add PostgreSQL Database
+
+1. Click **+ New** (or press `Ctrl+K` / `Cmd+K`).
+2. Select **Database > Add PostgreSQL**.
+3. Railway provisions a PostgreSQL instance and creates the internal private connection variable (`${{Postgres.DATABASE_URL}}`).
+
+### 3. Add Redis Database
+
+1. Click **+ New** again.
+2. Select **Database > Add Redis**.
+3. Railway provisions a Redis database for BullMQ review job scheduling and session cache (`${{Redis.REDIS_URL}}`).
+
+### 4. Deploy Codra Service
+
+You can deploy Codra using either the official Docker Hub image or directly from your GitHub repository:
+
+* **Option A: Official Docker Image (Recommended)**: Click **+ New > Docker Image**, enter `devarshishimpi/codra:latest`, and click Deploy.
+* **Option B: From GitHub Repository**: Click **+ New > GitHub Repo**, select your repository or fork of `devarshishimpi/codra`, and set the Dockerfile path to `apps/node/Dockerfile` in the service settings.
+
+### 5. Configure Pre-Deploy Migrations & Health Checks
+
+Open your Codra service and go to the **Settings** tab. Under **Deploy**, configure:
+
+* **Pre-deploy Command**: `node packages/db/scripts/migrate.mjs`
+* **Pre-deploy Timeout**: `300` seconds
+* **Healthcheck Path**: `/health`
+* **Healthcheck Timeout**: `100` seconds
+* **Restart Policy**: `ON_FAILURE` (5 retries)
+
+<Note type="info">
+  Railway executes the pre-deploy command in a separate container before shifting traffic to the new deployment. If migrations fail, Railway automatically aborts the release to keep your service stable.
+</Note>
+
+### 6. Set Environment Variables
+
+Go to your Codra service's **Variables** tab and configure the following:
+
+```ini
+# Private Networking
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+REDIS_URL=${{Redis.REDIS_URL}}
+PORT=3000
+
+# Public URLs
+APP_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+AUTH_CALLBACK_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}/auth/github/callback
+
+# GitHub App Integration
+GITHUB_APP_ID=123456
+GITHUB_APP_WEBHOOK_SECRET=your_webhook_secret
+GITHUB_CLIENT_ID=your_oauth_client_id
+GITHUB_CLIENT_SECRET=your_oauth_client_secret
+APP_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+
+# Security & Access
+LLM_CONFIG_ENCRYPTION_KEY=your_64_character_hex_key
+DASHBOARD_ALLOWED_USERS=your_github_username
+ENVIRONMENT=production
+START_API=true
+START_WORKER=true
+```
+
+### 7. Generate a Domain & Verify Health
+
+1. In the Codra service, go to the **Networking** tab.
+2. Click **Generate Domain** under Public Networking (or connect a custom domain).
+3. Test your health endpoint at `https://<your-railway-domain>/health`. It should return `OK`.
+
+### 8. Update GitHub App Endpoints
+
+Update your GitHub App's URLs under GitHub Developer Settings:
+
+* **Homepage URL**: `https://<your-railway-domain>`
+* **Webhook URL**: `https://<your-railway-domain>/webhook`
+* **Callback URL**: `https://<your-railway-domain>/auth/github/callback`
+
+<h2 id="database-only">Database Only (PostgreSQL for Cloudflare Workers)</h2>
+
+If you run Codra serverless on Cloudflare Workers, Railway can host your managed PostgreSQL database. Cloudflare Hyperdrive maintains a connection pool between Cloudflare's network and Railway.
+
+### 1. Provision PostgreSQL
+
+New to Railway? <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sign up here</a> to get free credit. Log in to the <a href="https://go.devarshi.dev/railway-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Railway dashboard</a> and create a new project. Choose **Provision PostgreSQL** (or add a PostgreSQL service to an existing project).
+
+<DocsScreenshot 
+  src="/assets/docs/docs-railway-prov-db.png" 
+  alt="Railway dashboard showing the Provision PostgreSQL option" 
+  caption="Provision a PostgreSQL database from your Railway project." 
+/>
+
+### 2. Get your Connection String
+
+Open the PostgreSQL service and go to the **Connect** tab. Railway shows an internal connection string (`*.railway.internal`) that only works from other services inside the same Railway project, and a public **TCP Proxy** connection string that works from outside Railway's network.
+
+<DocsScreenshot 
+  src="/assets/docs/docs-railway-connect-db.png" 
+  alt="Railway Connect tab showing the public TCP Proxy connection string" 
+  caption="Copy the public TCP Proxy connection string from the Connect tab." 
+/>
+
+Since Cloudflare Hyperdrive connects from outside Railway's private network, use the public proxy connection string. It will look like this:
+
+```text
+postgresql://postgres:PASSWORD@monorail.proxy.rlwy.net:12345/railway
+```
+
+<Note type="warn">
+  Use the <strong>public TCP Proxy</strong> connection string (the one with a <code>proxy.rlwy.net</code> host), not the <code>*.railway.internal</code> host. The internal host is only reachable from within Railway and will not work with Hyperdrive.
+</Note>
+
+### 3. Configure Cloudflare Hyperdrive
+
+Hyperdrive makes your existing regional databases feel like they're distributed. It maintains a pool of connections to your database from Cloudflare's network, reducing connection overhead.
+
+In your Cloudflare Dashboard, go to **Workers & Pages > Hyperdrive** and create a new configuration using your Railway public connection string.
+
+Alternatively, use wrangler:
+
+```shell
+npx wrangler hyperdrive create codra-db --connection-string="postgresql://postgres:PASSWORD@monorail.proxy.rlwy.net:12345/railway"
+```
+
+<DocsScreenshot 
+  src="/assets/docs/docs-hyperdrive-created-console.png" 
+  alt="Cloudflare dashboard showing a created Hyperdrive configuration" 
+  caption="Create a Hyperdrive configuration using the Railway public connection string." 
+/>
+
+### 4. Connect Codra Worker
+
+Once you have your Railway database and Hyperdrive ID, update your configuration.
+
+Add your Hyperdrive ID to `wrangler.jsonc`:
+
+```jsonc
+"hyperdrive": [
+  {
+    "binding": "HYPERDRIVE",
+    "id": "35b282fa80f24e67adfda063c3a839d1" // Your ID here
+  }
+]
+```
+
+Set the `DATABASE_URL` secret for your production worker:
+
+```shell
+npx wrangler secret put DATABASE_URL
+```
+
+When prompted, enter your Railway public connection string.
+
+<Note type="info">
+  For local development, you can paste your Railway public connection string directly into <code>.dev.vars</code> as <code>DATABASE_URL</code>.
+</Note>
+
+<Note type="warn">
+  Dashboard-managed provider API keys are stored encrypted in PostgreSQL, so database backups can contain encrypted provider credentials. Keep <code>LLM_CONFIG_ENCRYPTION_KEY</code> stable across deploys; changing it makes saved provider keys undecryptable.
+</Note>
+
+<h2 id="env-vars">Environment Variables Reference</h2>
+
+| Variable | Required | Description | Example |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Use `${{Postgres.DATABASE_URL}}` for Railway full-stack, or TCP Proxy URL for Cloudflare Workers. | `postgresql://user:pass@host:5432/railway` |
+| `REDIS_URL` | Yes (Node/Docker) | Redis connection string for BullMQ queues and sessions. | `${{Redis.REDIS_URL}}` or `redis://localhost:6379` |
+| `PORT` | No | Internal HTTP port (defaults to `3000`). Binds to `0.0.0.0`. | `3000` |
+| `APP_URL` | Yes | Public base URL of your Codra instance. | `https://${{RAILWAY_PUBLIC_DOMAIN}}` |
+| `AUTH_CALLBACK_URL` | Yes | GitHub OAuth callback endpoint. | `https://${{RAILWAY_PUBLIC_DOMAIN}}/auth/github/callback` |
+| `APP_PRIVATE_KEY` | Yes | GitHub App private key (PKCS#1 or PKCS#8). | `-----BEGIN RSA PRIVATE KEY-----\n...` |
+| `GITHUB_APP_ID` | Yes | Numeric GitHub App ID from developer settings. | `123456` |
+| `GITHUB_APP_WEBHOOK_SECRET` | Yes | Secret configured on the GitHub App webhook. | `your_webhook_secret` |
+| `GITHUB_CLIENT_ID` | Yes | OAuth Client ID for dashboard authentication. | `Iv1.abc123xyz` |
+| `GITHUB_CLIENT_SECRET` | Yes | OAuth Client Secret for dashboard authentication. | `secret_oauth_token` |
+| `LLM_CONFIG_ENCRYPTION_KEY` | Yes | 32-byte hex key for encrypting provider keys in PostgreSQL. | `64_character_hex_string` |
+| `DASHBOARD_ALLOWED_USERS` | No | Comma-separated list of GitHub logins allowed into dashboard. | `your_github_username` |
+| `START_API` | No | Set to `false` to disable HTTP server on dedicated worker nodes. | `true` |
+| `START_WORKER` | No | Set to `false` to disable BullMQ worker on dedicated API nodes. | `true` |
+| `ENVIRONMENT` | No | Runtime environment name. | `production` |
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Tune repository review behavior and model selection.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

@@ -1,7 +1,11 @@
 // beui.dev/components/motion/scroll-animation
-import type Lenis from 'lenis';
-import { ReactLenis, useLenis } from 'lenis/react';
-import { type MotionValue, useMotionValue, useReducedMotion } from 'motion/react';
+import type Lenis from "lenis";
+import { ReactLenis, useLenis } from "lenis/react";
+import {
+  type MotionValue,
+  useMotionValue,
+  useReducedMotion,
+} from "motion/react";
 import {
   createContext,
   type ReactNode,
@@ -9,9 +13,8 @@ import {
   useEffect,
   useMemo,
   useRef,
-} from 'react';
+} from "react";
 
-// Named fn, not a lib/ease token: Lenis needs a (t) => number easing fn, not bezier points.
 const EASE_SCROLL = (t: number) => Math.min(1, 1.001 - 2 ** (-10 * t));
 
 export type ScrollTarget = number | string | HTMLElement;
@@ -23,13 +26,10 @@ export type ScrollToOptions = {
 };
 
 export type SmoothScrollApi = {
-  /** Null on the reduced-motion / native path. */
   lenis: Lenis | null;
   scrollY: MotionValue<number>;
   progress: MotionValue<number>;
-  /** px/frame. */
   velocity: MotionValue<number>;
-  /** Jumps instantly under reduced motion. */
   scrollTo: (target: ScrollTarget, options?: ScrollToOptions) => void;
 };
 
@@ -37,14 +37,11 @@ const SmoothScrollContext = createContext<SmoothScrollApi | null>(null);
 
 export interface SmoothScrollProps {
   children: ReactNode;
-  /** True drives window scroll; false scrolls a contained area. */
   root?: boolean;
-  /** Lower = smoother, heavier. */
   lerp?: number;
   duration?: number;
-  orientation?: 'vertical' | 'horizontal';
+  orientation?: "vertical" | "horizontal";
   wheelMultiplier?: number;
-  /** Off by default: native touch momentum is already good on mobile. */
   touch?: boolean;
   className?: string;
 }
@@ -70,15 +67,14 @@ function resolveTop(
   source: ScrollSource,
   offset = 0,
 ): number {
-  if (typeof target === 'number') return target + offset;
+  if (typeof target === "number") return target + offset;
   if (source instanceof Window) {
     const el =
-      typeof target === 'string' ? document.querySelector(target) : target;
+      typeof target === "string" ? document.querySelector(target) : target;
     if (!el) return window.scrollY;
     return el.getBoundingClientRect().top + window.scrollY + offset;
   }
-  const el =
-    typeof target === 'string' ? source.querySelector(target) : target;
+  const el = typeof target === "string" ? source.querySelector(target) : target;
   if (!(el instanceof HTMLElement)) return source.scrollTop;
   return el.offsetTop + offset;
 }
@@ -132,8 +128,8 @@ function useNativeScrollSync(
       lastT = now;
     };
     onScroll();
-    target.addEventListener('scroll', onScroll, { passive: true });
-    return () => target.removeEventListener('scroll', onScroll);
+    target.addEventListener("scroll", onScroll, { passive: true });
+    return () => target.removeEventListener("scroll", onScroll);
   }, [enabled, getTarget, scrollY, progress, velocity]);
 }
 
@@ -142,7 +138,7 @@ export function SmoothScroll({
   root = true,
   lerp = 0.1,
   duration = 1.2,
-  orientation = 'vertical',
+  orientation = "vertical",
   wheelMultiplier = 1,
   touch = false,
   className,
@@ -171,7 +167,7 @@ export function SmoothScroll({
         return;
       }
       const source = nativeSource();
-      const behavior = reduce || options?.immediate ? 'auto' : 'smooth';
+      const behavior = reduce || options?.immediate ? "auto" : "smooth";
       const top = resolveTop(target, source ?? window, options?.offset);
       (source ?? window).scrollTo({ top, behavior });
     },
@@ -208,7 +204,6 @@ export function SmoothScroll({
           smoothWheel: true,
           syncTouch: touch,
           easing: EASE_SCROLL,
-          // Else Lenis preventDefault()s every wheel event, blocking nested scroll areas.
           allowNestedScroll: true,
         }}
       >

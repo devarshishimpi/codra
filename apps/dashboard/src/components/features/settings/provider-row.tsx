@@ -1,8 +1,8 @@
-import { Badge, Button, Input, Select, Switch } from '@codraoss/ui';
-import { ChevronRight, Save, Trash2 } from 'lucide-react';
-import { cn } from '@codraoss/ui/utils';
-import type { LlmApiFormat, LlmProvider } from '@codraoss/schema';
-import { FieldLabel } from './field-label';
+import { Badge, Button, Input, Select, Switch } from "@codraoss/ui";
+import { ChevronRight, Save, Trash2 } from "lucide-react";
+import { cn } from "@codraoss/ui/utils";
+import type { LlmApiFormat, LlmProvider } from "@codraoss/schema";
+import { FieldLabel } from "./field-label";
 import {
   API_FORMAT_OPTIONS,
   apiKeyFieldLabel,
@@ -14,7 +14,7 @@ import {
   providerKeyPlaceholder,
   providerStatusLabel,
   type ProviderDraft,
-} from './settings-support';
+} from "./settings-support";
 
 // Extracted from settings.tsx as its largest single block of markup; the section shell stays put,
 // so only these values are threaded through instead of the whole page's state.
@@ -44,22 +44,24 @@ export function ProviderRow({
   // Passed in rather than imported so this component stays free of the toast singleton.
   toast: { error: (message: string, opts?: { description?: string }) => void };
 }) {
-  const nativeCloudflare = provider.apiFormat === 'cloudflare-workers-ai';
+  const nativeCloudflare = provider.apiFormat === "cloudflare-workers-ai";
   const customProvider = isCustomProvider(provider);
-  const savedProvider = savedProviders.find(saved => saved.id === provider.id);
+  const savedProvider = savedProviders.find(
+    (saved) => saved.id === provider.id,
+  );
   const dirty = providerDraftDirty(provider, savedProvider);
   const modelCount = providerModelCounts.get(provider.id) ?? 0;
   const configOpen = expandedProviderId === provider.id;
   const canEnableProvider = providerHasCredential(provider);
-  const providerNameId = domId('provider-name', provider.id);
-  const providerBaseUrlId = domId('provider-base-url', provider.id);
-  const providerApiKeyId = domId('provider-api-key', provider.id);
+  const providerNameId = domId("provider-name", provider.id);
+  const providerBaseUrlId = domId("provider-base-url", provider.id);
+  const providerApiKeyId = domId("provider-api-key", provider.id);
 
   return (
     <article
       className={cn(
-        'group min-w-0 transition-colors duration-150',
-        dirty && 'bg-primary/[0.018]',
+        "group min-w-0 transition-colors duration-150",
+        dirty && "bg-primary/[0.018]",
       )}
     >
       <div className="flex min-w-0 items-center gap-3 px-3 py-3 sm:gap-4 sm:px-4">
@@ -67,21 +69,29 @@ export function ProviderRow({
           type="button"
           onClick={() => setExpandedProviderId(configOpen ? null : provider.id)}
           aria-expanded={configOpen}
-          aria-label={`${configOpen ? 'Collapse' : 'Configure'} ${provider.name}`}
+          aria-label={`${configOpen ? "Collapse" : "Configure"} ${provider.name}`}
           className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md px-1 py-1 text-left transition-colors hover:bg-ui-fill/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ui-brand/40"
         >
           <ChevronRight
             size={14}
             className={cn(
-              'shrink-0 text-ui-subtle transition-transform duration-200',
-              configOpen && 'rotate-90 text-ui-default',
+              "shrink-0 text-ui-subtle transition-transform duration-200",
+              configOpen && "rotate-90 text-ui-default",
             )}
           />
           <span className="min-w-0 flex-1">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-semibold text-ui-default">{provider.name}</span>
+              <span className="truncate text-sm font-semibold text-ui-default">
+                {provider.name}
+              </span>
               <Badge
-                variant={!provider.enabled ? 'neutral' : providerIsReady(provider) ? 'success' : 'warning'}
+                variant={
+                  !provider.enabled
+                    ? "neutral"
+                    : providerIsReady(provider)
+                      ? "success"
+                      : "warning"
+                }
                 className="shrink-0"
               >
                 {providerStatusLabel(provider)}
@@ -90,9 +100,13 @@ export function ProviderRow({
             <span className="mt-0.5 block text-xs text-ui-subtle">
               <span className="font-mono">{provider.apiFormat}</span>
               {modelCount > 0 && (
-                <span className="ml-2 opacity-70">· {modelCount} model{modelCount !== 1 ? 's' : ''}</span>
+                <span className="ml-2 opacity-70">
+                  · {modelCount} model{modelCount !== 1 ? "s" : ""}
+                </span>
               )}
-              {nativeCloudflare && <span className="ml-2 opacity-70">· Worker binding</span>}
+              {nativeCloudflare && (
+                <span className="ml-2 opacity-70">· Worker binding</span>
+              )}
             </span>
           </span>
         </button>
@@ -114,11 +128,11 @@ export function ProviderRow({
 
           <Switch
             checked={provider.enabled && canEnableProvider}
-            aria-label={`${provider.enabled && canEnableProvider ? 'Disable' : 'Enable'} ${provider.name}`}
-            onCheckedChange={enabled => {
+            aria-label={`${provider.enabled && canEnableProvider ? "Disable" : "Enable"} ${provider.name}`}
+            onCheckedChange={(enabled) => {
               if (enabled && !canEnableProvider) {
                 setExpandedProviderId(provider.id);
-                toast.error('Add an API key before enabling this provider.');
+                toast.error("Add an API key before enabling this provider.");
                 return;
               }
               updateProviderDraft(provider.id, { enabled });
@@ -149,48 +163,77 @@ export function ProviderRow({
                   <Input
                     id={providerNameId}
                     value={provider.name}
-                    onChange={e => updateProviderDraft(provider.id, { name: e.target.value })}
+                    onChange={(e) =>
+                      updateProviderDraft(provider.id, { name: e.target.value })
+                    }
                   />
                 </div>
                 <Select
                   label="Protocol"
                   value={provider.apiFormat}
-                  onValueChange={value => updateProviderDraft(provider.id, { apiFormat: value as LlmApiFormat })}
-                  options={API_FORMAT_OPTIONS.filter(option => option.value !== 'cloudflare-workers-ai')}
+                  onValueChange={(value) =>
+                    updateProviderDraft(provider.id, {
+                      apiFormat: value as LlmApiFormat,
+                    })
+                  }
+                  options={API_FORMAT_OPTIONS.filter(
+                    (option) => option.value !== "cloudflare-workers-ai",
+                  )}
                 />
                 <div>
                   <FieldLabel htmlFor={providerBaseUrlId}>Base URL</FieldLabel>
                   <Input
                     id={providerBaseUrlId}
-                    placeholder={provider.apiFormat === 'vertex' ? 'https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1' : 'https://llm.example.com/v1'}
-                    value={provider.baseUrl ?? ''}
-                    onChange={e => updateProviderDraft(provider.id, { baseUrl: e.target.value || null })}
+                    placeholder={
+                      provider.apiFormat === "vertex"
+                        ? "https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1"
+                        : "https://llm.example.com/v1"
+                    }
+                    value={provider.baseUrl ?? ""}
+                    onChange={(e) =>
+                      updateProviderDraft(provider.id, {
+                        baseUrl: e.target.value || null,
+                      })
+                    }
                   />
-                  {provider.apiFormat === 'vertex' && (
-                    <p className="mt-1.5 text-xs text-ui-subtle">Must include your GCP project ID and region.</p>
+                  {provider.apiFormat === "vertex" && (
+                    <p className="mt-1.5 text-xs text-ui-subtle">
+                      Must include your GCP project ID and region.
+                    </p>
                   )}
                 </div>
               </>
             )}
             {nativeCloudflare ? (
               <p className="col-span-full text-xs text-ui-subtle">
-                Uses the Worker AI binding defined in your Wrangler configuration.
+                Uses the Worker AI binding defined in your Wrangler
+                configuration.
               </p>
             ) : (
               <div className="col-span-full">
-                <FieldLabel htmlFor={providerApiKeyId}>{apiKeyFieldLabel(provider.apiFormat)}</FieldLabel>
+                <FieldLabel htmlFor={providerApiKeyId}>
+                  {apiKeyFieldLabel(provider.apiFormat)}
+                </FieldLabel>
                 <div className="flex flex-wrap items-center gap-2">
                   <Input
                     id={providerApiKeyId}
                     type="password"
                     autoComplete="new-password"
                     spellCheck={false}
-                    placeholder={provider.hasApiKey ? 'Enter a new key to replace the saved one' : providerKeyPlaceholder(provider.name, provider.apiFormat)}
+                    placeholder={
+                      provider.hasApiKey
+                        ? "Enter a new key to replace the saved one"
+                        : providerKeyPlaceholder(
+                            provider.name,
+                            provider.apiFormat,
+                          )
+                    }
                     value={provider.apiKey}
-                    onChange={e => {
+                    onChange={(e) => {
                       const apiKey = e.target.value;
                       // Losing the only credential must also drop `enabled`, or the switch desyncs from the draft and Save is rejected by the server.
-                      const losesCredential = !apiKey.trim() && !provider.hasApiKey;
+                      const losesCredential =
+                        !apiKey.trim() && !provider.hasApiKey;
                       updateProviderDraft(provider.id, {
                         apiKey,
                         ...(losesCredential ? { enabled: false } : {}),

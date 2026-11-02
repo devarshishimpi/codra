@@ -1,11 +1,16 @@
-import type { ClaimType, ParsedReviewComment } from '@codraoss/schema';
-import type { DiffLine, FileDiff } from '../diff';
-import { commentSyntaxFor, stripCommentsAndStrings } from '../claim-checks';
-import { buildAnchorHash, buildFindingFingerprint, buildFindingFingerprintV2, normalizeDiffText } from '../fingerprint';
-import { CLAIM_TYPE_CATEGORY } from '@codraoss/schema';
-import { RULES, type Rule } from './table';
+import type { ClaimType, ParsedReviewComment } from "@codraoss/schema";
+import type { DiffLine, FileDiff } from "../diff";
+import { commentSyntaxFor, stripCommentsAndStrings } from "../claim-checks";
+import {
+  buildAnchorHash,
+  buildFindingFingerprint,
+  buildFindingFingerprintV2,
+  normalizeDiffText,
+} from "../fingerprint";
+import { CLAIM_TYPE_CATEGORY } from "@codraoss/schema";
+import { RULES, type Rule } from "./table";
 
-import { MAX_RULE_SCAN_ADDED_LINES } from '../constants';
+import { MAX_RULE_SCAN_ADDED_LINES } from "../constants";
 
 export type RuleHit = {
   rule: Rule;
@@ -33,14 +38,17 @@ export type RuleScanOptions = {
 };
 
 function extensionOf(path: string) {
-  return path.toLowerCase().split('.').pop() ?? '';
+  return path.toLowerCase().split(".").pop() ?? "";
 }
 
 function ruleApplies(rule: Rule, ext: string) {
   return !rule.extensions || rule.extensions.includes(ext);
 }
 
-export function scanFileForRuleHits(file: FileDiff, options: RuleScanOptions = {}): RuleScanResult {
+export function scanFileForRuleHits(
+  file: FileDiff,
+  options: RuleScanOptions = {},
+): RuleScanResult {
   const stats: RuleScanStats = {
     addedLinesScanned: 0,
     sievePassed: 0,
@@ -60,11 +68,13 @@ export function scanFileForRuleHits(file: FileDiff, options: RuleScanOptions = {
   const disabled = new Set(options.disabledRuleIds ?? []);
   const shadowIds = new Set(options.shadowRuleIds ?? []);
 
-  const active = RULES.filter((rule) =>
-    rule.enabled
-    && !disabled.has(rule.id)
-    && !denied.has(rule.claimType)
-    && ruleApplies(rule, ext));
+  const active = RULES.filter(
+    (rule) =>
+      rule.enabled &&
+      !disabled.has(rule.id) &&
+      !denied.has(rule.claimType) &&
+      ruleApplies(rule, ext),
+  );
   if (active.length === 0) return { hits, stats };
 
   const triggers = [...new Set(active.flatMap((rule) => rule.triggers))];
@@ -73,11 +83,11 @@ export function scanFileForRuleHits(file: FileDiff, options: RuleScanOptions = {
   for (const hunk of file.hunks) {
     const removed = new Set<string>();
     for (const l of hunk.lines) {
-      if (l.kind === 'del') removed.add(normalizeDiffText(l.content));
+      if (l.kind === "del") removed.add(normalizeDiffText(l.content));
     }
 
     for (const line of hunk.lines) {
-      if (line.kind !== 'add') continue;
+      if (line.kind !== "add") continue;
       if (stats.addedLinesScanned >= MAX_RULE_SCAN_ADDED_LINES) {
         stats.truncated = true;
         break;
@@ -118,7 +128,10 @@ export function scanFileForRuleHits(file: FileDiff, options: RuleScanOptions = {
   return { hits, stats };
 }
 
-export function ruleHitsToComments(file: FileDiff, result: RuleScanResult): ParsedReviewComment[] {
+export function ruleHitsToComments(
+  file: FileDiff,
+  result: RuleScanResult,
+): ParsedReviewComment[] {
   const comments: ParsedReviewComment[] = [];
   for (const hit of result.hits) {
     if (hit.shadow) continue;
@@ -130,15 +143,22 @@ export function ruleHitsToComments(file: FileDiff, result: RuleScanResult): Pars
       line: line.newLineNumber ?? null,
       position: line.position ?? null,
       severity: rule.severity,
-      category: CLAIM_TYPE_CATEGORY[rule.claimType] ?? 'quality',
+      category: CLAIM_TYPE_CATEGORY[rule.claimType] ?? "quality",
       title: rule.title,
       body: rule.body,
       evidence: line.content,
       anchorHash,
       claimType: rule.claimType,
-      fingerprint: buildFindingFingerprint(file.path, `${rule.title} @${anchorHash}`),
-      fingerprintV2: buildFindingFingerprintV2(file.path, rule.claimType, anchorHash),
-      source: 'rule' as const,
+      fingerprint: buildFindingFingerprint(
+        file.path,
+        `${rule.title} @${anchorHash}`,
+      ),
+      fingerprintV2: buildFindingFingerprintV2(
+        file.path,
+        rule.claimType,
+        anchorHash,
+      ),
+      source: "rule" as const,
       ruleId: rule.id,
     } satisfies ParsedReviewComment);
   }

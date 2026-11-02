@@ -1,0 +1,101 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="setup">Neon Setup</h2>
+
+Neon provides a serverless PostgreSQL experience that is perfect for Cloudflare Workers. It scales to zero when not in use and provides instant branching.
+
+### 1. Create a Project
+
+New to Neon? <a href="https://go.devarshi.dev/neon-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sign up here</a> to get free credit. Log in to the <a href="https://go.devarshi.dev/neon-free" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Neon Console</a> and create a new project. Choose a region close to your main user base (or your Cloudflare Worker's primary region).
+
+<DocsScreenshot 
+  src="/assets/docs/docs-neon-create-project.png" 
+  alt="Neon console showing the create project flow" 
+  caption="Create a Neon project in the closest supported region for your deployment." 
+/>
+
+### 2. Get your Connection String
+
+Once the project is created, Neon will provide a connection string. It will look like this:
+
+```text
+postgresql://neondb_owner:npg_...-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+```
+
+<DocsScreenshot 
+  src="/assets/docs/docs-neon-connection-string.png" 
+  alt="Neon dashboard showing the pooled database connection string" 
+  caption="Copy the pooled connection string from the Neon project dashboard." 
+/>
+
+<Note type="info">
+  Always use the <strong>pooled</strong> connection string (the one with <code>-pooler</code> in the hostname) for serverless environments.
+</Note>
+
+<h2 id="hyperdrive">Cloudflare Hyperdrive</h2>
+
+Hyperdrive makes your existing regional databases feel like they're distributed. it maintains a pool of connections to your database from Cloudflare's network, reducing connection overhead.
+
+### 1. Create a Hyperdrive Config
+
+In your Cloudflare Dashboard, go to **Workers & Pages > Hyperdrive** and create a new configuration using your Neon connection string.
+
+Alternatively, use wrangler:
+
+```shell
+npx wrangler hyperdrive create codra-db --connection-string="postgresql://user:pass@host/db?sslmode=require"
+```
+
+<DocsScreenshot 
+  src="/assets/docs/docs-hyperdrive-created-console.png" 
+  alt="Cloudflare dashboard showing a created Hyperdrive configuration" 
+  caption="Create a Hyperdrive configuration using the Neon pooled connection string." 
+/>
+
+### 2. Get the Hyperdrive ID
+
+Note the ID provided by Cloudflare. You will need to add this to your `wrangler.jsonc`.
+
+<h2 id="connection">Connecting Codra</h2>
+
+Once you have your Neon database and Hyperdrive ID, update your configuration.
+
+### Update wrangler.jsonc
+
+Add your Hyperdrive ID to the configuration:
+
+```jsonc
+"hyperdrive": [
+  {
+    "binding": "HYPERDRIVE",
+    "id": "35b282fa80f24e67adfda063c3a839d1" // Your ID here
+  }
+]
+```
+
+### Set Database Secret
+
+Set the `DATABASE_URL` secret for your production worker. If using Hyperdrive, Cloudflare will automatically route connections through the pooler when you use the binding, but you still need to provide the connection string to the application logic.
+
+```shell
+npx wrangler secret put DATABASE_URL
+```
+
+When prompted, enter your Neon connection string.
+
+<Note type="info">
+  For local development, you can paste your Neon connection string directly into <code>.dev.vars</code> as <code>DATABASE_URL</code>.
+</Note>
+
+<Note type="warn">
+  Dashboard-managed provider API keys are stored encrypted in PostgreSQL, so database backups can contain encrypted provider credentials. Keep <code>LLM_CONFIG_ENCRYPTION_KEY</code> stable across deploys; changing it makes saved provider keys undecryptable.
+</Note>
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Tune repository review behavior and model selection.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

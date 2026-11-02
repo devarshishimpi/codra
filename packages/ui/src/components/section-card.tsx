@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
 export function SectionCard({
   icon,
@@ -19,8 +19,14 @@ export function SectionCard({
         <div className="flex min-w-0 items-center gap-2.5">
           {icon && <span className="shrink-0 text-ui-subtle">{icon}</span>}
           <div className="min-w-0">
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ui-default">{title}</h2>
-            {description && <p className="mt-0.5 truncate text-xs text-ui-subtle">{description}</p>}
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ui-default">
+              {title}
+            </h2>
+            {description && (
+              <p className="mt-0.5 truncate text-xs text-ui-subtle">
+                {description}
+              </p>
+            )}
           </div>
         </div>
         {action && <div className="shrink-0">{action}</div>}

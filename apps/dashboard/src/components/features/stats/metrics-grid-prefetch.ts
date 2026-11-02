@@ -3,7 +3,7 @@
 // replaced never had. Calling the prefetch on mount puts the ~68 kB gzip request alongside the
 // stats fetch instead of behind it.
 // Separate from metrics-grid.tsx so that file keeps exporting components only (Fast Refresh).
-import type { MetricsGridCharts } from './metrics-grid-charts';
+import type { MetricsGridCharts } from "./metrics-grid-charts";
 
 type ChartsComponent = typeof MetricsGridCharts;
 
@@ -12,7 +12,7 @@ let resolved: ChartsComponent | null = null;
 
 /** Memoized so the prefetch and the render path share one request and one module instance. */
 export function loadMetricsCharts(): Promise<ChartsComponent> {
-  pending ??= import('./metrics-grid-charts').then((m) => {
+  pending ??= import("./metrics-grid-charts").then((m) => {
     resolved = m.MetricsGridCharts;
     return resolved;
   });

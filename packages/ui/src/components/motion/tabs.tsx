@@ -1,7 +1,12 @@
-// beui.dev/components/motion/tabs
-// domMax rather than domAnimation: the active-tab indicator animates via layoutId/layoutRoot, and
-// layout projection only ships in the max bundle.
-import { LazyMotion, m, domMax, MotionConfig, useReducedMotion, type Transition } from 'motion/react';
+// Beui tabs.
+import {
+  LazyMotion,
+  m,
+  domMax,
+  MotionConfig,
+  useReducedMotion,
+  type Transition,
+} from "motion/react";
 import {
   createContext,
   useCallback,
@@ -10,10 +15,10 @@ import {
   useMemo,
   useState,
   type ReactNode,
-} from 'react';
-import { cn } from '../../lib/utils';
+} from "react";
+import { cn } from "../../lib/utils";
 
-type Variant = 'pill' | 'underline' | 'segment';
+type Variant = "pill" | "underline" | "segment";
 
 type Ctx = {
   value: string;
@@ -26,13 +31,12 @@ const TabsCtx = createContext<Ctx | null>(null);
 
 function useTabs() {
   const ctx = useContext(TabsCtx);
-  if (!ctx) throw new Error('Tabs.* must be used inside <Tabs>');
+  if (!ctx) throw new Error("Tabs.* must be used inside <Tabs>");
   return ctx;
 }
 
-// A touch of overshoot so the active-tab indicator settles with life instead of snapping.
 const transition: Transition = {
-  type: 'spring',
+  type: "spring",
   stiffness: 170,
   damping: 24,
   mass: 1.2,
@@ -42,7 +46,7 @@ export function Tabs({
   defaultValue,
   value,
   onValueChange,
-  variant = 'pill',
+  variant = "pill",
   children,
   className,
 }: {
@@ -53,7 +57,7 @@ export function Tabs({
   children: ReactNode;
   className?: string;
 }) {
-  const [internal, setInternal] = useState(defaultValue ?? '');
+  const [internal, setInternal] = useState(defaultValue ?? "");
   const layoutId = useId();
   const reduce = useReducedMotion();
   const controlled = value !== undefined;
@@ -73,8 +77,6 @@ export function Tabs({
     <MotionConfig transition={reduce ? { duration: 0 } : transition}>
       <TabsCtx.Provider value={ctx}>
         <LazyMotion features={domMax}>
-          {/* layoutRoot: the indicator's layoutId measures in page coordinates, so without this
-              it would replay scroll offsets as movement inside fixed/scrolled containers. */}
           <m.div layoutRoot className={className}>
             {children}
           </m.div>
@@ -85,12 +87,19 @@ export function Tabs({
 }
 
 const listClasses: Record<Variant, string> = {
-  pill: 'inline-flex items-center gap-1 rounded-full bg-card p-1',
-  underline: 'inline-flex items-center gap-1 border-b border-border',
-  segment: 'inline-flex items-center gap-0 rounded-md border border-ui-line bg-ui-fill/40 p-0.5',
+  pill: "inline-flex items-center gap-1 rounded-full bg-card p-1",
+  underline: "inline-flex items-center gap-1 border-b border-border",
+  segment:
+    "inline-flex items-center gap-0 rounded-md border border-ui-line bg-ui-fill/40 p-0.5",
 };
 
-export function TabsList({ children, className }: { children: ReactNode; className?: string }) {
+export function TabsList({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   const { variant } = useTabs();
   return (
     <div role="tablist" className={cn(listClasses[variant], className)}>
@@ -113,7 +122,7 @@ export function TabsTrigger({
   const { value: current, setValue, layoutId, variant } = useTabs();
   const active = current === value;
 
-  if (variant === 'underline') {
+  if (variant === "underline") {
     return (
       <button
         type="button"
@@ -121,8 +130,10 @@ export function TabsTrigger({
         aria-selected={active}
         onClick={() => setValue(value)}
         className={cn(
-          'relative isolate px-3 pb-2.5 pt-1 -mb-px text-sm font-medium transition-colors min-h-[44px] inline-flex items-center',
-          active ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+          "relative isolate px-3 pb-2.5 pt-1 -mb-px text-sm font-medium transition-colors min-h-[44px] inline-flex items-center",
+          active
+            ? "text-foreground"
+            : "text-muted-foreground hover:text-foreground",
           className,
         )}
       >
@@ -130,29 +141,38 @@ export function TabsTrigger({
         {active ? (
           <m.span
             layoutId={layoutId}
-            className={cn('absolute -bottom-px left-0 right-0 h-px bg-primary', indicatorClassName)}
+            className={cn(
+              "absolute -bottom-px left-0 right-0 h-px bg-primary",
+              indicatorClassName,
+            )}
           />
         ) : null}
       </button>
     );
   }
 
-  // Segment uses a neutral raised surface (vs. pill's max-contrast) so it reads as a standard segmented control.
-  const isSegment = variant === 'segment';
-  const radius = variant === 'pill' ? 'rounded-full' : 'rounded-[5px]';
-  const indicatorBg = isSegment ? 'bg-ui-base shadow-sm ring-1 ring-ui-line' : 'bg-primary';
-  const activeText = isSegment ? 'text-ui-strong' : 'text-primary-foreground';
+  const isSegment = variant === "segment";
+  const radius = variant === "pill" ? "rounded-full" : "rounded-[5px]";
+  const indicatorBg = isSegment
+    ? "bg-ui-base shadow-sm ring-1 ring-ui-line"
+    : "bg-primary";
+  const activeText = isSegment ? "text-ui-strong" : "text-primary-foreground";
   const inactiveText = isSegment
-    ? 'text-ui-subtle hover:text-ui-default'
-    : 'text-muted-foreground hover:text-foreground';
+    ? "text-ui-subtle hover:text-ui-default"
+    : "text-muted-foreground hover:text-foreground";
 
   return (
     <div className="relative">
       {active ? (
         <m.span
           layoutId={layoutId}
-          style={{ borderRadius: variant === 'pill' ? 9999 : 5 }}
-          className={cn('absolute inset-0', indicatorBg, radius, indicatorClassName)}
+          style={{ borderRadius: variant === "pill" ? 9999 : 5 }}
+          className={cn(
+            "absolute inset-0",
+            indicatorBg,
+            radius,
+            indicatorClassName,
+          )}
         />
       ) : null}
       <button
@@ -161,7 +181,7 @@ export function TabsTrigger({
         aria-selected={active}
         onClick={() => setValue(value)}
         className={cn(
-          'relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium capitalize transition-colors outline-none',
+          "relative z-10 inline-flex items-center justify-center whitespace-nowrap bg-transparent px-3.5 py-1.5 text-sm font-medium capitalize transition-colors outline-none",
           active ? activeText : inactiveText,
           radius,
           className,

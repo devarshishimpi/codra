@@ -1,6 +1,9 @@
-import { z } from 'zod';
-import { jsonrepair } from 'jsonrepair';
-import type { FileDiff } from '../diff';
+import { z } from "zod";
+import { jsonrepair } from "jsonrepair";
+import type { FileDiff } from "../diff";
+
+// Re-exported so @codraoss/models reaches the per-model verifier style through this package subpath.
+export { applyModelVerifyStyle } from "./model-styles";
 
 export type VerifyCandidate = {
   index: number;
@@ -20,34 +23,36 @@ const verifyResultSchema = z.object({
         reason: z.string().optional(),
         // decidable" -- only an explicit `false` costs a finding. See the note on the prompt below.
         decidable: z.boolean().optional(),
-        verdict: z.enum(['keep', 'drop']),
+        verdict: z.enum(["keep", "drop"]),
         confidence: z.number().min(0).max(1).optional(),
       }),
     )
     .default([]),
 });
 
-export type VerifyResult = z.infer<typeof verifyResultSchema>['results'][number];
+export type VerifyResult = z.infer<
+  typeof verifyResultSchema
+>["results"][number];
 
 export const VERIFY_RESPONSE_SCHEMA = {
-  name: 'codra_verify_findings',
+  name: "codra_verify_findings",
   schema: {
-    type: 'object',
+    type: "object",
     additionalProperties: false,
-    required: ['results'],
+    required: ["results"],
     properties: {
       results: {
-        type: 'array',
+        type: "array",
         items: {
-          type: 'object',
+          type: "object",
           additionalProperties: false,
-          required: ['index', 'reason', 'decidable', 'verdict'],
+          required: ["index", "reason", "decidable", "verdict"],
           properties: {
-            index: { type: 'integer', minimum: 0 },
-            reason: { type: 'string', maxLength: 300 },
-            decidable: { type: 'boolean' },
-            verdict: { type: 'string', enum: ['keep', 'drop'] },
-            confidence: { type: 'number', minimum: 0, maximum: 1 },
+            index: { type: "integer", minimum: 0 },
+            reason: { type: "string", maxLength: 300 },
+            decidable: { type: "boolean" },
+            verdict: { type: "string", enum: ["keep", "drop"] },
+            confidence: { type: "number", minimum: 0, maximum: 1 },
           },
         },
       },
@@ -81,12 +86,10 @@ Answer two questions per finding, in this order.
       reason: "the + line adds strict validation, so the claim is backwards".
 
 2. "verdict":
-   - "keep": the code in the window genuinely exhibits the problem the claim describes.
-   - "drop": the claim is not supported by the code shown - it describes something that isn't there, it is speculative, it is a subjective style preference, or it is not decidable from this window.
-   A claim you marked not decidable is always a "drop".
+   - "keep": ONLY if the code in the window genuinely exhibits the concrete defect described, AND the defect directly stems from the modified line quoted in evidence.
+   - "drop": if the claim cannot be proven from this window alone, if the code contradicts it, if the safeguard already exists, if it speculates on unseen callers or external files, or if it is a stylistic preference.
 
-Judge the CLAIM against the CODE. Do not defer to the claim's confidence or phrasing; a well-written claim about code that doesn't do what it says is still a drop.
-Be strict: when in doubt, "drop". It is better to drop a borderline finding than to keep a wrong one.
+Judge the CLAIM strictly against the CODE. Drop claims that cannot be decisively proven from the provided diff window; keep only concrete, demonstrable defects introduced by these changes.
 
 Output MUST be valid JSON, exactly one object, no prose before or after:
 {
@@ -105,28 +108,48 @@ export function buildVerifyPrompt(candidates: VerifyCandidate[]): string {
       `Title: ${c.title}`,
       `Claim: ${c.body}`,
       ...(c.evidence ? [`Code the claim cites: ${c.evidence}`] : []),
-      'Relevant diff:',
-      c.snippet || '(no diff context available for this location)',
-    ].join('\n');
+      "Relevant diff:",
+      c.snippet || "(no diff context available for this location)",
+    ].join("\n");
   });
 
   return [
-    'Validate each finding below against its diff context. Return a verdict for every index.',
-    '',
-    blocks.join('\n\n'),
-  ].join('\n');
+    "Validate each finding below against its diff context. Return a verdict for every index.",
+    "",
+    blocks.join("\n\n"),
+  ].join("\n");
 }
 
-export function renderDiffSnippet(file: FileDiff | undefined, line: number | undefined, radius = 12): string {
-  if (!file) return '';
+export function renderDiffSnippet(
+  file: FileDiff | undefined,
+  line: number | undefined,
+  radius = 120,
+): string {
+  if (!file) return "";
   const flat = file.hunks.flatMap((hunk) => hunk.lines);
-  if (flat.length === 0) return '';
+  if (flat.length === 0) return "";
 
-  if (line == null) return '';
+  if (flat.length <= 300) {
+    return flat
+      .map((l) => {
+        const prefix = l.kind === "add" ? "+" : l.kind === "del" ? "-" : " ";
+        const gutter = String(l.newLineNumber ?? l.oldLineNumber ?? "").padStart(
+          4,
+          " ",
+        );
+        return `${gutter} ${prefix}${l.content}`;
+      })
+      .join("\n");
+  }
+
+  if (line == null) return "";
 
   const byNewLine = flat.findIndex((l) => l.newLineNumber === line);
-  const anchor = byNewLine !== -1 ? byNewLine : flat.findIndex((l) => l.oldLineNumber === line);
-  if (anchor === -1) return '';
+  const anchor =
+    byNewLine !== -1
+      ? byNewLine
+      : flat.findIndex((l) => l.oldLineNumber === line);
+  if (anchor === -1) return "";
 
   const start = Math.max(0, anchor - radius);
   const end = Math.min(flat.length, anchor + radius + 1);
@@ -134,24 +157,77 @@ export function renderDiffSnippet(file: FileDiff | undefined, line: number | und
   return flat
     .slice(start, end)
     .map((l) => {
-      const prefix = l.kind === 'add' ? '+' : l.kind === 'del' ? '-' : ' ';
-      const gutter = String(l.newLineNumber ?? l.oldLineNumber ?? '').padStart(4, ' ');
+      const prefix = l.kind === "add" ? "+" : l.kind === "del" ? "-" : " ";
+      const gutter = String(l.newLineNumber ?? l.oldLineNumber ?? "").padStart(
+        4,
+        " ",
+      );
       return `${gutter} ${prefix}${l.content}`;
     })
-    .join('\n');
+    .join("\n");
+}
+
+function scanBalancedBraces(raw: string, startIdx: number): string | null {
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = startIdx; i < raw.length; i++) {
+    const char = raw[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (char === "\\") {
+      escape = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (char === "{") depth++;
+    else if (char === "}") {
+      depth--;
+      if (depth === 0) return raw.slice(startIdx, i + 1);
+    }
+  }
+  return null;
 }
 
 export function parseVerifyResponse(raw: string): VerifyResult[] {
   const trimmed = raw.trim();
-  const start = trimmed.indexOf('{');
-  const end = trimmed.lastIndexOf('}');
-  const candidate = start !== -1 && end !== -1 && end > start ? trimmed.slice(start, end + 1) : trimmed;
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  const candidate =
+    start !== -1 && end !== -1 && end > start
+      ? trimmed.slice(start, end + 1)
+      : trimmed;
 
   let json: unknown;
   try {
     json = JSON.parse(candidate);
   } catch {
-    json = JSON.parse(jsonrepair(candidate));
+    try {
+      json = JSON.parse(jsonrepair(candidate));
+    } catch {
+      const resultsIdx = trimmed.indexOf('"results"');
+      const objectStart =
+        resultsIdx !== -1 ? trimmed.lastIndexOf("{", resultsIdx) : -1;
+      const balanced =
+        objectStart !== -1 ? scanBalancedBraces(trimmed, objectStart) : null;
+      if (balanced) {
+        try {
+          json = JSON.parse(jsonrepair(balanced));
+        } catch {
+          throw new Error("Could not parse verifier response as JSON");
+        }
+      } else {
+        throw new Error("Could not parse verifier response as JSON");
+      }
+    }
   }
 
   return verifyResultSchema.parse(json).results;

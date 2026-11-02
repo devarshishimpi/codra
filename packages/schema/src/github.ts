@@ -1,9 +1,14 @@
+export const feedbackGitHubWebhookEvents = [
+  "pull_request_review_comment",
+  "pull_request_review_thread",
+] as const;
 
-export const feedbackGitHubWebhookEvents = ['pull_request_review_comment', 'pull_request_review_thread'] as const;
+export type FeedbackGitHubWebhookEventName =
+  (typeof feedbackGitHubWebhookEvents)[number];
 
-export type FeedbackGitHubWebhookEventName = typeof feedbackGitHubWebhookEvents[number];
-
-export function isFeedbackGitHubWebhookEvent(eventName: string): eventName is FeedbackGitHubWebhookEventName {
+export function isFeedbackGitHubWebhookEvent(
+  eventName: string,
+): eventName is FeedbackGitHubWebhookEventName {
   return (feedbackGitHubWebhookEvents as readonly string[]).includes(eventName);
 }
 
@@ -16,7 +21,7 @@ export type GitHubReviewCommentPayload = {
 };
 
 export type PullRequestReviewCommentWebhookPayload = {
-  action: 'created' | 'edited' | 'deleted';
+  action: "created" | "edited" | "deleted";
   installation?: { id: number };
   repository: { owner: { login: string }; name: string };
   pull_request: { number: number };
@@ -24,7 +29,7 @@ export type PullRequestReviewCommentWebhookPayload = {
 };
 
 export type PullRequestReviewThreadWebhookPayload = {
-  action: 'resolved' | 'unresolved';
+  action: "resolved" | "unresolved";
   installation?: { id: number };
   repository: { owner: { login: string }; name: string };
   pull_request: { number: number };
@@ -36,7 +41,7 @@ export type FeedbackWebhookPayload =
   | PullRequestReviewThreadWebhookPayload;
 
 export type PullRequestWebhookPayload = {
-  action: 'opened' | 'synchronize' | 'ready_for_review' | 'reopened' | 'closed';
+  action: "opened" | "synchronize" | "ready_for_review" | "reopened" | "closed";
   installation?: { id: number };
   repository: {
     owner: { login: string };
@@ -54,7 +59,7 @@ export type PullRequestWebhookPayload = {
 };
 
 export type IssueCommentWebhookPayload = {
-  action: 'created';
+  action: "created";
   installation?: { id: number };
   repository: {
     owner: { login: string };

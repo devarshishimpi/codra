@@ -18,10 +18,10 @@ We take the security of Codra seriously. If you believe you have found a securit
 
 ### What to include in your report:
 
--   A description of the vulnerability.
--   Steps to reproduce the issue.
--   Potential impact of the vulnerability.
--   Any suggested fixes or mitigations.
+- A description of the vulnerability.
+- Steps to reproduce the issue.
+- Potential impact of the vulnerability.
+- Any suggested fixes or mitigations.
 
 We will acknowledge your report within 48 hours and provide a timeline for a fix if the vulnerability is confirmed.
 

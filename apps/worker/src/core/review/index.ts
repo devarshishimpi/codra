@@ -1,7 +1,7 @@
-import type { ReviewJobMessage } from '@codraoss/schema';
-import { runReview, type ReviewJobRunResult } from '@codraoss/core';
-import { createReviewRuntime } from '../../adapters';
-import type { AppBindings } from '../../env';
+import type { ReviewJobMessage } from "@codraoss/schema";
+import { runReview, type ReviewJobRunResult } from "@codraoss/core";
+import { createReviewRuntime } from "../../adapters";
+import type { AppBindings } from "../../env";
 
 // The seam between the Worker and the engine. The engine moved to @codraoss/core; this converts
 // AppBindings into the ports it takes, and is the ONLY place in production that does.
@@ -14,7 +14,10 @@ import type { AppBindings } from '../../env';
 
 export type { ReviewJobRunResult };
 
-export function runReviewJob(env: AppBindings, message: ReviewJobMessage): Promise<ReviewJobRunResult> {
+export function runReviewJob(
+  env: AppBindings,
+  message: ReviewJobMessage,
+): Promise<ReviewJobRunResult> {
   return runReview(createReviewRuntime(env), message);
 }
 
@@ -22,6 +25,7 @@ export function runReviewJob(env: AppBindings, message: ReviewJobMessage): Promi
 // specs that name that specifier keep working unchanged.
 export {
   FRESH_INVOCATION_YIELD_SECONDS,
+  MAX_ATTEMPTS_PER_WORKFLOW_INSTANCE,
   NextPhaseError,
   failJobAndCheckRun,
   extractReviewRequest,
@@ -43,4 +47,4 @@ export {
   type ReviewUnit,
   type VerifyDrop,
   type VerifyOutcome,
-} from '@codraoss/core';
+} from "@codraoss/core";

@@ -1,32 +1,32 @@
-import * as React from 'react';
-import { cn } from '../lib/utils';
-import { AlertCircle, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import * as React from "react";
+import { cn } from "../lib/utils";
+import { AlertCircle, CheckCircle2, AlertTriangle, Info } from "lucide-react";
 
 const variants = {
   default: {
-    bg: 'var(--info-bg)',
-    border: 'var(--info-border)',
-    color: 'var(--info)',
-    icon: Info
+    bg: "var(--info-bg)",
+    border: "var(--info-border)",
+    color: "var(--info)",
+    icon: Info,
   },
   destructive: {
-    bg: 'var(--danger-bg)',
-    border: 'var(--danger-border)',
-    color: 'var(--danger)',
-    icon: AlertCircle
+    bg: "var(--danger-bg)",
+    border: "var(--danger-border)",
+    color: "var(--danger)",
+    icon: AlertCircle,
   },
   warning: {
-    bg: 'var(--warning-bg)',
-    border: 'var(--warning-border)',
-    color: 'var(--warning)',
-    icon: AlertTriangle
+    bg: "var(--warning-bg)",
+    border: "var(--warning-border)",
+    color: "var(--warning)",
+    icon: AlertTriangle,
   },
   success: {
-    bg: 'var(--success-bg)',
-    border: 'var(--success-border)',
-    color: 'var(--success)',
-    icon: CheckCircle2
-  }
+    bg: "var(--success-bg)",
+    border: "var(--success-border)",
+    color: "var(--success)",
+    icon: CheckCircle2,
+  },
 };
 
 interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -35,7 +35,10 @@ interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'default', icon: IconOverride, children, ...props }, ref) => {
+  (
+    { className, variant = "default", icon: IconOverride, children, ...props },
+    ref,
+  ) => {
     const config = variants[variant];
     const Icon = IconOverride || config.icon;
 
@@ -44,13 +47,13 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         ref={ref}
         role="alert"
         className={cn(
-          'flex gap-3 rounded-lg border px-4 py-3 text-sm',
-          className
+          "flex gap-3 rounded-lg border px-4 py-3 text-sm",
+          className,
         )}
-        style={{ 
-          backgroundColor: config.bg, 
-          borderColor: config.border, 
-          color: config.color 
+        style={{
+          backgroundColor: config.bg,
+          borderColor: config.border,
+          color: config.color,
         }}
         {...props}
       >
@@ -58,6 +61,6 @@ export const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
         <div className="flex-1">{children}</div>
       </div>
     );
-  }
+  },
 );
-Alert.displayName = 'Alert';
+Alert.displayName = "Alert";

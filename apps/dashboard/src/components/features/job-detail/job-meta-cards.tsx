@@ -1,16 +1,21 @@
-import type { ReactNode } from 'react';
-import { AtSign, Info, ListChecks, RotateCcw, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { cn, formatPreciseDuration } from '@codraoss/ui/utils';
-import type { JobDetail, JobStep } from '@codraoss/schema';
+import type { ReactNode } from "react";
+import { AtSign, Info, ListChecks, RotateCcw, Zap } from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn, formatPreciseDuration } from "@codraoss/ui/utils";
+import type { JobDetail, JobStep } from "@codraoss/schema";
 import {
   EmptyValue,
   JobStatusLine,
   MetaChip,
   StatusDot,
   VerdictPill,
-} from './job-chips';
-import { DETAIL_LABEL, DETAIL_ROW, formatAbsoluteDate, formatRelativeDate } from './job-chip-utils';
+} from "./job-chips";
+import {
+  DETAIL_LABEL,
+  DETAIL_ROW,
+  formatAbsoluteDate,
+  formatRelativeDate,
+} from "./job-chip-utils";
 
 interface JobMetaCardsProps {
   job: JobDetail;
@@ -45,15 +50,25 @@ function MetaPanel({
     <div className="ui-panel flex min-w-0 flex-col overflow-hidden p-3.5">
       <div className="flex items-center gap-2 px-0.5">
         <Icon size={15} strokeWidth={2} className="shrink-0 text-ui-default" />
-        <h2 className="truncate text-[13px] font-medium text-ui-default">{title}</h2>
+        <h2 className="truncate text-[13px] font-medium text-ui-default">
+          {title}
+        </h2>
       </div>
       {/* Recessed inner panel, same as the dashboard stat cards. */}
-      <div className="ui-well mt-3 flex-1 rounded-md px-4 py-1.5">{children}</div>
+      <div className="ui-well mt-3 flex-1 rounded-md px-4 py-1.5">
+        {children}
+      </div>
     </div>
   );
 }
 
-function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+function DetailRow({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <div className={DETAIL_ROW}>
       <dt className={DETAIL_LABEL}>{label}</dt>
@@ -63,19 +78,22 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
 }
 
 function StepRow({ step }: { step: JobStep }) {
-  const isRunning = step.status === 'running';
-  const isPending = step.status === 'pending';
+  const isRunning = step.status === "running";
+  const isPending = step.status === "pending";
   const elapsed = elapsedSec(step);
 
   return (
     <div className={DETAIL_ROW}>
       <div className="flex min-w-0 items-center gap-2">
-        <StatusDot status={step.status} className={isPending ? 'opacity-50' : undefined} />
+        <StatusDot
+          status={step.status}
+          className={isPending ? "opacity-50" : undefined}
+        />
         <span
           className={cn(
-            'truncate text-[13px] leading-none',
-            isPending ? 'text-ui-subtle' : 'text-ui-default',
-            isRunning && 'font-medium',
+            "truncate text-[13px] leading-none",
+            isPending ? "text-ui-subtle" : "text-ui-default",
+            isRunning && "font-medium",
           )}
         >
           {step.name}
@@ -110,7 +128,11 @@ export function JobMetaCards({ job }: JobMetaCardsProps) {
           </DetailRow>
 
           <DetailRow label="Verdict">
-            {job.verdict ? <VerdictPill verdict={job.verdict} /> : <EmptyValue />}
+            {job.verdict ? (
+              <VerdictPill verdict={job.verdict} />
+            ) : (
+              <EmptyValue />
+            )}
           </DetailRow>
 
           <DetailRow label="Trigger">
@@ -146,12 +168,13 @@ export function JobMetaCards({ job }: JobMetaCardsProps) {
             </DetailRow>
           )}
         </dl>
-
       </MetaPanel>
 
       <MetaPanel icon={ListChecks} title="Progress steps">
         {steps.length === 0 ? (
-          <p className="py-2.5 text-xs text-ui-default dark:text-ui-subtle">No steps recorded yet.</p>
+          <p className="py-2.5 text-xs text-ui-default dark:text-ui-subtle">
+            No steps recorded yet.
+          </p>
         ) : (
           steps.map((step) => <StepRow key={step.name} step={step} />)
         )}

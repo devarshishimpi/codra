@@ -1,17 +1,26 @@
-import type { DbEnv } from './env';
-import { hexToBytes } from '@codraoss/schema/hex';
-import { parseJsonColumn, queryRows } from './client';
-import { defaultRepoConfig, jobDetailSchema, repoConfigSchema, type RepoConfig } from '@codraoss/schema';
-import { getOrCreateRepository } from './repositories';
-import { reviewCommentJsonObject } from './review-comment-sql';
-import { type JobRow, bytesToHex, mapJob } from './jobs-mapping';
-import { markSystemActive } from './jobs-activity';
+import type { DbEnv } from "./env";
+import { hexToBytes } from "@codraoss/schema/hex";
+import { parseJsonColumn, queryRows } from "./client";
+import {
+  defaultRepoConfig,
+  jobDetailSchema,
+  repoConfigSchema,
+  type RepoConfig,
+} from "@codraoss/schema";
+import { getOrCreateRepository } from "./repositories";
+import { reviewCommentJsonObject } from "./review-comment-sql";
+import { type JobRow, bytesToHex, mapJob } from "./jobs-mapping";
+import { markSystemActive } from "./jobs-activity";
 
 type JobDetailRow = JobRow & {
   files_json: unknown[] | string | null;
 };
 
-export async function setJobWorkflowInstance(env: DbEnv, jobId: string, workflowInstanceId: string) {
+export async function setJobWorkflowInstance(
+  env: DbEnv,
+  jobId: string,
+  workflowInstanceId: string,
+) {
   await queryRows(
     env,
     `
@@ -57,7 +66,7 @@ export async function hasPendingMaintenanceWork(env: DbEnv): Promise<boolean> {
 }
 
 export async function insertJob(
-  env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>,
+  env: Pick<DbEnv, "HYPERDRIVE" | "APP_KV">,
   input: {
     installationId: string;
     owner: string;
@@ -67,7 +76,7 @@ export async function insertJob(
     prAuthor: string | null;
     commitSha: string;
     baseSha: string;
-    trigger: 'auto' | 'mention' | 'retry';
+    trigger: "auto" | "mention" | "retry";
     headRef: string | null;
     baseRef: string | null;
     configSnapshot?: RepoConfig | null;
@@ -162,10 +171,13 @@ export async function listJobs(
   }
   if (query.search) {
     params.push(`%${query.search}%`);
-    conditions.push(`(j.pr_title ILIKE $${params.length} OR CAST(j.pr_number AS TEXT) LIKE $${params.length})`);
+    conditions.push(
+      `(j.pr_title ILIKE $${params.length} OR CAST(j.pr_number AS TEXT) LIKE $${params.length})`,
+    );
   }
 
-  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+  const whereClause =
+    conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
 
   params.push(query.limit);
   const limitIdx = params.length;
@@ -203,13 +215,25 @@ export async function listJobs(
   };
 }
 
-export async function getJob(env: DbEnv, jobId: string): Promise<JobRow | null> {
-  const [row] = await queryRows<JobRow>(env, `SELECT * FROM jobs WHERE id = $1`, [jobId]);
+export async function getJob(
+  env: DbEnv,
+  jobId: string,
+): Promise<JobRow | null> {
+  const [row] = await queryRows<JobRow>(
+    env,
+    `SELECT * FROM jobs WHERE id = $1`,
+    [jobId],
+  );
   return row ?? null;
 }
 
 export async function getJobDetail(env: DbEnv, jobId: string) {
-  if (!jobId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
+  if (
+    !jobId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      jobId,
+    )
+  ) {
     return null;
   }
 
@@ -290,7 +314,9 @@ export async function getJobDetail(env: DbEnv, jobId: string) {
     headRef: row.head_ref,
     baseRef: row.base_ref,
     summaryMarkdown: row.summary_markdown,
-    configSnapshot: repoConfigSchema.parse(parseJsonColumn(row.config_snapshot, defaultRepoConfig)),
+    configSnapshot: repoConfigSchema.parse(
+      parseJsonColumn(row.config_snapshot, defaultRepoConfig),
+    ),
     reviewId: row.review_id,
     retryOfJobId: row.retry_of_job_id,
     summaryModel: row.summary_model,
@@ -300,7 +326,13 @@ export async function getJobDetail(env: DbEnv, jobId: string) {
 
 export async function findExistingJobForHead(
   env: DbEnv,
-  input: { owner: string; repo: string; prNumber: number; commitSha: string; trigger: 'auto' | 'mention' },
+  input: {
+    owner: string;
+    repo: string;
+    prNumber: number;
+    commitSha: string;
+    trigger: "auto" | "mention";
+  },
 ) {
   const [row] = await queryRows<JobRow>(
     env,
@@ -316,15 +348,21 @@ export async function findExistingJobForHead(
       ORDER BY j.created_at DESC
       LIMIT 1
     `,
-    [input.owner, input.repo, input.prNumber, hexToBytes(input.commitSha), input.trigger],
+    [
+      input.owner,
+      input.repo,
+      input.prNumber,
+      hexToBytes(input.commitSha),
+      input.trigger,
+    ],
   );
 
   return row ? mapJob(row) : null;
 }
 
 // Re-export so imports use db/jobs.ts (respects vi.mock).
-export { type JobRow, bytesToHex, mapJob } from './jobs-mapping';
-export { markSystemActive, clearSystemActive } from './jobs-activity';
+export { type JobRow, bytesToHex, mapJob } from "./jobs-mapping";
+export { markSystemActive, clearSystemActive } from "./jobs-activity";
 export {
   type JobLeaseClaim,
   getJobForProcessing,
@@ -335,7 +373,7 @@ export {
   resetJobContinuationCount,
   recoverExpiredJobLeases,
   getOtherRunningJobsCount,
-} from './jobs-leases';
+} from "./jobs-leases";
 export {
   updateJobCheckRun,
   completeJob,
@@ -348,4 +386,4 @@ export {
   updateJobStep,
   getTerminalJobsNeedingCheckRunCompletion,
   supersedeOlderJobs,
-} from './jobs-lifecycle';
+} from "./jobs-lifecycle";

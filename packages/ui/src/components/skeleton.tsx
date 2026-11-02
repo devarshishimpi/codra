@@ -1,5 +1,5 @@
-import React from 'react';
-import { cn } from '../lib/utils';
+import React from "react";
+import { cn } from "../lib/utils";
 
 interface SkeletonProps {
   width?: string | number;
@@ -13,15 +13,15 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   width,
   height,
   borderRadius,
-  className = '',
+  className = "",
   style,
 }) => {
   return (
     <div
-      className={cn('skeleton', className)}
+      className={cn("skeleton", className)}
       style={{
-        width: width ?? '100%',
-        height: height ?? '1rem',
+        width: width ?? "100%",
+        height: height ?? "1rem",
         borderRadius: borderRadius ?? undefined,
         ...style,
       }}

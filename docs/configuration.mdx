@@ -1,0 +1,141 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="environment">Environment Variables</h2>
+
+Codra has two configuration layers:
+1. **Platform and Runtime Secrets**: Environment variables or secrets provided at boot (e.g. GitHub credentials, database strings, Redis URLs).
+2. **Dashboard-Managed LLM Provider Credentials**: API keys configured securely through **Settings > LLM Providers** and encrypted in PostgreSQL.
+
+### Runtime Configuration Comparison
+
+| Setting | Cloudflare Workers | Node.js & Docker | Purpose |
+| --- | --- | --- | --- |
+| Database | `HYPERDRIVE` binding or `DATABASE_URL` | `DATABASE_URL` | Connection string to PostgreSQL 13+. |
+| Queue / Sessions | `REVIEW_QUEUE` & `APP_KV` | `REDIS_URL` | Storage for review jobs and user sessions. |
+| Process Roles | Always unified serverless | `START_API`, `START_WORKER` | Option to decouple API and background workers. |
+| Redis TLS | N/A | `REDIS_INSECURE_TLS` | Allows self-signed certificates with `rediss://`. |
+| Port | Handled by Cloudflare edge | `PORT` (default `3000`) | Internal HTTP binding port. |
+| AI Binding | `AI` binding (Workers AI) | Disabled (use API keys) | Cloudflare-native model execution. |
+
+### Core Platform Secrets
+
+These variables are shared across all deployment targets:
+
+| Name | Purpose | Format |
+| --- | --- | --- |
+| `APP_PRIVATE_KEY` | GitHub App private key. Accepts both PKCS#1 (`BEGIN RSA PRIVATE KEY`) and PKCS#8 (`BEGIN PRIVATE KEY`). | PEM string with escaped `\n` or multiline text |
+| `GITHUB_APP_ID` | Numeric GitHub App ID used to issue installation tokens. | Number |
+| `GITHUB_APP_WEBHOOK_SECRET` | Secret used to verify GitHub webhook HMAC-SHA256 signatures. | String |
+| `GITHUB_CLIENT_ID` | OAuth Client ID for dashboard authentication. | String |
+| `GITHUB_CLIENT_SECRET` | OAuth Client Secret for dashboard authentication. | String |
+| `AUTH_CALLBACK_URL` | OAuth redirect endpoint (e.g. `https://codra.example.com/api/auth/callback`). | URL |
+| `APP_URL` | Public base URL of your Codra deployment. | URL |
+| `LLM_CONFIG_ENCRYPTION_KEY` | 32-byte hexadecimal encryption key for securing provider API keys stored in PostgreSQL. Generate with `openssl rand -hex 32`. | 64-character hex |
+| `DASHBOARD_ALLOWED_USERS` | Comma-separated list of GitHub usernames permitted to log into the dashboard. | String |
+| `BOT_USERNAME` | Bot name mentioned in PR comments (defaults to `codra-app`). | String |
+
+### Dashboard-Managed Provider Credentials
+
+Add Google, OpenAI, Anthropic, OpenRouter, and custom provider API keys in **Settings > LLM Providers**. These keys are write-only in the UI, encrypted with `LLM_CONFIG_ENCRYPTION_KEY`, and stored in PostgreSQL as encrypted values.
+
+Cloudflare Workers AI does not use a dashboard API key or base URL. It runs through the Worker `AI` binding at runtime.
+
+<h2 id="repo-config">Repository Configuration</h2>
+
+Repository behavior is stored in your PostgreSQL database and can be edited from the dashboard. The config is validated against the schema in `src/shared/schema.ts`.
+
+### Default Config
+
+```jsonc
+{
+  "review": {
+    "on": ["opened", "synchronize", "ready_for_review", "reopened"],
+    "ignore_drafts": true,
+    "mention_trigger": "@codra-app",
+    "skip_files": [
+      "**/*.lock",
+      "dist/**",
+      "build/**",
+      ".next/**",
+      "*.generated.*",
+      "coverage/**"
+    ],
+    "max_files": 15,
+    "large_file_threshold_lines": 200,
+    "max_diff_lines_per_file": 800,
+    "max_total_diff_chars": 150000,
+    "focus": ["security", "bugs", "performance", "correctness", "quality"],
+    "custom_rules": [],
+    "labels": {
+      "p1": "review: needs-attention",
+      "p2": "review: approved",
+      "p3": "review: approved"
+    }
+  },
+  "model": {
+    "main": "primary-review",
+    "fallbacks": ["fast-review", "cloudflare-native-review"],
+    "size_overrides": []
+  }
+}
+```
+
+### Config Field Reference
+
+| Field | Description |
+| --- | --- |
+| `review.on` | Pull request actions that trigger automatic reviews. |
+| `review.ignore_drafts` | Skips draft PRs when true. |
+| `review.mention_trigger` | String that triggers a review from PR issue comments, or false to disable. |
+| `review.skip_files` | Glob patterns excluded from review. Matched against file paths in the diff. |
+| `review.max_files` | Maximum number of files to review from a diff. |
+| `review.large_file_threshold_lines` | Threshold used by diff filtering and model selection decisions. |
+| `review.max_diff_lines_per_file` | Per-file diff size limit in lines. |
+| `review.max_total_diff_chars` | Whole-PR diff character budget. |
+| `review.focus` | Review categories used in prompts: security, bugs, performance, correctness, quality. |
+| `review.custom_rules` | Extra project-specific review instructions passed to the model. |
+| `review.labels` | PR labels to apply per verdict, or false to disable label changes. |
+| `model.main` | Primary model ID to attempt first. |
+| `model.fallbacks` | Ordered fallback model IDs tried if the primary fails. |
+| `model.size_overrides` | Model chains selected when total PR line count is under a configured threshold. |
+
+<h2 id="model-routing">Model Routing</h2>
+
+Model routing chooses stable Codra model IDs from DB-backed model configs. The provider-specific model name is stored in dashboard model configuration and is the value sent to the provider at runtime.
+
+The global model strategy is not initialized automatically. After provider credentials and model configs are ready, choose the global route in Settings. Repository overrides still reference Codra model IDs for `model.main`, `model.fallbacks`, and `model.size_overrides`.
+
+Settings and repository dropdowns list model configs from the database and refreshed provider catalogs, not hardcoded model arrays.
+
+### Optional Rate and Token Limits
+
+RPM, RPD, and TPM limits are optional app-level guardrails on model configs. Leave them blank when no Codra-enforced limit is needed; provider-side quota and throttling can still apply.
+
+### Supported Review Categories
+
+<div className="flex flex-wrap gap-3 my-4">
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-danger">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> security
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-warning">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> bugs
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-info">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> performance
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-success">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> correctness
+  </span>
+  <span className="text-sm font-medium inline-flex items-center gap-2 bg-secondary/50 px-2 py-1 rounded-md text-violet-500">
+    <span className="w-2 h-2 rounded-full bg-current opacity-70"></span> quality
+  </span>
+</div>
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Providers</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure dashboard-managed providers, encrypted keys, catalogs, and model routing.</p>
+  </div>
+  <Link to="/docs/providers" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Providers <ArrowRight size={16} /></Link>
+</div>

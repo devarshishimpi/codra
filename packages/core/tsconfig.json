@@ -1,19 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    // The base sets ES2024 only. The engine reaches for AbortController/AbortSignal (timeout.ts),
-    // crypto.subtle + TextEncoder (verify.ts), console (logger.ts) and fetch types -- all of which
-    // live in the DOM lib. Deliberately NOT @cloudflare/workers-types: KVNamespace must never
-    // resolve inside this package, which is what forces the KvStore port to exist.
     "lib": ["ES2024", "DOM"],
     "types": ["node"],
-
-    // No emit, and therefore no project reference to ../schema. Packages here have no build step:
-    // @codraoss/schema is consumed as raw TS source through its `exports` map, exactly as the root
-    // program consumes it. Keeping the base's composite/declaration settings would instead demand
-    // that schema be built to dist/ first (TS6305) -- a build nothing in this repo performs.
-    // This project exists to typecheck the package against a NARROWER lib/types than the root
-    // program, which is what catches a stray KVNamespace or hono import.
     "composite": false,
     "declaration": false,
     "emitDeclarationOnly": false,

@@ -12,7 +12,7 @@ export type ModelOption = {
   providerId: string;
 };
 
-export type ModelDensity = 'compact' | 'comfortable';
+export type ModelDensity = "compact" | "comfortable";
 
 export type ModelRouteTier = {
   max_lines: number;
@@ -42,8 +42,13 @@ export type ModelRouteInput =
 
 export function normalizeModelRoute(config: ModelRouteInput): ModelRouteConfig {
   return {
-    main: typeof config?.main === 'string' && config.main.trim() ? config.main : null,
-    fallbacks: Array.isArray(config?.fallbacks) ? config.fallbacks : EMPTY_MODEL_ROUTE.fallbacks,
+    main:
+      typeof config?.main === "string" && config.main.trim()
+        ? config.main
+        : null,
+    fallbacks: Array.isArray(config?.fallbacks)
+      ? config.fallbacks
+      : EMPTY_MODEL_ROUTE.fallbacks,
     size_overrides: Array.isArray(config?.size_overrides)
       ? config.size_overrides
       : EMPTY_MODEL_ROUTE.size_overrides,
@@ -55,21 +60,28 @@ export function stringArraysEqual(a: string[] = [], b: string[] = []) {
 }
 
 export function tiersEqual(
-  a: ModelRouteConfig['size_overrides'] = [],
-  b: ModelRouteConfig['size_overrides'] = [],
+  a: ModelRouteConfig["size_overrides"] = [],
+  b: ModelRouteConfig["size_overrides"] = [],
 ) {
-  return a.length === b.length && a.every((tier, index) => {
-    const other = b[index];
-    return Boolean(
-      tier && other &&
-      tier.max_lines === other.max_lines &&
-      tier.model === other.model &&
-      stringArraysEqual(tier.fallbacks ?? [], other.fallbacks ?? []),
-    );
-  });
+  return (
+    a.length === b.length &&
+    a.every((tier, index) => {
+      const other = b[index];
+      return Boolean(
+        tier &&
+        other &&
+        tier.max_lines === other.max_lines &&
+        tier.model === other.model &&
+        stringArraysEqual(tier.fallbacks ?? [], other.fallbacks ?? []),
+      );
+    })
+  );
 }
 
-export function routesEqual(a: ModelRouteConfig | null, b: ModelRouteConfig | null) {
+export function routesEqual(
+  a: ModelRouteConfig | null,
+  b: ModelRouteConfig | null,
+) {
   if (a === b) return true;
   if (!a || !b) return false;
   return (
@@ -80,19 +92,28 @@ export function routesEqual(a: ModelRouteConfig | null, b: ModelRouteConfig | nu
 }
 
 export function getModelLabel(model: string, models: ModelOption[] = []) {
-  return models.find(m => m.value === model)?.label ?? model;
+  return models.find((m) => m.value === model)?.label ?? model;
 }
 
-export function describeModelRoute(config: ModelRouteConfig, models: ModelOption[] = []) {
-  if (!config.main && (config.fallbacks?.length ?? 0) === 0 && (config.size_overrides?.length ?? 0) === 0) {
-    return 'No model strategy configured';
+export function describeModelRoute(
+  config: ModelRouteConfig,
+  models: ModelOption[] = [],
+) {
+  if (
+    !config.main &&
+    (config.fallbacks?.length ?? 0) === 0 &&
+    (config.size_overrides?.length ?? 0) === 0
+  ) {
+    return "No model strategy configured";
   }
 
   const fallbacks = config.fallbacks?.length ?? 0;
   const tiers = config.size_overrides?.length ?? 0;
   return [
-    config.main ? getModelLabel(config.main, models) : 'No baseline model',
-    fallbacks > 0 ? `${fallbacks} fallback${fallbacks === 1 ? '' : 's'}` : 'no fallbacks',
-    tiers > 0 ? `${tiers} tier${tiers === 1 ? '' : 's'}` : 'baseline only',
-  ].join(' · ');
+    config.main ? getModelLabel(config.main, models) : "No baseline model",
+    fallbacks > 0
+      ? `${fallbacks} fallback${fallbacks === 1 ? "" : "s"}`
+      : "no fallbacks",
+    tiers > 0 ? `${tiers} tier${tiers === 1 ? "" : "s"}` : "baseline only",
+  ].join(" · ");
 }

@@ -105,7 +105,7 @@ export function SharedLayoutBg({
             </AnimatePresence>
           </div>
           {el}
-        </>
+        </>,
       ),
     );
   }

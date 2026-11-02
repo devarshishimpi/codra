@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import type { MouseEvent } from "react";
 
 /**
  * `<summary>` toggles its `<details>` on any click, including the one that ends a drag-select -

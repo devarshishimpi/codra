@@ -1,4 +1,3 @@
-
 /**
  * The logging port. A correct implementation must:
  *  - never throw, for any input, including circular objects (callers log on failure paths, so a
@@ -15,31 +14,33 @@ export interface Logger {
 }
 
 const SENSITIVE_KEYS = [
-  'api_key',
-  'api-key',
-  'apikey',
-  'secret',
-  'password',
-  'token',
-  'private_key',
-  'private-key',
-  'database_url',
-  'authorization',
-  'session',
-  'cookie',
+  "api_key",
+  "api-key",
+  "apikey",
+  "secret",
+  "password",
+  "token",
+  "private_key",
+  "private-key",
+  "database_url",
+  "authorization",
+  "session",
+  "cookie",
 ];
 
 const JWT = /\beyJ[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]*/g;
 const BEARER = /\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}/gi;
 
 export function scrubString(value: string): string {
-  return value.replace(JWT, '[REDACTED_JWT]').replace(BEARER, (m) => `${m.split(/\s+/)[0]} [REDACTED]`);
+  return value
+    .replace(JWT, "[REDACTED_JWT]")
+    .replace(BEARER, (m) => `${m.split(/\s+/)[0]} [REDACTED]`);
 }
 
 export function redact(obj: any): any {
   if (obj === null || obj === undefined) return obj;
-  if (typeof obj !== 'object') {
-    return typeof obj === 'string' ? scrubString(obj) : obj;
+  if (typeof obj !== "object") {
+    return typeof obj === "string" ? scrubString(obj) : obj;
   }
   if (Array.isArray(obj)) return obj.map(redact);
   if (obj instanceof Error) {
@@ -54,7 +55,7 @@ export function redact(obj: any): any {
   for (const [key, value] of Object.entries(obj)) {
     const lowerKey = key.toLowerCase();
     if (SENSITIVE_KEYS.some((sk) => lowerKey.includes(sk))) {
-      redacted[key] = '[REDACTED]';
+      redacted[key] = "[REDACTED]";
     } else {
       redacted[key] = redact(value);
     }
@@ -72,16 +73,23 @@ export function formatLogRecord(
     timestamp: new Date().toISOString(),
     level,
     message: scrubString(message),
-    ...contexts.reduce<Record<string, unknown>>((merged, context) => Object.assign(merged, redact(context)), {}),
+    ...contexts.reduce<Record<string, unknown>>(
+      (merged, context) => Object.assign(merged, redact(context)),
+      {},
+    ),
     ...(data ? { data: redact(data) } : {}),
   };
 }
 
 export const consoleLogger: Logger = {
-  info: (message, data) => console.log(JSON.stringify(formatLogRecord('info', message, [], data))),
-  warn: (message, data) => console.warn(JSON.stringify(formatLogRecord('warn', message, [], data))),
-  error: (message, data) => console.error(JSON.stringify(formatLogRecord('error', message, [], data))),
-  debug: (message, data) => console.log(JSON.stringify(formatLogRecord('debug', message, [], data))),
+  info: (message, data) =>
+    console.log(JSON.stringify(formatLogRecord("info", message, [], data))),
+  warn: (message, data) =>
+    console.warn(JSON.stringify(formatLogRecord("warn", message, [], data))),
+  error: (message, data) =>
+    console.error(JSON.stringify(formatLogRecord("error", message, [], data))),
+  debug: (message, data) =>
+    console.log(JSON.stringify(formatLogRecord("debug", message, [], data))),
 };
 
 let sink: Logger = consoleLogger;

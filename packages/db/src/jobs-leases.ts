@@ -1,12 +1,16 @@
-import type { DbEnv } from './env';
-import { queryRows } from './client';
-import type { JobRow } from './jobs-mapping';
-import { markSystemActive } from './jobs-activity';
-
+import type { DbEnv } from "./env";
+import { queryRows } from "./client";
+import type { JobRow } from "./jobs-mapping";
+import { markSystemActive } from "./jobs-activity";
 
 // Lives here rather than with the other read queries because claimJobLease is its main caller; keeping it in the barrel would make jobs.ts <-> jobs-leases.ts an import cycle.
 export async function getJobForProcessing(env: DbEnv, jobId: string) {
-  if (!jobId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(jobId)) {
+  if (
+    !jobId ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      jobId,
+    )
+  ) {
     return null;
   }
   const [row] = await queryRows<JobRow>(
@@ -25,13 +29,13 @@ export async function getJobForProcessing(env: DbEnv, jobId: string) {
 }
 
 export type JobLeaseClaim =
-  | { status: 'claimed'; row: JobRow }
-  | { status: 'busy'; row: JobRow; retryAfterSeconds: number }
-  | { status: 'terminal'; row: JobRow }
-  | { status: 'missing' };
+  | { status: "claimed"; row: JobRow }
+  | { status: "busy"; row: JobRow; retryAfterSeconds: number }
+  | { status: "terminal"; row: JobRow }
+  | { status: "missing" };
 
 export async function claimJobLease(
-  env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>,
+  env: Pick<DbEnv, "HYPERDRIVE" | "APP_KV">,
   jobId: string,
   leaseOwner: string,
   leaseSeconds: number,
@@ -71,31 +75,42 @@ export async function claimJobLease(
 
   if (claimed) {
     await markSystemActive(env);
-    return { status: 'claimed', row: claimed };
+    return { status: "claimed", row: claimed };
   }
 
   const row = await getJobForProcessing(env, jobId);
   if (!row) {
-    return { status: 'missing' };
+    return { status: "missing" };
   }
 
-  if (!['queued', 'running'].includes(row.status)) {
-    return { status: 'terminal', row };
+  if (!["queued", "running"].includes(row.status)) {
+    return { status: "terminal", row };
   }
 
-  const leaseExpiresAt = row.lease_expires_at ? new Date(row.lease_expires_at).getTime() : 0;
-  const delayedUntil = row.lease_owner === null && row.last_queue_message_at ? new Date(row.last_queue_message_at).getTime() : 0;
+  const leaseExpiresAt = row.lease_expires_at
+    ? new Date(row.lease_expires_at).getTime()
+    : 0;
+  const delayedUntil =
+    row.lease_owner === null && row.last_queue_message_at
+      ? new Date(row.last_queue_message_at).getTime()
+      : 0;
   const retryAt = Math.max(leaseExpiresAt, delayedUntil);
   const secondsUntilExpiry = Math.ceil((retryAt - Date.now()) / 1000);
   return {
-    status: 'busy',
+    status: "busy",
     row,
-    retryAfterSeconds: Math.max(15, Math.min(60, Number.isFinite(secondsUntilExpiry) ? secondsUntilExpiry : 60)),
+    retryAfterSeconds: Math.max(
+      15,
+      Math.min(
+        60,
+        Number.isFinite(secondsUntilExpiry) ? secondsUntilExpiry : 60,
+      ),
+    ),
   };
 }
 
 export async function heartbeatJobLease(
-  env: Pick<DbEnv, 'HYPERDRIVE' | 'APP_KV'>,
+  env: Pick<DbEnv, "HYPERDRIVE" | "APP_KV">,
   jobId: string,
   leaseOwner: string,
   leaseSeconds: number,
@@ -115,7 +130,11 @@ export async function heartbeatJobLease(
   await markSystemActive(env);
 }
 
-export async function releaseJobLease(env: DbEnv, jobId: string, leaseOwner: string) {
+export async function releaseJobLease(
+  env: DbEnv,
+  jobId: string,
+  leaseOwner: string,
+) {
   await queryRows(
     env,
     `
@@ -130,7 +149,11 @@ export async function releaseJobLease(env: DbEnv, jobId: string, leaseOwner: str
 }
 
 // Bumps continuation counter; cleared on file completion to detect stuck jobs.
-export async function markJobContinuationQueued(env: DbEnv, jobId: string, delaySeconds = 0) {
+export async function markJobContinuationQueued(
+  env: DbEnv,
+  jobId: string,
+  delaySeconds = 0,
+) {
   const rows = await queryRows<{ continuation_count: number }>(
     env,
     `
@@ -271,11 +294,14 @@ export async function recoverExpiredJobLeases(
   };
 }
 
-export async function getOtherRunningJobsCount(env: DbEnv, excludeJobId: string): Promise<number> {
+export async function getOtherRunningJobsCount(
+  env: DbEnv,
+  excludeJobId: string,
+): Promise<number> {
   const [result] = await queryRows<{ count: string }>(
     env,
     `SELECT count(*) as count FROM jobs WHERE status = 'running' AND id != $1`,
-    [excludeJobId]
+    [excludeJobId],
   );
-  return parseInt(result?.count ?? '0', 10);
+  return parseInt(result?.count ?? "0", 10);
 }

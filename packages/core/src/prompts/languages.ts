@@ -7,75 +7,111 @@ export type LanguageGuideline = {
 
 const LANGUAGE_GUIDELINES: LanguageGuideline[] = [
   {
-    language: 'TypeScript/JavaScript',
-    persona: 'an expert TypeScript engineer focused on correctness and safe async code',
-    extensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'],
+    language: "TypeScript/JavaScript",
+    persona:
+      "an expert TypeScript engineer focused on correctness and safe async code",
+    extensions: ["ts", "tsx", "js", "jsx", "mjs", "cjs"],
     guidelines: [
-      'Flag unhandled promise rejections, missing await, or async errors that can crash or silently drop work.',
-      'Flag resource leaks that cause real bugs (uncleared timers/intervals/listeners on a path that runs repeatedly).',
-      'Flag security pitfalls such as eval() on untrusted input or ReDoS-prone regexes.',
-      'Flag runtime-breaking null/undefined access introduced by the diff.',
+      "Flag unhandled promise rejections, missing await, or async errors that can crash or silently drop work.",
+      "Flag resource leaks that cause real bugs (uncleared timers/intervals/listeners on a path that runs repeatedly).",
+      "Flag security pitfalls such as eval() on untrusted input or ReDoS-prone regexes.",
+      "Flag runtime-breaking null/undefined access introduced by the diff.",
     ],
   },
   {
-    language: 'Python',
-    persona: 'a Python engineer focused on correctness',
-    extensions: ['py'],
+    language: "Python",
+    persona: "a Python engineer focused on correctness",
+    extensions: ["py"],
     guidelines: [
-      'Flag mutable default arguments that cause shared-state bugs.',
+      "Flag mutable default arguments that cause shared-state bugs.",
       'Flag bare "except:" that swallows errors and hides failures.',
-      'Flag incorrect exception handling or resource handling (files/sockets not closed).',
+      "Flag incorrect exception handling or resource handling (files/sockets not closed).",
     ],
   },
   {
-    language: 'CSS/SCSS/Less',
-    persona: 'a frontend engineer',
-    extensions: ['css', 'scss', 'sass', 'less'],
+    language: "Go",
+    persona:
+      "a Go engineer focused on correctness, concurrency safety, and idiomatic error handling",
+    extensions: ["go"],
     guidelines: [
-      'Flag only rules that break layout or rendering; do not report stylistic preferences.',
+      "Flag unhandled errors returned from functions that could cause silent failures.",
+      "Flag nil pointer dereferences, uninitialized map writes, or nil slice panics.",
+      "Flag goroutine leaks or race conditions (unsynchronized concurrent map/variable access).",
+      "Do NOT apply JavaScript/Python syntax: Go uses channels and goroutines, not async/await or promises.",
     ],
   },
   {
-    language: 'SQL',
-    persona: 'a database engineer focused on query safety and correctness',
-    extensions: ['sql'],
+    language: "Rust",
+    persona:
+      "a Rust systems engineer focused on memory safety, panic avoidance, and concurrency",
+    extensions: ["rs"],
     guidelines: [
-      'Flag SQL injection risks (unparameterized/interpolated user input).',
-      'Flag destructive or non-atomic migrations that risk data loss.',
+      "Flag unexpected panics or unhandled unwrap()/expect() calls on fallible production paths.",
+      "Flag safety invariant violations in unsafe blocks.",
+      "Flag potential deadlocks in mutex/rwlock acquisition order.",
     ],
   },
   {
-    language: 'Markdown',
-    persona: 'a technical writer',
-    extensions: ['md', 'mdx'],
+    language: "PHP",
+    persona: "a PHP backend engineer focused on correctness and type safety",
+    extensions: ["php"],
     guidelines: [
-      'Flag only broken links/images or factually incorrect content; do not report style or grammar nits.',
+      "Flag null dereference errors or calling methods on nullable types without checks.",
+      "Flag type signature mismatches against declared return types or baseline contracts.",
+      "Flag SQL injection, command injection, or unescaped user input vulnerabilities.",
     ],
   },
   {
-    language: 'HTML',
-    persona: 'a web engineer',
-    extensions: ['html', 'htm'],
+    language: "CSS/SCSS/Less",
+    persona: "a frontend engineer",
+    extensions: ["css", "scss", "sass", "less"],
     guidelines: [
-      'Flag only markup that is broken or functionally inaccessible; do not report SEO or style preferences.',
+      "Flag only rules that break layout or rendering; do not report stylistic preferences.",
     ],
   },
   {
-    language: 'JSON/Config',
-    persona: 'a DevOps engineer',
-    extensions: ['json', 'jsonc', 'yaml', 'yml', 'toml'],
+    language: "SQL",
+    persona: "a database engineer focused on query safety and correctness",
+    extensions: ["sql"],
     guidelines: [
-      'Flag invalid syntax/schema or hardcoded secrets; do not report naming-convention preferences.',
+      "Flag SQL injection risks (unparameterized/interpolated user input).",
+      "Flag destructive or non-atomic migrations that risk data loss.",
+    ],
+  },
+  {
+    language: "Markdown",
+    persona: "a technical writer",
+    extensions: ["md", "mdx"],
+    guidelines: [
+      "Flag only broken links/images or factually incorrect content; do not report style or grammar nits.",
+    ],
+  },
+  {
+    language: "HTML",
+    persona: "a web engineer",
+    extensions: ["html", "htm"],
+    guidelines: [
+      "Flag only markup that is broken or functionally inaccessible; do not report SEO or style preferences.",
+    ],
+  },
+  {
+    language: "JSON/Config",
+    persona: "a DevOps engineer",
+    extensions: ["json", "jsonc", "yaml", "yml", "toml"],
+    guidelines: [
+      "Flag invalid syntax/schema or hardcoded secrets; do not report naming-convention preferences.",
     ],
   },
 ];
 
-export function getLanguageForFile(path: string): LanguageGuideline | undefined {
-  const ext = path.split('.').pop()?.toLowerCase();
+export function getLanguageForFile(
+  path: string,
+): LanguageGuideline | undefined {
+  const ext = path.split(".").pop()?.toLowerCase();
   if (!ext) return undefined;
 
   const matches = LANGUAGE_GUIDELINES.filter((g) => g.extensions.includes(ext));
-  
+
   if (matches.length === 0) return undefined;
 
   if (matches.length > 1) {
@@ -89,8 +125,15 @@ export function getLanguageForFile(path: string): LanguageGuideline | undefined 
 
 // Matched by filename convention, not extension; kept narrow to avoid false positives.
 export function isChangelogPath(path: string): boolean {
-  const name = path.split('/').pop()?.toLowerCase() ?? '';
-  const stem = name.replace(/\.(md|mdx|markdown|rst|txt)$/, '');
-  return stem === 'changelog' || stem === 'changes' || stem === 'history' || stem === 'news'
-    || stem === 'release-notes' || stem === 'release_notes' || stem === 'releasenotes';
+  const name = path.split("/").pop()?.toLowerCase() ?? "";
+  const stem = name.replace(/\.(md|mdx|markdown|rst|txt)$/, "");
+  return (
+    stem === "changelog" ||
+    stem === "changes" ||
+    stem === "history" ||
+    stem === "news" ||
+    stem === "release-notes" ||
+    stem === "release_notes" ||
+    stem === "releasenotes"
+  );
 }

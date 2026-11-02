@@ -1,0 +1,114 @@
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+<h2 id="overview">Local Development</h2>
+
+Codra supports three local development workflows depending on your preferred runtime:
+1. **Node.js Native (`npm run dev:node`)**: Fastest iteration with hot recompilation via `tsup`, local PostgreSQL, and Redis.
+2. **Cloudflare Workers Runtime (`npm run dev`)**: Local Workers simulation via Wrangler and Miniflare.
+3. **Docker Compose (`docker compose up`)**: Containerized local environment matching production.
+
+<h2 id="setup">Setup</h2>
+
+Clone your fork and install dependencies from the repository root:
+
+```shell
+git clone https://github.com/YOUR_ORG_OR_USER/codra.git
+cd codra
+npm install
+```
+
+### Environment Configuration
+
+Depending on your target runtime, create your local configuration file:
+
+* **For Node.js & Docker**: Copy `.env.example` to `.env`
+* **For Cloudflare Workers**: Copy `.dev.vars.example` to `.dev.vars`
+
+```shell
+# For Node.js / Docker development
+cp .dev.vars.example .env
+
+# For Cloudflare Workers development
+cp .dev.vars.example .dev.vars
+```
+
+Fill in your GitHub App credentials, `DATABASE_URL`, and `LLM_CONFIG_ENCRYPTION_KEY`. For Node.js / Docker, also configure `REDIS_URL=redis://localhost:6379`.
+
+### Database Migrations
+
+Apply database migrations before starting any development server:
+
+```shell
+npm run migrate
+```
+
+The migration runner reads credentials from your environment or configuration files, runs all pending SQL migrations, and includes automatic DNS retries.
+
+<h2 id="dev-server">Running the Development Server</h2>
+
+### Option A: Node.js Dev Server (Recommended for Fast Iteration)
+
+```shell
+# 1. Build workspace packages and dashboard client
+npm run build:packages
+npx vite build
+
+# 2. Start the Node.js server in watch mode
+npm run dev:node
+```
+
+The Node.js dev server runs with live TypeScript reloading via `tsup --watch`. When you modify packages or server code, the server automatically restarts in under a second.
+
+### Option B: Cloudflare Workers Dev Server
+
+```shell
+npm run dev
+```
+
+This runs two processes concurrently:
+* `npm run dev:client` — Builds the Vite React dashboard in watch mode.
+* `npm run dev:worker` — Runs the Worker locally using Wrangler and Miniflare with bindings from `.dev.vars`.
+
+### Option C: Docker Compose
+
+```shell
+# Build and run the local container
+docker compose build
+docker compose run --rm codra node packages/db/scripts/migrate.mjs
+docker compose up -d codra
+```
+
+<h2 id="local-urls">Local Endpoints & Webhooks</h2>
+
+### Local Dashboard & API
+
+* **Node.js / Docker**:
+  * Dashboard & API: `http://localhost:3000`
+  * Health check: `http://localhost:3000/health`
+  * OAuth Callback: `http://localhost:3000/api/auth/callback`
+* **Cloudflare Workers**:
+  * Dashboard & Worker: `http://127.0.0.1:8787`
+  * OAuth Callback: `http://127.0.0.1:8787/auth/github/callback`
+
+### Forwarding GitHub Webhooks
+
+To test pull request webhooks and review triggers locally, expose your local port using a tunnel:
+
+```bash
+# Using Cloudflare Quick Tunnel (no account required)
+cloudflared tunnel --url http://localhost:3000
+
+# Or using ngrok
+ngrok http 3000
+```
+
+Copy the generated HTTPS URL and set it as your **Webhook URL** in GitHub Developer Settings (`https://YOUR_TUNNEL_URL/webhook`).
+
+<div className="mt-16 p-6 rounded-lg bg-secondary/30 border border-border flex flex-col sm:flex-row items-start sm:items-center gap-4">
+  <div className="flex-1">
+    <p className="text-base font-medium text-foreground">Next: Configuration</p>
+    <p className="text-sm text-foreground/80 mt-1">Configure review settings, rules, and model routing.</p>
+  </div>
+  <Link to="/docs/configuration" className="flex items-center gap-2 px-5 py-2.5 rounded-md bg-foreground text-background text-sm font-medium hover:opacity-90 transition-opacity shrink-0">Configuration <ArrowRight size={16} /></Link>
+</div>

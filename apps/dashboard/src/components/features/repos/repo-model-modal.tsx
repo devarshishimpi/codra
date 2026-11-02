@@ -1,19 +1,25 @@
-import { Alert, Button } from '@codraoss/ui';
-import { useMemo, useState } from 'react';
-import { Dialog } from '@base-ui/react/dialog';
-import { toast } from 'sonner';
-import { api } from '@client/lib/api';
-import { Save, RotateCcw, X } from 'lucide-react';
-import type { RepoConfigRecord } from '@codraoss/schema';
-import { ModelRouteEditor } from '@client/components/features/models/model-chain';
+import { Alert, Button } from "@codraoss/ui";
+import { useMemo, useState } from "react";
+import { Dialog } from "@base-ui/react/dialog";
+import { toast } from "sonner";
+import { api } from "@client/lib/api";
+import { Save, RotateCcw, X } from "lucide-react";
+import type { RepoConfigRecord } from "@codraoss/schema";
+import { ModelRouteEditor } from "@client/components/features/models/model-chain";
 import {
   EMPTY_MODEL_ROUTE,
   routesEqual,
   type ModelOption,
   type ModelRouteConfig,
   type ProviderOption,
-} from '@client/components/features/models/model-route';
-import { getGlobalRoute, getRepoRoute, hasStoredModelStrategy, repoId, type GlobalModelConfig } from './repo-route';
+} from "@client/components/features/models/model-route";
+import {
+  getGlobalRoute,
+  getRepoRoute,
+  hasStoredModelStrategy,
+  repoId,
+  type GlobalModelConfig,
+} from "./repo-route";
 
 export interface RepoModelModalProps {
   repo: RepoConfigRecord | null;
@@ -26,7 +32,7 @@ export interface RepoModelModalProps {
   onModelReset: (repo: RepoConfigRecord) => void;
 }
 
-type RepoModelFormProps = Omit<RepoModelModalProps, 'open' | 'onOpenChange'>;
+type RepoModelFormProps = Omit<RepoModelModalProps, "open" | "onOpenChange">;
 
 // Lives inside `Dialog.Portal`, which unmounts on close, so the draft starts from the repo's stored
 // route on every open instead of being synced back from props.
@@ -38,21 +44,24 @@ function RepoModelForm({
   onModelApplied,
   onModelReset,
 }: RepoModelFormProps) {
-  const [route, setRoute] = useState<ModelRouteConfig>(
-    () => (repo ? getRepoRoute(repo, globalConfig) : EMPTY_MODEL_ROUTE),
+  const [route, setRoute] = useState<ModelRouteConfig>(() =>
+    repo ? getRepoRoute(repo, globalConfig) : EMPTY_MODEL_ROUTE,
   );
   const [initialRoute, setInitialRoute] = useState<ModelRouteConfig>(route);
-  const [saving, setSaving] = useState<'apply' | 'reset' | null>(null);
+  const [saving, setSaving] = useState<"apply" | "reset" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const dirty = useMemo(() => !routesEqual(route, initialRoute), [initialRoute, route]);
+  const dirty = useMemo(
+    () => !routesEqual(route, initialRoute),
+    [initialRoute, route],
+  );
   const hasStoredStrategy = repo ? hasStoredModelStrategy(repo) : false;
 
   const handleApply = async () => {
     if (!repo || !dirty) return;
-    setSaving('apply');
+    setSaving("apply");
     setError(null);
-    const tid = toast.loading('Applying model strategy…');
+    const tid = toast.loading("Applying model strategy…");
     try {
       await api.updateRepoConfig(repo.owner, repo.repo, {
         model: {
@@ -63,11 +72,18 @@ function RepoModelForm({
       });
       setInitialRoute(route);
       onModelApplied(repo, route);
-      toast.success('Strategy saved', { id: tid, description: `${repo.owner}/${repo.repo} now uses a custom model chain.` });
+      toast.success("Strategy saved", {
+        id: tid,
+        description: `${repo.owner}/${repo.repo} now uses a custom model chain.`,
+      });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to save model strategy.';
+      const msg =
+        err instanceof Error ? err.message : "Failed to save model strategy.";
       setError(msg);
-      toast.error('Could not save strategy', { id: tid, description: 'Your changes were not applied. Please try again.' });
+      toast.error("Could not save strategy", {
+        id: tid,
+        description: "Your changes were not applied. Please try again.",
+      });
     } finally {
       setSaving(null);
     }
@@ -75,9 +91,9 @@ function RepoModelForm({
 
   const handleReset = async () => {
     if (!repo) return;
-    setSaving('reset');
+    setSaving("reset");
     setError(null);
-    const tid = toast.loading('Resetting to global defaults…');
+    const tid = toast.loading("Resetting to global defaults…");
     try {
       await api.updateRepoConfig(repo.owner, repo.repo, {
         model: {
@@ -90,11 +106,18 @@ function RepoModelForm({
       setRoute(globalRoute);
       setInitialRoute(globalRoute);
       onModelReset(repo);
-      toast.success('Reset to global strategy', { id: tid, description: `${repo.owner}/${repo.repo} will inherit account defaults.` });
+      toast.success("Reset to global strategy", {
+        id: tid,
+        description: `${repo.owner}/${repo.repo} will inherit account defaults.`,
+      });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to reset model strategy.';
+      const msg =
+        err instanceof Error ? err.message : "Failed to reset model strategy.";
       setError(msg);
-      toast.error('Reset failed', { id: tid, description: 'Could not remove the custom strategy. Try again.' });
+      toast.error("Reset failed", {
+        id: tid,
+        description: "Could not remove the custom strategy. Try again.",
+      });
     } finally {
       setSaving(null);
     }
@@ -103,7 +126,11 @@ function RepoModelForm({
   return (
     <>
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        {error && <Alert variant="destructive" className="mb-4">{error}</Alert>}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            {error}
+          </Alert>
+        )}
         <ModelRouteEditor
           value={route}
           onChange={setRoute}
@@ -118,21 +145,23 @@ function RepoModelForm({
           variant="ghost"
           onClick={handleReset}
           disabled={!repo || saving !== null || !hasStoredStrategy}
-          loading={saving === 'reset'}
+          loading={saving === "reset"}
           icon={<RotateCcw size={14} />}
           className="text-ui-subtle hover:text-ui-default"
         >
           Use global
         </Button>
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Dialog.Close render={<Button variant="secondary" disabled={saving !== null} />}>
+          <Dialog.Close
+            render={<Button variant="secondary" disabled={saving !== null} />}
+          >
             Cancel
           </Dialog.Close>
           <Button
             variant="primary"
             onClick={handleApply}
             disabled={!dirty || saving !== null}
-            loading={saving === 'apply'}
+            loading={saving === "apply"}
             icon={<Save size={14} />}
           >
             Apply
@@ -159,7 +188,8 @@ export function RepoModelModal({
   // different repo inside that window would otherwise reuse the previous repo's draft and save it
   // to the new one.
   const formKey = useMemo(
-    () => `${repo ? repoId(repo) : 'none'}:${JSON.stringify(getGlobalRoute(globalConfig))}`,
+    () =>
+      `${repo ? repoId(repo) : "none"}:${JSON.stringify(getGlobalRoute(globalConfig))}`,
     [repo, globalConfig],
   );
 
@@ -174,11 +204,18 @@ export function RepoModelModal({
                 Edit model strategy
               </Dialog.Title>
               <Dialog.Description className="mt-1 truncate text-sm text-ui-subtle">
-                {repo ? repoId(repo) : 'Repository routing'}
+                {repo ? repoId(repo) : "Repository routing"}
               </Dialog.Description>
             </div>
             <Dialog.Close
-              render={<Button variant="ghost" size="icon" aria-label="Close modal" className="h-8 w-8 shrink-0" />}
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Close modal"
+                  className="h-8 w-8 shrink-0"
+                />
+              }
             >
               <X size={15} />
             </Dialog.Close>

@@ -1,6 +1,6 @@
-import type { RepoConfigStore } from '@codraoss/core/ports';
-import type { DbEnv } from '../env';
-import { getRepoConfigRecord, syncRepoConfig } from '../repo-configs';
+import type { RepoConfigStore } from "@codraoss/core/ports";
+import type { DbEnv } from "../env";
+import { getRepoConfigRecord, syncRepoConfig } from "../repo-configs";
 
 export function makeRepoConfigStore(env: DbEnv): RepoConfigStore {
   return {

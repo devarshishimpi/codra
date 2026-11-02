@@ -2,84 +2,84 @@
  * @codraoss/ui design tokens: the tokens and classes this package's components reference, without which they render unstyled. A Tailwind v4 partial, not an entry, so import it from the app's stylesheet AFTER `@import "tailwindcss"` for the @theme/@utility directives to be processed.
  */
 
-
 /* dark: utilities follow .dark class, not OS prefers-color-scheme. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --ui-base:    #ffffff;
-  --ui-canvas:  oklch(98.75% 0 0);
-  --ui-line:    oklch(14.5% 0 0 / 0.1);
-  --ui-fill:    oklch(92.2% 0 0);
-  --ui-subtle:  oklch(55.6% 0 0);
+  --ui-base: #ffffff;
+  --ui-canvas: oklch(98.75% 0 0);
+  --ui-line: oklch(14.5% 0 0 / 0.1);
+  --ui-fill: oklch(92.2% 0 0);
+  --ui-subtle: oklch(55.6% 0 0);
   --ui-default: oklch(21% 0 0);
-  --ui-strong:  oklch(14.5% 0 0);
+  --ui-strong: oklch(14.5% 0 0);
 }
 .dark {
-  --ui-base:    oklch(17% 0 0);
-  --ui-canvas:  oklch(10% 0 0);
-  --ui-line:    oklch(32% 0 0);
-  --ui-fill:    oklch(26.9% 0 0);
-  --ui-subtle:  oklch(70.8% 0 0);
+  --ui-base: oklch(17% 0 0);
+  --ui-canvas: oklch(10% 0 0);
+  --ui-line: oklch(32% 0 0);
+  --ui-fill: oklch(26.9% 0 0);
+  --ui-subtle: oklch(70.8% 0 0);
   --ui-default: oklch(97% 0 0);
-  --ui-strong:  oklch(98.5% 0 0);
+  --ui-strong: oklch(98.5% 0 0);
 }
 
 :root {
-  --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 :root {
-  --background:         oklch(100%  0     0);
-  --foreground:         oklch(12%   0.02  115);
-  --card:               oklch(100%  0     0);
-  --card-foreground:    oklch(12%   0.02  115);
-  --popover:            oklch(100%  0     0);
-  --popover-foreground: oklch(12%   0.02  115);
+  --background: oklch(100% 0 0);
+  --foreground: oklch(12% 0.02 115);
+  --card: oklch(100% 0 0);
+  --card-foreground: oklch(12% 0.02 115);
+  --popover: oklch(100% 0 0);
+  --popover-foreground: oklch(12% 0.02 115);
 
   /* Lime darkened for AA contrast on white; .dark restores full brightness. */
-  --primary:             oklch(64%   0.24  115);
-  --primary-foreground:  oklch(100%  0     0);
-  --btn-primary-bg:      oklch(64% 0.24 115);
-  --btn-primary-fg:      oklch(20% 0.02 118);
-  --btn-primary-border:  oklch(72% 0.17 118);
+  --primary: oklch(64% 0.24 115);
+  --primary-foreground: oklch(100% 0 0);
+  --btn-primary-bg: oklch(64% 0.24 115);
+  --btn-primary-fg: oklch(20% 0.02 118);
+  --btn-primary-border: oklch(72% 0.17 118);
   --btn-primary-surface: oklch(95% 0.09 118);
-  --btn-primary-hover:   oklch(90% 0.13 118);
+  --btn-primary-hover: oklch(90% 0.13 118);
 
-  --secondary:           oklch(96.3% 0.003 286.3);
-  --secondary-foreground:oklch(27.4% 0.006 286.3);
-  --muted:               oklch(96.3% 0.003 286.3);
-  --muted-foreground:    oklch(55.1% 0.011 286.3);
+  --secondary: oklch(96.3% 0.003 286.3);
+  --secondary-foreground: oklch(27.4% 0.006 286.3);
+  --muted: oklch(96.3% 0.003 286.3);
+  --muted-foreground: oklch(55.1% 0.011 286.3);
 
-  --accent:              oklch(90.9% 0.004 286.3);
-  --accent-foreground:   oklch(20.5% 0.005 286.3);
+  --accent: oklch(90.9% 0.004 286.3);
+  --accent-foreground: oklch(20.5% 0.005 286.3);
 
-  --destructive:         oklch(55%   0.22  25);
+  --destructive: oklch(55% 0.22 25);
   --destructive-foreground: oklch(100% 0 0);
 
-  --border:              oklch(90.9% 0.004 286.3);
-  --input:               oklch(90.9% 0.004 286.3);
-  --ring:                oklch(72%   0.22  115);
+  --border: oklch(90.9% 0.004 286.3);
+  --input: oklch(90.9% 0.004 286.3);
+  --ring: oklch(72% 0.22 115);
 
   --radius: 0.75rem;
 
-  --success:        oklch(64%   0.24  115);
-  --success-bg:     oklch(98%   0.04  115);
-  --success-border: oklch(85%   0.15  115);
-  --warning:        oklch(56%   0.18  65);
-  --warning-bg:     oklch(98%   0.04  65);
-  --warning-border: oklch(90%   0.12  65);
-  --danger:         oklch(62%   0.22  25);
-  --danger-bg:      oklch(98%   0.04  25);
-  --danger-border:  oklch(88%   0.14  25);
-  --info:           oklch(68%   0.18  250);
-  --info-bg:        oklch(98%   0.04  250);
-  --info-border:    oklch(88%   0.12  250);
+  --success: oklch(64% 0.24 115);
+  --success-bg: oklch(98% 0.04 115);
+  --success-border: oklch(85% 0.15 115);
+  --warning: oklch(56% 0.18 65);
+  --warning-bg: oklch(98% 0.04 65);
+  --warning-border: oklch(90% 0.12 65);
+  --danger: oklch(62% 0.22 25);
+  --danger-bg: oklch(98% 0.04 25);
+  --danger-border: oklch(88% 0.14 25);
+  --info: oklch(68% 0.18 250);
+  --info-bg: oklch(98% 0.04 250);
+  --info-border: oklch(88% 0.12 250);
 
   --shadow-sm: 0 1px 2px oklch(0% 0 0 / 0.02);
   --shadow-md: 0 1px 4px oklch(0% 0 0 / 0.03), 0 1px 2px oklch(0% 0 0 / 0.02);
-  --shadow-lg: 0 4px 16px -4px oklch(0% 0 0 / 0.04), 0 1px 6px -2px oklch(0% 0 0 / 0.03);
+  --shadow-lg:
+    0 4px 16px -4px oklch(0% 0 0 / 0.04), 0 1px 6px -2px oklch(0% 0 0 / 0.03);
 
   --code-bg: oklch(96.3% 0.003 286.3);
   --code-fg: oklch(27.4% 0.006 286.3);
@@ -93,53 +93,54 @@
 }
 
 .dark {
-  --background:          #000000;
-  --foreground:          oklch(98%  0.005 115);
-  --card:                #09090b;
-  --card-foreground:     oklch(98%  0.005 115);
-  --popover:             #09090b;
-  --popover-foreground:  oklch(98%  0.005 115);
+  --background: #000000;
+  --foreground: oklch(98% 0.005 115);
+  --card: #09090b;
+  --card-foreground: oklch(98% 0.005 115);
+  --popover: #09090b;
+  --popover-foreground: oklch(98% 0.005 115);
 
-  --primary:             oklch(94%  0.23  115);
-  --primary-foreground:  oklch(12%  0.04  115);
+  --primary: oklch(94% 0.23 115);
+  --primary-foreground: oklch(12% 0.04 115);
 
-  --btn-primary-bg:      #CCE800;
-  --btn-primary-fg:      #CCE800;
-  --btn-primary-border:  color-mix(in oklab, #CCE800 50%, transparent);
-  --btn-primary-surface: color-mix(in oklab, #CCE800 8%, transparent);
-  --btn-primary-hover:   color-mix(in oklab, #CCE800 16%, transparent);
+  --btn-primary-bg: #cce800;
+  --btn-primary-fg: #cce800;
+  --btn-primary-border: color-mix(in oklab, #cce800 50%, transparent);
+  --btn-primary-surface: color-mix(in oklab, #cce800 8%, transparent);
+  --btn-primary-hover: color-mix(in oklab, #cce800 16%, transparent);
 
-  --secondary:           oklch(18%  0.018 115);
-  --secondary-foreground:oklch(82%  0.012 115);
-  --muted:               oklch(18%  0.018 115);
-  --muted-foreground:    oklch(55%  0.015 115);
+  --secondary: oklch(18% 0.018 115);
+  --secondary-foreground: oklch(82% 0.012 115);
+  --muted: oklch(18% 0.018 115);
+  --muted-foreground: oklch(55% 0.015 115);
 
-  --accent:              oklch(18%  0.018 115);
-  --accent-foreground:   oklch(91%  0.010 115);
+  --accent: oklch(18% 0.018 115);
+  --accent-foreground: oklch(91% 0.01 115);
 
-  --destructive:         oklch(60%  0.220 25);
+  --destructive: oklch(60% 0.22 25);
   --destructive-foreground: oklch(10% 0.015 115);
 
-  --border:              oklch(22%  0.02  115);
-  --input:               oklch(22%  0.02  115);
-  --ring:                oklch(94%  0.23  115);
+  --border: oklch(22% 0.02 115);
+  --input: oklch(22% 0.02 115);
+  --ring: oklch(94% 0.23 115);
 
-  --success:        oklch(94%  0.23  115);
-  --success-bg:     oklch(18%  0.06  115);
-  --success-border: oklch(28%  0.10  115);
-  --warning:        oklch(78%  0.165 65);
-  --warning-bg:     oklch(18%  0.080 65);
-  --warning-border: oklch(35%  0.14  65);
-  --danger:         oklch(70%  0.200 25);
-  --danger-bg:      oklch(18%  0.080 25);
-  --danger-border:  oklch(35%  0.14  25);
-  --info:           oklch(72%  0.160 250);
-  --info-bg:        oklch(18%  0.075 250);
-  --info-border:    oklch(35%  0.12  250);
+  --success: oklch(94% 0.23 115);
+  --success-bg: oklch(18% 0.06 115);
+  --success-border: oklch(28% 0.1 115);
+  --warning: oklch(78% 0.165 65);
+  --warning-bg: oklch(18% 0.08 65);
+  --warning-border: oklch(35% 0.14 65);
+  --danger: oklch(70% 0.2 25);
+  --danger-bg: oklch(18% 0.08 25);
+  --danger-border: oklch(35% 0.14 25);
+  --info: oklch(72% 0.16 250);
+  --info-bg: oklch(18% 0.075 250);
+  --info-border: oklch(35% 0.12 250);
 
   --shadow-sm: 0 1px 2px oklch(100% 0 0 / 0.05), 0 1px 2px oklch(0% 0 0 / 0.3);
   --shadow-md: 0 4px 12px oklch(0% 0 0 / 0.45), 0 1px 4px oklch(0% 0 0 / 0.25);
-  --shadow-lg: 0 12px 24px -4px oklch(0% 0 0 / 0.5), 0 4px 12px -2px oklch(0% 0 0 / 0.3);
+  --shadow-lg:
+    0 12px 24px -4px oklch(0% 0 0 / 0.5), 0 4px 12px -2px oklch(0% 0 0 / 0.3);
 
   --code-bg: oklch(20.5% 0.005 286.3);
   --code-fg: oklch(86.5% 0.005 286.3);
@@ -152,69 +153,69 @@
 }
 
 @theme inline {
-  --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  --font-sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
 
-  --color-ui-base:    var(--ui-base);
-  --color-ui-canvas:  var(--ui-canvas);
-  --color-ui-line:    var(--ui-line);
-  --color-ui-fill:    var(--ui-fill);
-  --color-ui-subtle:  var(--ui-subtle);
+  --color-ui-base: var(--ui-base);
+  --color-ui-canvas: var(--ui-canvas);
+  --color-ui-line: var(--ui-line);
+  --color-ui-fill: var(--ui-fill);
+  --color-ui-subtle: var(--ui-subtle);
   --color-ui-default: var(--ui-default);
-  --color-ui-strong:  var(--ui-strong);
-  --color-ui-brand:   var(--primary);
+  --color-ui-strong: var(--ui-strong);
+  --color-ui-brand: var(--primary);
 
-  --color-background:            var(--background);
-  --color-foreground:            var(--foreground);
-  --color-card:                  var(--card);
-  --color-card-foreground:       var(--card-foreground);
-  --color-popover:               var(--popover);
-  --color-popover-foreground:    var(--popover-foreground);
-  --color-primary:               var(--primary);
-  --color-primary-foreground:    var(--primary-foreground);
-  --color-secondary:             var(--secondary);
-  --color-secondary-foreground:  var(--secondary-foreground);
-  --color-muted:                 var(--muted);
-  --color-muted-foreground:      var(--muted-foreground);
-  --color-accent:                var(--accent);
-  --color-accent-foreground:     var(--accent-foreground);
-  --color-destructive:           var(--destructive);
-  --color-destructive-foreground:var(--destructive-foreground);
-  --color-border:                var(--border);
-  --color-input:                 var(--input);
-  --color-ring:                  var(--ring);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  --color-success:        var(--success);
-  --color-success-bg:     var(--success-bg);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
   --color-success-border: var(--success-border);
 
-  --color-warning:        var(--warning);
-  --color-warning-bg:     var(--warning-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
   --color-warning-border: var(--warning-border);
 
-  --color-danger:         var(--danger);
-  --color-danger-bg:      var(--danger-bg);
-  --color-danger-border:  var(--danger-border);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-border: var(--danger-border);
 
-  --color-info:           var(--info);
-  --color-info-bg:        var(--info-bg);
-  --color-info-border:    var(--info-border);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-border: var(--info-border);
 
   /* radius-lg == radius-xl intentionally: cards and .surface share one size. */
-  --radius-sm:  0.3125rem;
-  --radius-md:  0.4375rem;
-  --radius-lg:  0.6875rem;
-  --radius-xl:  0.6875rem;
+  --radius-sm: 0.3125rem;
+  --radius-md: 0.4375rem;
+  --radius-lg: 0.6875rem;
+  --radius-xl: 0.6875rem;
   --radius-2xl: 0.875rem;
 
-  --text-xs:   0.75rem;
-  --text-sm:   0.875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
   --text-base: 1rem;
-  --text-lg:   clamp(1.125rem, 2vw, 1.25rem);
-  --text-xl:   clamp(1.25rem, 3vw, 1.5rem);
-  --text-2xl:  clamp(1.5rem, 4vw, 2.25rem);
-  --text-3xl:  clamp(2rem, 6vw, 3.5rem);
-  --text-4xl:  clamp(2.5rem, 10vw, 6rem);
+  --text-lg: clamp(1.125rem, 2vw, 1.25rem);
+  --text-xl: clamp(1.25rem, 3vw, 1.5rem);
+  --text-2xl: clamp(1.5rem, 4vw, 2.25rem);
+  --text-3xl: clamp(2rem, 6vw, 3.5rem);
+  --text-4xl: clamp(2.5rem, 10vw, 6rem);
   --text-display: clamp(3rem, 12vw, 9rem);
 
   --space-xs: clamp(0.5rem, 1vw, 0.75rem);
@@ -225,8 +226,12 @@
 }
 
 @keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @utility surface {
@@ -255,7 +260,11 @@
 
 @utility glass {
   @apply backdrop-blur-md bg-card/75 border border-border;
-  background-image: linear-gradient(to bottom right, oklch(100% 0 0 / 0.05), transparent);
+  background-image: linear-gradient(
+    to bottom right,
+    oklch(100% 0 0 / 0.05),
+    transparent
+  );
 }
 
 @utility surface-hover {
@@ -278,29 +287,29 @@
 
 /* Unlayered, kept at this specificity so no later utility can beat it. */
 .skeleton {
-  background:
-    linear-gradient(
-      90deg,
-      var(--muted) 25%,
-      color-mix(in oklch, var(--muted) 50%, var(--card)) 50%,
-      var(--muted) 75%
-    ) !important;
+  background: linear-gradient(
+    90deg,
+    var(--muted) 25%,
+    color-mix(in oklch, var(--muted) 50%, var(--card)) 50%,
+    var(--muted) 75%
+  ) !important;
   background-size: 200% 100% !important;
   animation: shimmer 1.8s linear infinite !important;
 }
 
 /* Geist, scoped locally since global @theme sets --font-sans/mono to app defaults. */
 .ui-font-sans {
-  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
 }
 .ui-font-mono {
-  font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-feature-settings: 'tnum' 1;
+  font-family:
+    "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-feature-settings: "tnum" 1;
 }
 
 /* Matches dashboard stat-card chrome; .ui-well is its recessed inner panel. */
 .ui-panel {
-  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
   border-radius: var(--radius-lg);
   border: 1px solid var(--ui-line);
   background: #ffffff;
@@ -323,23 +332,23 @@
 /* Syntax tokens for sugar-high (./lib/highlight.tsx); it emits
    color: var(--sh-<token type>) per token. */
 :root {
-  --sh-keyword:     oklch(48% 0.19 305);
-  --sh-string:      oklch(46% 0.12 150);
-  --sh-class:       oklch(50% 0.13 65);
-  --sh-comment:     oklch(58% 0.01 260);
-  --sh-entity:      oklch(46% 0.14 260);
-  --sh-property:    oklch(45% 0.11 200);
-  --sh-identifier:  inherit;
-  --sh-sign:        oklch(58% 0.01 260);
+  --sh-keyword: oklch(48% 0.19 305);
+  --sh-string: oklch(46% 0.12 150);
+  --sh-class: oklch(50% 0.13 65);
+  --sh-comment: oklch(58% 0.01 260);
+  --sh-entity: oklch(46% 0.14 260);
+  --sh-property: oklch(45% 0.11 200);
+  --sh-identifier: inherit;
+  --sh-sign: oklch(58% 0.01 260);
   --sh-jsxliterals: inherit;
-  --sh-break:       inherit;
-  --sh-space:       inherit;
+  --sh-break: inherit;
+  --sh-space: inherit;
 }
 .dark {
-  --sh-keyword:  oklch(75% 0.14 305);
-  --sh-string:   oklch(76% 0.11 150);
-  --sh-class:    oklch(78% 0.12 65);
-  --sh-comment:  oklch(58% 0.01 260);
-  --sh-entity:   oklch(76% 0.1 260);
+  --sh-keyword: oklch(75% 0.14 305);
+  --sh-string: oklch(76% 0.11 150);
+  --sh-class: oklch(78% 0.12 65);
+  --sh-comment: oklch(58% 0.01 260);
+  --sh-entity: oklch(76% 0.1 260);
   --sh-property: oklch(78% 0.1 200);
 }

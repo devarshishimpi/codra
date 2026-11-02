@@ -1,27 +1,32 @@
-import type { ReviewRuntime } from '@codraoss/core/ports';
-import { TokenTracker } from '@codraoss/core/token-tracker';
-import type { AppBindings } from '../env';
+import type { ReviewRuntime } from "@codraoss/core/ports";
+import { TokenTracker } from "@codraoss/core/token-tracker";
+import type { AppBindings } from "../env";
 // Imported for its side effect as well as never: this installs the AsyncLocalStorage-backed logger as
 // the sink @codraoss/core's logger facade delegates to. Explicit here so engine log lines carry request
 // context by construction, rather than because some other module happened to be loaded first.
-import '../core/logger';
-import { cryptoIds, makeKvStore, makeTelemetrySink, systemClock } from './platform';
-import { makeJobStore } from './jobs-store';
-import { makeFileReviewStore } from './file-review-store';
+import "../core/logger";
+import {
+  cryptoIds,
+  makeKvStore,
+  makeTelemetrySink,
+  systemClock,
+} from "./platform";
+import { makeJobStore } from "./jobs-store";
+import { makeFileReviewStore } from "./file-review-store";
 import {
   makeLearningStore,
   makeModelConfigReader,
   makeRepoConfigLoader,
   makeReviewSettingsReader,
   makeWebhookDeliveryReader,
-} from './settings-store';
+} from "./settings-store";
 import {
   makeFormatterFactory,
   makeGitHubClientFactory,
   makeGitHubFactory,
   makeModelErrorClassifier,
   makeModelFactory,
-} from './services';
+} from "./services";
 
 // The composition root: the one place Cloudflare bindings, Postgres and the GitHub/model services are
 // wired to the engine's ports. @codraoss/core sees this object and nothing else.

@@ -1,7 +1,15 @@
-import { logger } from '@codraoss/core/logger';
-import { buildUnifiedDiffFromFiles, type DiffFileEntry } from '@codraoss/core/diff';
-import { type GitHubRequestContext, isDiffTooLargeError, repoApiPath, withRetry } from './http';
-import { DIFF_FILES_PER_PAGE, MAX_DIFF_FILE_PAGES } from './constants';
+import { logger } from "@codraoss/core/logger";
+import {
+  buildUnifiedDiffFromFiles,
+  type DiffFileEntry,
+} from "@codraoss/core/diff";
+import {
+  type GitHubRequestContext,
+  isDiffTooLargeError,
+  repoApiPath,
+  withRetry,
+} from "./http";
+import { DIFF_FILES_PER_PAGE, MAX_DIFF_FILE_PAGES } from "./constants";
 
 // Internal implementation. Class stays the mockable seam.
 
@@ -16,12 +24,15 @@ async function fetchPullRequestDiffFromFiles(
 
   // Bounded budget of ~25 subrequests. 5 pages = 500 files limit.
   for (let page = 1; page <= MAX_DIFF_FILE_PAGES; page++) {
-    const pageFiles = await withRetry(`getPullRequestFiles ${owner}/${repo}#${pullNumber} p${page}`, async () => {
-      const response = await ctx.requestAndCheck(
-        `${repoApiPath(owner, repo)}/pulls/${pullNumber}/files?per_page=${DIFF_FILES_PER_PAGE}&page=${page}`,
-      );
-      return (await response.json()) as DiffFileEntry[];
-    });
+    const pageFiles = await withRetry(
+      `getPullRequestFiles ${owner}/${repo}#${pullNumber} p${page}`,
+      async () => {
+        const response = await ctx.requestAndCheck(
+          `${repoApiPath(owner, repo)}/pulls/${pullNumber}/files?per_page=${DIFF_FILES_PER_PAGE}&page=${page}`,
+        );
+        return (await response.json()) as DiffFileEntry[];
+      },
+    );
 
     files.push(...pageFiles);
     if (pageFiles.length < DIFF_FILES_PER_PAGE) break;
@@ -43,14 +54,17 @@ export async function fetchPullRequestDiff(
   pullNumber: number,
 ) {
   try {
-    return await withRetry(`getPullRequestDiff ${owner}/${repo}#${pullNumber}`, async () => {
-      const response = await ctx.requestAndCheck(
-        `${repoApiPath(owner, repo)}/pulls/${pullNumber}`,
-        {},
-        'application/vnd.github.v3.diff',
-      );
-      return response.text();
-    });
+    return await withRetry(
+      `getPullRequestDiff ${owner}/${repo}#${pullNumber}`,
+      async () => {
+        const response = await ctx.requestAndCheck(
+          `${repoApiPath(owner, repo)}/pulls/${pullNumber}`,
+          {},
+          "application/vnd.github.v3.diff",
+        );
+        return response.text();
+      },
+    );
   } catch (error) {
     if (!isDiffTooLargeError(error)) throw error;
     logger.warn(
@@ -70,18 +84,30 @@ export async function fetchCompareDiff(
 ) {
   const comparePath = `${repoApiPath(owner, repo)}/compare/${encodeURIComponent(base)}...${encodeURIComponent(head)}`;
   try {
-    return await withRetry(`getCompareDiff ${owner}/${repo} ${base}...${head}`, async () => {
-      const response = await ctx.requestAndCheck(comparePath, {}, 'application/vnd.github.v3.diff');
-      return response.text();
-    });
+    return await withRetry(
+      `getCompareDiff ${owner}/${repo} ${base}...${head}`,
+      async () => {
+        const response = await ctx.requestAndCheck(
+          comparePath,
+          {},
+          "application/vnd.github.v3.diff",
+        );
+        return response.text();
+      },
+    );
   } catch (error) {
     if (!isDiffTooLargeError(error)) throw error;
     // Best-effort diff rebuild via JSON file list (max 300 files).
-    logger.warn(`Compare diff ${owner}/${repo} ${base}...${head} is over the line cap; rebuilding from the JSON file list`);
-    return withRetry(`getCompareFiles ${owner}/${repo} ${base}...${head}`, async () => {
-      const response = await ctx.requestAndCheck(comparePath);
-      const payload = (await response.json()) as { files?: DiffFileEntry[] };
-      return buildUnifiedDiffFromFiles(payload.files ?? []);
-    });
+    logger.warn(
+      `Compare diff ${owner}/${repo} ${base}...${head} is over the line cap; rebuilding from the JSON file list`,
+    );
+    return withRetry(
+      `getCompareFiles ${owner}/${repo} ${base}...${head}`,
+      async () => {
+        const response = await ctx.requestAndCheck(comparePath);
+        const payload = (await response.json()) as { files?: DiffFileEntry[] };
+        return buildUnifiedDiffFromFiles(payload.files ?? []);
+      },
+    );
   }
 }

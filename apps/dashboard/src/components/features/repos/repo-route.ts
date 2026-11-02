@@ -1,23 +1,36 @@
-import { formatDateTime } from '@client/lib/timezone';
-import type { RepoConfig, RepoConfigRecord } from '@codraoss/schema';
-import { EMPTY_MODEL_ROUTE, normalizeModelRoute, routesEqual, type ModelRouteConfig } from '@client/components/features/models/model-route';
+import { formatDateTime } from "@client/lib/timezone";
+import type { RepoConfig, RepoConfigRecord } from "@codraoss/schema";
+import {
+  EMPTY_MODEL_ROUTE,
+  normalizeModelRoute,
+  routesEqual,
+  type ModelRouteConfig,
+} from "@client/components/features/models/model-route";
 // Shared by the repos page, its rows and the strategy dialog, so it can't live in any single one.
 
-export type GlobalModelConfig = RepoConfig['model'];
+export type GlobalModelConfig = RepoConfig["model"];
 
-export function repoId(repo: Pick<RepoConfigRecord, 'owner' | 'repo'>) {
+export function repoId(repo: Pick<RepoConfigRecord, "owner" | "repo">) {
   return `${repo.owner}/${repo.repo}`;
 }
 
 export function hasStoredModelStrategy(repo: RepoConfigRecord) {
-  return repo.mainModel !== null || repo.fallbackModels !== null || repo.sizeOverrides !== null;
+  return (
+    repo.mainModel !== null ||
+    repo.fallbackModels !== null ||
+    repo.sizeOverrides !== null
+  );
 }
 
-export function getGlobalRoute(globalConfig: GlobalModelConfig | ModelRouteConfig | null): ModelRouteConfig {
+export function getGlobalRoute(
+  globalConfig: GlobalModelConfig | ModelRouteConfig | null,
+): ModelRouteConfig {
   return normalizeModelRoute(globalConfig);
 }
 
-export function getStoredRepoRoute(repo: RepoConfigRecord): ModelRouteConfig | null {
+export function getStoredRepoRoute(
+  repo: RepoConfigRecord,
+): ModelRouteConfig | null {
   if (!hasStoredModelStrategy(repo)) return null;
 
   return {
@@ -27,7 +40,10 @@ export function getStoredRepoRoute(repo: RepoConfigRecord): ModelRouteConfig | n
   };
 }
 
-export function hasMeaningfulCustomStrategy(repo: RepoConfigRecord, globalConfig: GlobalModelConfig | ModelRouteConfig | null) {
+export function hasMeaningfulCustomStrategy(
+  repo: RepoConfigRecord,
+  globalConfig: GlobalModelConfig | ModelRouteConfig | null,
+) {
   const storedRoute = getStoredRepoRoute(repo);
   if (!storedRoute) return false;
 
@@ -37,7 +53,10 @@ export function hasMeaningfulCustomStrategy(repo: RepoConfigRecord, globalConfig
   );
 }
 
-export function getRepoRoute(repo: RepoConfigRecord, globalConfig: GlobalModelConfig | ModelRouteConfig | null): ModelRouteConfig {
+export function getRepoRoute(
+  repo: RepoConfigRecord,
+  globalConfig: GlobalModelConfig | ModelRouteConfig | null,
+): ModelRouteConfig {
   if (!hasMeaningfulCustomStrategy(repo, globalConfig)) {
     return getGlobalRoute(globalConfig);
   }
@@ -48,5 +67,9 @@ export function getRepoRoute(repo: RepoConfigRecord, globalConfig: GlobalModelCo
 export function formatLastActivity(value: string | Date | null) {
   if (!value) return null;
   // Rendered in the account's display time zone (UTC unless changed in settings).
-  return formatDateTime(value, { year: 'numeric', month: 'short', day: 'numeric' });
+  return formatDateTime(value, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }

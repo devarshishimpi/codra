@@ -1,5 +1,5 @@
-import type { DbEnv } from './env';
-import { queryRows } from './client';
+import type { DbEnv } from "./env";
+import { queryRows } from "./client";
 
 export type RepositoryRow = {
   id: number;
@@ -10,7 +10,7 @@ export type RepositoryRow = {
 
 export async function getOrCreateRepository(
   env: DbEnv,
-  input: { installationId: string; owner: string; repo: string }
+  input: { installationId: string; owner: string; repo: string },
 ): Promise<number> {
   const [row] = await queryRows<RepositoryRow>(
     env,
@@ -20,7 +20,7 @@ export async function getOrCreateRepository(
       ON CONFLICT (owner, repo) DO UPDATE SET installation_id = EXCLUDED.installation_id
       RETURNING id
     `,
-    [input.installationId, input.owner, input.repo]
+    [input.installationId, input.owner, input.repo],
   );
 
   return row.id;

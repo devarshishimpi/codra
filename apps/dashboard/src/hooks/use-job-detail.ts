@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
-import { api } from '@client/lib/api';
-import type { JobDetail } from '@codraoss/schema';
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { api } from "@client/lib/api";
+import type { JobDetail } from "@codraoss/schema";
 
 /* Job detail carries every file's full diff, so cache writes are best-effort (quota is swallowed). */
 function jobCacheKey(id: string) {
@@ -18,9 +18,14 @@ function readJobCache(id: string): JobDetail | null {
   }
 }
 
+// Serializing multi-MB jobs janks the main thread and throws QuotaExceeded in sessionStorage.
+const MAX_CACHED_CHARS = 1_000_000;
+
 function writeJobCache(id: string, job: JobDetail) {
   try {
-    sessionStorage.setItem(jobCacheKey(id), JSON.stringify(job));
+    const payload = JSON.stringify(job);
+    if (payload.length > MAX_CACHED_CHARS) return;
+    sessionStorage.setItem(jobCacheKey(id), payload);
   } catch {
     // best-effort
   }
@@ -38,17 +43,32 @@ export function useJobDetail(id: string) {
   const etag = useRef<string | null>(null);
   const latestJob = useRef<JobDetail | null>(null);
 
-  const terminalStatuses: string[] = ['done', 'failed', 'superseded', 'cancelled'];
-  const isTerminal = (candidate: JobDetail | null) => !!candidate && terminalStatuses.includes(candidate.status);
+  const terminalStatuses: string[] = [
+    "done",
+    "failed",
+    "superseded",
+    "cancelled",
+  ];
+  const isTerminal = (candidate: JobDetail | null) =>
+    !!candidate && terminalStatuses.includes(candidate.status);
 
   const getPollDelay = (candidate: JobDetail | null) => {
     if (!candidate || isTerminal(candidate)) return null;
 
-    const nextRetryAt = candidate.nextRetryAt ? new Date(candidate.nextRetryAt).getTime() : null;
-    const waitingForRetry = nextRetryAt !== null && Number.isFinite(nextRetryAt) && nextRetryAt > Date.now();
-    const baseDelay = waitingForRetry ? Math.min(Math.max(nextRetryAt - Date.now(), 10_000), 15_000) : 3_000;
+    const nextRetryAt = candidate.nextRetryAt
+      ? new Date(candidate.nextRetryAt).getTime()
+      : null;
+    const waitingForRetry =
+      nextRetryAt !== null &&
+      Number.isFinite(nextRetryAt) &&
+      nextRetryAt > Date.now();
+    const baseDelay = waitingForRetry
+      ? Math.min(Math.max(nextRetryAt - Date.now(), 10_000), 15_000)
+      : 3_000;
 
-    return document.visibilityState === 'hidden' ? Math.max(baseDelay, 45_000) : baseDelay;
+    return document.visibilityState === "hidden"
+      ? Math.max(baseDelay, 45_000)
+      : baseDelay;
   };
 
   const fetchJob = async (silent = false) => {
@@ -58,12 +78,17 @@ export function useJobDetail(id: string) {
       if (!response.notModified && response.data) {
         latestJob.current = response.data.job;
         setJob(response.data.job);
-        writeJobCache(id, response.data.job);
+        // Do not cache here synchronously to prevent jank on the main thread every 3 seconds
       }
       setError(null);
       schedulePolling();
     } catch (loadError) {
-      if (!silent) setError(loadError instanceof Error ? loadError.message : 'Failed to load job.');
+      if (!silent)
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load job.",
+        );
       schedulePolling();
     }
   };
@@ -113,11 +138,24 @@ export function useJobDetail(id: string) {
     schedulePollingRef.current();
   }, [job?.status, job?.nextRetryAt]);
 
+  useEffect(() => {
+    const saveCache = () => {
+      if (latestJob.current && latestJob.current.id === id) {
+        writeJobCache(id, latestJob.current);
+      }
+    };
+    window.addEventListener("pagehide", saveCache);
+    return () => {
+      window.removeEventListener("pagehide", saveCache);
+      saveCache();
+    };
+  }, [id]);
+
   // Mount-only: the listener reads through the ref, so it never needs rebinding.
   useEffect(() => {
     const reschedule = () => schedulePollingRef.current();
-    document.addEventListener('visibilitychange', reschedule);
-    return () => document.removeEventListener('visibilitychange', reschedule);
+    document.addEventListener("visibilitychange", reschedule);
+    return () => document.removeEventListener("visibilitychange", reschedule);
   }, []);
 
   const handleRetry = async () => {
@@ -127,7 +165,7 @@ export function useJobDetail(id: string) {
       const response = await api.retryJob(job.id);
       navigate(`/jobs/${response.job.id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to retry job.');
+      setError(e instanceof Error ? e.message : "Failed to retry job.");
     } finally {
       setIsRetrying(false);
     }
@@ -136,14 +174,17 @@ export function useJobDetail(id: string) {
   const handleRerun = async () => {
     if (!job) return;
     setIsRerunning(true);
-    const t = toast.loading('Starting a fresh review…');
+    const t = toast.loading("Starting a fresh review…");
     try {
       const response = await api.rerunJob(job.id);
-      toast.success('Fresh review started.', { id: t });
+      toast.success("Fresh review started.", { id: t });
       navigate(`/jobs/${response.job.id}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to rerun job.';
-      toast.error('Could not start a fresh review.', { id: t, description: msg });
+      const msg = e instanceof Error ? e.message : "Failed to rerun job.";
+      toast.error("Could not start a fresh review.", {
+        id: t,
+        description: msg,
+      });
       setError(msg);
     } finally {
       setIsRerunning(false);
@@ -153,14 +194,14 @@ export function useJobDetail(id: string) {
   const handleStop = async () => {
     if (!job) return;
     setIsStopping(true);
-    const t = toast.loading('Stopping review…');
+    const t = toast.loading("Stopping review…");
     try {
       await api.stopJob(job.id);
-      toast.success('Review stopped.', { id: t });
+      toast.success("Review stopped.", { id: t });
       await fetchJob();
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to stop job.';
-      toast.error('Could not stop the review.', { id: t, description: msg });
+      const msg = e instanceof Error ? e.message : "Failed to stop job.";
+      toast.error("Could not stop the review.", { id: t, description: msg });
       setError(msg);
     } finally {
       setIsStopping(false);
@@ -170,14 +211,14 @@ export function useJobDetail(id: string) {
   const handleDelete = async () => {
     if (!job) return;
     setIsDeleting(true);
-    const t = toast.loading('Deleting job…');
+    const t = toast.loading("Deleting job…");
     try {
       await api.deleteJob(job.id);
-      toast.success('Job deleted.', { id: t });
-      navigate('/jobs');
+      toast.success("Job deleted.", { id: t });
+      navigate("/jobs");
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to delete job.';
-      toast.error('Could not delete the job.', { id: t, description: msg });
+      const msg = e instanceof Error ? e.message : "Failed to delete job.";
+      toast.error("Could not delete the job.", { id: t, description: msg });
       setError(msg);
     } finally {
       setIsDeleting(false);
@@ -195,6 +236,6 @@ export function useJobDetail(id: string) {
     handleRerun,
     handleStop,
     handleDelete,
-    fetchJob
+    fetchJob,
   };
 }

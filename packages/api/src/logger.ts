@@ -1,5 +1,5 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
-import { formatLogRecord, setLoggerSink } from '@codraoss/core/logger';
+import { AsyncLocalStorage } from "node:async_hooks";
+import { formatLogRecord, setLoggerSink } from "@codraoss/core/logger";
 
 // The request-context half of the logger. Scrubbing and record shaping live in @codraoss/core/logger;
 // this file owns everything platform-bound -- AsyncLocalStorage and the console sink -- so that
@@ -18,9 +18,9 @@ class Logger {
     const store = storage.getStore() || {};
     const output = formatLogRecord(level, message, [store, this.context], data);
 
-    if (level === 'error') {
+    if (level === "error") {
       console.error(JSON.stringify(output));
-    } else if (level === 'warn') {
+    } else if (level === "warn") {
       console.warn(JSON.stringify(output));
     } else {
       console.log(JSON.stringify(output));
@@ -32,27 +32,27 @@ class Logger {
   }
 
   info(message: string, data?: any) {
-    this.log('info', message, data);
+    this.log("info", message, data);
   }
 
   error(message: string, data?: any) {
     if (data instanceof Error) {
-      this.log('error', message, {
+      this.log("error", message, {
         name: data.name,
         message: data.message,
         stack: data.stack,
       });
     } else {
-      this.log('error', message, data);
+      this.log("error", message, data);
     }
   }
 
   warn(message: string, data?: any) {
-    this.log('warn', message, data);
+    this.log("warn", message, data);
   }
 
   debug(message: string, data?: any) {
-    this.log('debug', message, data);
+    this.log("debug", message, data);
   }
 }
 

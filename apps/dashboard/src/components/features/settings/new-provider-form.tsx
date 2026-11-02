@@ -1,13 +1,13 @@
-import { Button, Input, Select } from '@codraoss/ui';
-import type { Dispatch, SetStateAction } from 'react';
-import { Plus } from 'lucide-react';
-import { FieldLabel } from './field-label';
+import { Button, Input, Select } from "@codraoss/ui";
+import type { Dispatch, SetStateAction } from "react";
+import { Plus } from "lucide-react";
+import { FieldLabel } from "./field-label";
 import {
   PROVIDER_PRESETS,
   apiKeyFieldLabel,
   providerKeyPlaceholder,
   type NewProviderDraft,
-} from './settings-support';
+} from "./settings-support";
 
 // The draft lives in `useProviderSettings`, not here, so toggling this panel closed doesn't throw
 // away a half-typed provider.
@@ -28,7 +28,9 @@ export function NewProviderForm({
   onCreate: () => void | Promise<void>;
   onCancel: () => void;
 }) {
-  const selectedPreset = PROVIDER_PRESETS.find(preset => preset.value === newProvider.preset) ?? PROVIDER_PRESETS[0];
+  const selectedPreset =
+    PROVIDER_PRESETS.find((preset) => preset.value === newProvider.preset) ??
+    PROVIDER_PRESETS[0];
 
   return (
     <div className="animate-slide-down border-b border-ui-line bg-ui-fill/20 px-4 py-5 sm:px-5 sm:py-6">
@@ -40,9 +42,11 @@ export function NewProviderForm({
           <FieldLabel htmlFor="new-provider-type">Protocol</FieldLabel>
           <Select
             value={newProvider.preset}
-            onValueChange={value => {
-              const preset = PROVIDER_PRESETS.find(item => item.value === value) ?? PROVIDER_PRESETS[0];
-              setNewProvider(current => ({
+            onValueChange={(value) => {
+              const preset =
+                PROVIDER_PRESETS.find((item) => item.value === value) ??
+                PROVIDER_PRESETS[0];
+              setNewProvider((current) => ({
                 ...current,
                 preset: preset.value,
                 name: preset.name,
@@ -50,7 +54,10 @@ export function NewProviderForm({
                 baseUrl: preset.baseUrl,
               }));
             }}
-            options={PROVIDER_PRESETS.map(preset => ({ value: preset.value, label: preset.label }))}
+            options={PROVIDER_PRESETS.map((preset) => ({
+              value: preset.value,
+              label: preset.label,
+            }))}
           />
         </div>
         <div>
@@ -59,10 +66,17 @@ export function NewProviderForm({
             id="new-provider-name"
             placeholder="My provider"
             value={newProvider.name}
-            onChange={e => setNewProvider(current => ({ ...current, name: e.target.value }))}
+            onChange={(e) =>
+              setNewProvider((current) => ({
+                ...current,
+                name: e.target.value,
+              }))
+            }
           />
           {selectedProviderNameExists && (
-            <p className="mt-1.5 text-xs text-warning">{newProvider.name.trim()} already exists</p>
+            <p className="mt-1.5 text-xs text-warning">
+              {newProvider.name.trim()} already exists
+            </p>
           )}
         </div>
         <div>
@@ -71,19 +85,34 @@ export function NewProviderForm({
             id="new-provider-base-url"
             placeholder={selectedPreset.exampleUrl}
             value={newProvider.baseUrl}
-            onChange={e => setNewProvider(current => ({ ...current, baseUrl: e.target.value }))}
+            onChange={(e) =>
+              setNewProvider((current) => ({
+                ...current,
+                baseUrl: e.target.value,
+              }))
+            }
           />
         </div>
         <div>
-          <FieldLabel htmlFor="new-provider-api-key">{apiKeyFieldLabel(newProvider.apiFormat)}</FieldLabel>
+          <FieldLabel htmlFor="new-provider-api-key">
+            {apiKeyFieldLabel(newProvider.apiFormat)}
+          </FieldLabel>
           <Input
             id="new-provider-api-key"
             type="password"
             autoComplete="new-password"
             spellCheck={false}
-            placeholder={providerKeyPlaceholder(newProvider.name, newProvider.apiFormat)}
+            placeholder={providerKeyPlaceholder(
+              newProvider.name,
+              newProvider.apiFormat,
+            )}
             value={newProvider.apiKey}
-            onChange={e => setNewProvider(current => ({ ...current, apiKey: e.target.value }))}
+            onChange={(e) =>
+              setNewProvider((current) => ({
+                ...current,
+                apiKey: e.target.value,
+              }))
+            }
           />
         </div>
       </div>
@@ -101,7 +130,7 @@ export function NewProviderForm({
           size="sm"
           onClick={onCreate}
           disabled={saving !== null || !newProviderReady}
-          loading={saving === 'provider:new'}
+          loading={saving === "provider:new"}
           icon={<Plus size={13} />}
         >
           Create

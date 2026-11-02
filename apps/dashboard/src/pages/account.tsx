@@ -1,17 +1,17 @@
-import { LoadError } from '@codraoss/ui';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
-import { api } from '@client/lib/api';
-import { PageHeader } from '@client/components/layout/page-header';
+import { LoadError } from "@codraoss/ui";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { api } from "@client/lib/api";
+import { PageHeader } from "@client/components/layout/page-header";
 import {
   getStoredTimeZone,
   resolvedTimeZone,
   setStoredTimeZone,
-} from '@client/lib/timezone';
-import type { AccountSettings, AuthSessionUser } from '@codraoss/schema/api';
+} from "@client/lib/timezone";
+import type { AccountSettings, AuthSessionUser } from "@codraoss/schema/api";
 
-import { ProfileCard } from '@client/components/features/account/profile-card';
-import { AccountDetailsSection } from '@client/components/features/account/details-section';
+import { ProfileCard } from "@client/components/features/account/profile-card";
+import { AccountDetailsSection } from "@client/components/features/account/details-section";
 
 export function AccountPage() {
   const [user, setUser] = useState<AuthSessionUser | null>(null);
@@ -22,7 +22,9 @@ export function AccountPage() {
   // A ref, not state: it only guards concurrent saves and is never rendered.
   const savingZone = useRef(false);
   // State-driven, not a render-time localStorage read - that wasn't reactive and never reflected a save.
-  const [zonePref, setZonePref] = useState<string | null>(() => getStoredTimeZone());
+  const [zonePref, setZonePref] = useState<string | null>(() =>
+    getStoredTimeZone(),
+  );
 
   const load = async () => {
     setError(null);
@@ -39,7 +41,7 @@ export function AccountPage() {
         setZonePref(accountRes.account.timezone ?? null);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load your account.');
+      setError(e instanceof Error ? e.message : "Failed to load your account.");
     } finally {
       setLoading(false);
     }
@@ -57,13 +59,13 @@ export function AccountPage() {
       setAccount(res.account);
       setStoredTimeZone(res.account.timezone ?? null);
       setZonePref(res.account.timezone ?? null);
-      toast.success('Time zone updated', {
+      toast.success("Time zone updated", {
         description: `Timestamps now show in ${resolvedTimeZone()}.`,
       });
     } catch (e) {
       setZonePref(previous);
       setStoredTimeZone(previous);
-      toast.error('Could not update time zone', {
+      toast.error("Could not update time zone", {
         description: e instanceof Error ? e.message : undefined,
       });
     } finally {
@@ -77,9 +79,14 @@ export function AccountPage() {
 
   // Falls back to GitHub profile name (then login) until the user sets their own.
   const displayName =
-    account?.accountName?.trim() || user?.name?.trim() || user?.login || 'GitHub user';
+    account?.accountName?.trim() ||
+    user?.name?.trim() ||
+    user?.login ||
+    "GitHub user";
   const initial = displayName.charAt(0).toUpperCase();
-  const profileUrl = user ? `https://github.com/${user.login}` : 'https://github.com';
+  const profileUrl = user
+    ? `https://github.com/${user.login}`
+    : "https://github.com";
 
   // Skeletons replace content only; chrome and labels stay rendered so the page doesn't reflow when data lands.
   const pending = loading || !user;
@@ -95,7 +102,10 @@ export function AccountPage() {
         <LoadError
           title="Couldn't load your account"
           detail={error}
-          onRetry={() => { setLoading(true); void load(); }}
+          onRetry={() => {
+            setLoading(true);
+            void load();
+          }}
           retrying={loading}
         />
       )}

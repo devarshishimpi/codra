@@ -1,7 +1,7 @@
-import type { DbEnv } from './env';
+import type { DbEnv } from "./env";
 
-import { queryRows } from './client';
-import { PROVIDER_COLUMNS, MODEL_SELECT } from './constants';
+import { queryRows } from "./client";
+import { PROVIDER_COLUMNS, MODEL_SELECT } from "./constants";
 import {
   KIMI_K2_5_MODEL,
   llmProviderSchema,
@@ -11,7 +11,7 @@ import {
   type ModelConfig,
   type ResolvedModelConfig,
   type LlmProviderSecret,
-} from '@codraoss/schema';
+} from "@codraoss/schema";
 
 export type { ResolvedModelConfig, LlmProviderSecret };
 
@@ -34,8 +34,6 @@ type ModelConfigRow = {
   model_name: string;
   updated_at: string;
 };
-
-
 
 function mapProvider(row: ProviderRow): LlmProvider {
   return llmProviderSchema.parse({
@@ -70,9 +68,6 @@ function mapModelConfig(row: ModelConfigRow): ModelConfig {
 
 // The llm_providers column list, in one place, since it was inlined at six sites before, all needing updates for one new column.
 
-
-
-
 export async function listLlmProviders(env: DbEnv): Promise<LlmProvider[]> {
   const rows = await queryRows<ProviderRow>(
     env,
@@ -81,7 +76,9 @@ export async function listLlmProviders(env: DbEnv): Promise<LlmProvider[]> {
   return rows.map(mapProvider);
 }
 
-export async function listLlmProviderSecrets(env: DbEnv): Promise<LlmProviderSecret[]> {
+export async function listLlmProviderSecrets(
+  env: DbEnv,
+): Promise<LlmProviderSecret[]> {
   const rows = await queryRows<ProviderRow>(
     env,
     `SELECT ${PROVIDER_COLUMNS} FROM llm_providers ORDER BY name ASC`,
@@ -89,7 +86,10 @@ export async function listLlmProviderSecrets(env: DbEnv): Promise<LlmProviderSec
   return rows.map(mapProviderSecret);
 }
 
-export async function getLlmProvider(env: DbEnv, id: string): Promise<LlmProviderSecret | null> {
+export async function getLlmProvider(
+  env: DbEnv,
+  id: string,
+): Promise<LlmProviderSecret | null> {
   const [row] = await queryRows<ProviderRow>(
     env,
     `SELECT ${PROVIDER_COLUMNS} FROM llm_providers WHERE id = $1`,
@@ -115,12 +115,21 @@ export async function createLlmProvider(
     VALUES ($1, $2, $3, $4, $5, now())
     RETURNING ${PROVIDER_COLUMNS}
     `,
-    [input.name, input.apiFormat, input.baseUrl, input.encryptedApiKey, input.enabled],
+    [
+      input.name,
+      input.apiFormat,
+      input.baseUrl,
+      input.encryptedApiKey,
+      input.enabled,
+    ],
   );
   return mapProvider(row);
 }
 
-export async function findLlmProviderByName(env: DbEnv, name: string): Promise<LlmProvider | null> {
+export async function findLlmProviderByName(
+  env: DbEnv,
+  name: string,
+): Promise<LlmProvider | null> {
   const [row] = await queryRows<ProviderRow>(
     env,
     `SELECT ${PROVIDER_COLUMNS} FROM llm_providers WHERE lower(name) = lower($1)`,
@@ -140,8 +149,14 @@ export async function updateLlmProvider(
     enabled: boolean;
   },
 ) {
-  const params: unknown[] = [id, input.name, input.apiFormat, input.baseUrl, input.enabled];
-  let apiKeySql = '';
+  const params: unknown[] = [
+    id,
+    input.name,
+    input.apiFormat,
+    input.baseUrl,
+    input.enabled,
+  ];
+  let apiKeySql = "";
   if (input.encryptedApiKey !== undefined) {
     params.push(input.encryptedApiKey);
     apiKeySql = `, encrypted_api_key = $${params.length}`;
@@ -173,7 +188,10 @@ export async function deleteLlmProvider(env: DbEnv, id: string) {
     [id],
   );
   if (Number(count) > 0) {
-    return { deleted: false, reason: 'Provider is still used by one or more models.' };
+    return {
+      deleted: false,
+      reason: "Provider is still used by one or more models.",
+    };
   }
 
   const rows = await queryRows<{ id: string }>(
@@ -199,11 +217,13 @@ export async function getResolvedModelConfig(
   env: DbEnv,
   modelId: string,
 ): Promise<ResolvedModelConfig | null> {
-  const [row] = await queryRows<ModelConfigRow & {
-    provider_enabled: boolean;
-    base_url: string | null;
-    encrypted_api_key: string | null;
-  }>(
+  const [row] = await queryRows<
+    ModelConfigRow & {
+      provider_enabled: boolean;
+      base_url: string | null;
+      encrypted_api_key: string | null;
+    }
+  >(
     env,
     `
     SELECT
@@ -234,7 +254,7 @@ export async function getResolvedModelConfig(
 
 export async function updateModelConfig(
   env: DbEnv,
-  config: Omit<ModelConfig, 'updatedAt' | 'providerName' | 'apiFormat'>,
+  config: Omit<ModelConfig, "updatedAt" | "providerName" | "apiFormat">,
 ) {
   const [row] = await queryRows<ModelConfigRow>(
     env,
@@ -268,11 +288,13 @@ export async function updateModelConfig(
 }
 
 function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'provider';
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "provider"
+  );
 }
 
 export async function upsertDiscoveredModelConfigs(
@@ -284,10 +306,14 @@ export async function upsertDiscoveredModelConfigs(
     modelNames: string[];
   },
 ) {
-  const uniqueModelNames = Array.from(new Set(input.modelNames.flatMap(name => {
-    const trimmed = name.trim();
-    return trimmed ? [trimmed] : [];
-  })));
+  const uniqueModelNames = Array.from(
+    new Set(
+      input.modelNames.flatMap((name) => {
+        const trimmed = name.trim();
+        return trimmed ? [trimmed] : [];
+      }),
+    ),
+  );
   if (uniqueModelNames.length === 0) return [];
 
   const providerSlug = slugify(input.providerName);
@@ -304,8 +330,10 @@ export async function upsertDiscoveredModelConfigs(
     ),
   ]);
 
-  const existingModelNames = new Set(existingForProvider.map(row => row.model_name));
-  const usedModelIds = new Set(existingModelIds.map(row => row.model_id));
+  const existingModelNames = new Set(
+    existingForProvider.map((row) => row.model_name),
+  );
+  const usedModelIds = new Set(existingModelIds.map((row) => row.model_id));
   const rowsToInsert: Array<{
     model_id: string;
     provider_id: string;
@@ -335,10 +363,10 @@ export async function upsertDiscoveredModelConfigs(
 
   if (rowsToInsert.length === 0) return [];
 
-  const modelIds = rowsToInsert.map(row => row.model_id);
-  const providerIds = rowsToInsert.map(row => row.provider_id);
-  const modelNames = rowsToInsert.map(row => row.model_name);
-  const providers = rowsToInsert.map(row => row.provider);
+  const modelIds = rowsToInsert.map((row) => row.model_id);
+  const providerIds = rowsToInsert.map((row) => row.provider_id);
+  const modelNames = rowsToInsert.map((row) => row.model_name);
+  const providers = rowsToInsert.map((row) => row.provider);
 
   const rows = await queryRows<ModelConfigRow>(
     env,

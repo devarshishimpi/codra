@@ -1,10 +1,9 @@
-
-import type { FileDiff } from '../diff';
+import type { FileDiff } from "../diff";
 
 import {
   NON_ANSWER_MAX_RESPONSE_CHARS,
   NON_ANSWER_MIN_DIFF_LINES,
-} from '../constants';
+} from "../constants";
 
 /**
  * True when a review response is a non-answer: a substantive diff dismissed in a sentence with no
@@ -13,11 +12,12 @@ import {
  */
 export function isNonAnswerReview(input: {
   rawText: string;
-  file: Pick<FileDiff, 'lineCount'>;
+  file: Pick<FileDiff, "lineCount">;
   findingCount: number;
   minDiffLines?: number;
 }): boolean {
   if (input.findingCount > 0) return false;
-  if (input.file.lineCount < (input.minDiffLines ?? NON_ANSWER_MIN_DIFF_LINES)) return false;
+  if (input.file.lineCount < (input.minDiffLines ?? NON_ANSWER_MIN_DIFF_LINES))
+    return false;
   return input.rawText.trim().length < NON_ANSWER_MAX_RESPONSE_CHARS;
 }

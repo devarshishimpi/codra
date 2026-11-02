@@ -3,6 +3,7 @@
     "src/index.ts",
     "src/ports/index.ts",
     "src/logger.ts",
+    "src/formatter.ts",
     "src/diff/index.ts",
     "src/model-output/index.ts",
     "src/rules/detect.ts",

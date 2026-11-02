@@ -1,7 +1,10 @@
-
 export interface KvStore {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
 }
 
 export interface Clock {
@@ -16,4 +19,4 @@ export interface SecretStore {
   getSecret(key: string): Promise<string | null>;
 }
 
-export type { Logger } from '../logger';
+export type { Logger } from "../logger";

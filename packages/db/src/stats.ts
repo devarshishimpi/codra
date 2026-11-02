@@ -1,8 +1,14 @@
-import type { DbEnv } from './env';
-import { isSupportedTimeZone } from '@codraoss/schema/timezone';
-import { queryRows } from './client';
-import { statsSchema, jobStatuses, reviewTriggers, reviewSeverities, reviewCategories } from '@codraoss/schema';
-import { getModelUsageStats } from './file-reviews';
+import type { DbEnv } from "./env";
+import { isSupportedTimeZone } from "@codraoss/schema/timezone";
+import { queryRows } from "./client";
+import {
+  statsSchema,
+  jobStatuses,
+  reviewTriggers,
+  reviewSeverities,
+  reviewCategories,
+} from "@codraoss/schema";
+import { getModelUsageStats } from "./file-reviews";
 
 // Guard the zone before it reaches SQL, so an unknown name can't error the query.
 const jobStatusSet = new Set<string>(jobStatuses);
@@ -23,13 +29,24 @@ export function trendBucketDays(days: number) {
 }
 
 // `created_at` is `timestamptz` (absolute); `AT TIME ZONE <zone>` converts it to wall-clock time before truncating, so a job at 03:00 IST lands on the IST day, not the UTC one.
-export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
+export async function getStats(env: DbEnv, days = 30, timeZone = "UTC") {
   const parsedDays = Number(days);
   const safeDays = Number.isFinite(parsedDays) ? Math.trunc(parsedDays) : 30;
   const clampedDays = Math.min(Math.max(safeDays, 1), 365);
-  const zone = isSupportedTimeZone(timeZone) ? timeZone : 'UTC';
+  const zone = isSupportedTimeZone(timeZone) ? timeZone : "UTC";
   const bucketDays = trendBucketDays(clampedDays);
-  const [[totals], dailyRows, verdictRows, topRepos, modelRows, statusRows, triggerRows, severityRows, categoryRows, [performanceRow]] = await Promise.all([
+  const [
+    [totals],
+    dailyRows,
+    verdictRows,
+    topRepos,
+    modelRows,
+    statusRows,
+    triggerRows,
+    severityRows,
+    categoryRows,
+    [performanceRow],
+  ] = await Promise.all([
     queryRows<{
       jobs: number;
       input_tokens: number;
@@ -50,7 +67,14 @@ export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
     ),
     // Buckets are generated first and LEFT JOINed, so quiet stretches come back as explicit zeros
     // instead of gaps -- the chart then shows a continuous, evenly spaced series for every range.
-    queryRows<{ day: string; end_day: string; jobs: number; input_tokens: number; output_tokens: number; comments: number }>(
+    queryRows<{
+      day: string;
+      end_day: string;
+      jobs: number;
+      input_tokens: number;
+      output_tokens: number;
+      comments: number;
+    }>(
       env,
       `
         WITH bounds AS (
@@ -81,7 +105,7 @@ export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
       `,
       [clampedDays, zone, bucketDays],
     ),
-    queryRows<{ verdict: 'approve' | 'comment' | null; count: number }>(
+    queryRows<{ verdict: "approve" | "comment" | null; count: number }>(
       env,
       `
         SELECT verdict, COUNT(*)::int AS count
@@ -150,7 +174,11 @@ export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
       `,
       [clampedDays],
     ),
-    queryRows<{ avg_duration_ms: number | null; p95_duration_ms: number | null; avg_confidence: number | null }>(
+    queryRows<{
+      avg_duration_ms: number | null;
+      p95_duration_ms: number | null;
+      avg_confidence: number | null;
+    }>(
       env,
       `
         SELECT
@@ -177,10 +205,13 @@ export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
       jobs: row.jobs,
       inputTokens: row.input_tokens,
       outputTokens: row.output_tokens,
-      comments: row.comments
+      comments: row.comments,
     })),
     trendBucketDays: bucketDays,
-    verdicts: verdictRows.map((row) => ({ verdict: row.verdict, count: row.count })),
+    verdicts: verdictRows.map((row) => ({
+      verdict: row.verdict,
+      count: row.count,
+    })),
     models: modelRows.map((row) => ({
       modelUsed: row.model_used,
       provider: row.model_provider ?? undefined,
@@ -188,15 +219,61 @@ export async function getStats(env: DbEnv, days = 30, timeZone = 'UTC') {
       inputTokens: row.input_tokens ?? 0,
       outputTokens: row.output_tokens ?? 0,
     })),
-    topRepos: topRepos.map((row) => ({ owner: row.owner, repo: row.repo, jobs: row.jobs })),
+    topRepos: topRepos.map((row) => ({
+      owner: row.owner,
+      repo: row.repo,
+      jobs: row.jobs,
+    })),
     // Drop rows whose enum-typed column holds an unexpected value (e.g. legacy rows with no DB CHECK constraint) -- keeping them would fail statsSchema.parse and 500 the endpoint.
-    statuses: statusRows.flatMap((row) => (jobStatusSet.has(row.status) ? [{ status: row.status as (typeof jobStatuses)[number], count: row.count }] : [])),
-    triggers: triggerRows.flatMap((row) => (reviewTriggerSet.has(row.trigger) ? [{ trigger: row.trigger as (typeof reviewTriggers)[number], count: row.count }] : [])),
-    severities: severityRows.flatMap((row) => (reviewSeveritySet.has(row.severity) ? [{ severity: row.severity as (typeof reviewSeverities)[number], count: row.count }] : [])),
-    categories: categoryRows.flatMap((row) => (reviewCategorySet.has(row.category) ? [{ category: row.category as (typeof reviewCategories)[number], count: row.count }] : [])),
+    statuses: statusRows.flatMap((row) =>
+      jobStatusSet.has(row.status)
+        ? [
+            {
+              status: row.status as (typeof jobStatuses)[number],
+              count: row.count,
+            },
+          ]
+        : [],
+    ),
+    triggers: triggerRows.flatMap((row) =>
+      reviewTriggerSet.has(row.trigger)
+        ? [
+            {
+              trigger: row.trigger as (typeof reviewTriggers)[number],
+              count: row.count,
+            },
+          ]
+        : [],
+    ),
+    severities: severityRows.flatMap((row) =>
+      reviewSeveritySet.has(row.severity)
+        ? [
+            {
+              severity: row.severity as (typeof reviewSeverities)[number],
+              count: row.count,
+            },
+          ]
+        : [],
+    ),
+    categories: categoryRows.flatMap((row) =>
+      reviewCategorySet.has(row.category)
+        ? [
+            {
+              category: row.category as (typeof reviewCategories)[number],
+              count: row.count,
+            },
+          ]
+        : [],
+    ),
     performance: {
-      avgDurationMs: performanceRow?.avg_duration_ms != null ? Math.round(performanceRow.avg_duration_ms) : null,
-      p95DurationMs: performanceRow?.p95_duration_ms != null ? Math.round(performanceRow.p95_duration_ms) : null,
+      avgDurationMs:
+        performanceRow?.avg_duration_ms != null
+          ? Math.round(performanceRow.avg_duration_ms)
+          : null,
+      p95DurationMs:
+        performanceRow?.p95_duration_ms != null
+          ? Math.round(performanceRow.p95_duration_ms)
+          : null,
       avgConfidence: performanceRow?.avg_confidence ?? null,
     },
   });

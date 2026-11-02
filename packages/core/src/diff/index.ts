@@ -1,6 +1,6 @@
-import picomatch from 'picomatch';
-import { MAX_TOTAL_DIFF_CHARS } from '../constants';
-import type { RepoConfig } from '@codraoss/schema';
+import picomatch from "picomatch";
+import { MAX_TOTAL_DIFF_CHARS } from "../constants";
+import type { RepoConfig } from "@codraoss/schema";
 import {
   type DiffLineKind,
   type DiffLine,
@@ -11,7 +11,7 @@ import {
   findPositionForLine,
   truncateFileDiff,
   chunkFileDiff,
-} from './position';
+} from "./position";
 
 export {
   type DiffLineKind,
@@ -25,33 +25,50 @@ export {
   chunkFileDiff,
 };
 
-const defaultSkipMatchers = ['**/*.lock', '**/package-lock.json', '**/pnpm-lock.yaml', '**/yarn.lock', '**/*.min.js'].map((pattern) =>
-  picomatch(pattern, { dot: true }),
-);
+const defaultSkipMatchers = [
+  "**/*.lock",
+  "**/package-lock.json",
+  "**/pnpm-lock.yaml",
+  "**/yarn.lock",
+  "**/*.min.js",
+].map((pattern) => picomatch(pattern, { dot: true }));
 
-export function isReviewableFile(path: string, customMatchers: ReturnType<typeof picomatch>[]) {
+export function isReviewableFile(
+  path: string,
+  customMatchers: ReturnType<typeof picomatch>[],
+) {
   if (defaultSkipMatchers.some((matcher) => matcher(path))) return false;
   if (customMatchers.some((matcher) => matcher(path))) return false;
   return true;
 }
 
 export function parseDiffHeaderPath(line: string) {
-  const rest = line.slice('diff --git '.length);
+  const rest = line.slice("diff --git ".length);
 
-  if (rest.startsWith('a/')) {
+  if (rest.startsWith("a/")) {
     const n = (rest.length - 5) / 2;
-    if (Number.isInteger(n) && n > 0 && rest[2 + n] === ' ' && rest.startsWith('b/', 3 + n)) {
+    if (
+      Number.isInteger(n) &&
+      n > 0 &&
+      rest[2 + n] === " " &&
+      rest.startsWith("b/", 3 + n)
+    ) {
       const a = rest.slice(2, 2 + n);
       if (a === rest.slice(5 + n)) return a;
     }
   }
 
-  const bStart = rest.indexOf(' b/', rest.startsWith('a/') ? 2 : 0);
-  const bPath = bStart === -1 ? rest.slice(rest.lastIndexOf(' ') + 1) : rest.slice(bStart + 3);
-  return bPath.startsWith('b/') ? bPath.slice(2) : bPath;
+  const bStart = rest.indexOf(" b/", rest.startsWith("a/") ? 2 : 0);
+  const bPath =
+    bStart === -1
+      ? rest.slice(rest.lastIndexOf(" ") + 1)
+      : rest.slice(bStart + 3);
+  return bPath.startsWith("b/") ? bPath.slice(2) : bPath;
 }
 
-function parseHunkHeader(line: string): { oldLine: number; newLine: number } | null {
+function parseHunkHeader(
+  line: string,
+): { oldLine: number; newLine: number } | null {
   const match = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
   if (!match) {
     return null;
@@ -63,16 +80,28 @@ function parseHunkHeader(line: string): { oldLine: number; newLine: number } | n
   };
 }
 
-function classifyDiffLine(prefix: ' ' | '+' | '-', content: string, oldLine: number, newLine: number, position: number): DiffLine {
-  if (prefix === ' ') {
-    return { kind: 'context', content, oldLineNumber: oldLine, newLineNumber: newLine, position };
+function classifyDiffLine(
+  prefix: " " | "+" | "-",
+  content: string,
+  oldLine: number,
+  newLine: number,
+  position: number,
+): DiffLine {
+  if (prefix === " ") {
+    return {
+      kind: "context",
+      content,
+      oldLineNumber: oldLine,
+      newLineNumber: newLine,
+      position,
+    };
   }
 
-  if (prefix === '+') {
-    return { kind: 'add', content, newLineNumber: newLine, position };
+  if (prefix === "+") {
+    return { kind: "add", content, newLineNumber: newLine, position };
   }
 
-  return { kind: 'del', content, oldLineNumber: oldLine, position };
+  return { kind: "del", content, oldLineNumber: oldLine, position };
 }
 
 function finishFile(files: FileDiff[], currentFile: FileDiff | null) {
@@ -81,9 +110,15 @@ function finishFile(files: FileDiff[], currentFile: FileDiff | null) {
   }
 }
 
-export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['review']): FileDiff[] {
+export function parseUnifiedDiff(
+  rawDiff: string,
+  reviewConfig?: RepoConfig["review"],
+): FileDiff[] {
   const files: FileDiff[] = [];
-  const customMatchers = reviewConfig?.skip_files?.map((pattern) => picomatch(pattern, { dot: true })) ?? [];
+  const customMatchers =
+    reviewConfig?.skip_files?.map((pattern) =>
+      picomatch(pattern, { dot: true }),
+    ) ?? [];
 
   let currentFile: FileDiff | null = null;
   let currentHunk: DiffHunk | null = null;
@@ -106,7 +141,7 @@ export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['rev
   const length = rawDiff.length;
 
   while (startIndex < length) {
-    let endIndex = rawDiff.indexOf('\n', startIndex);
+    let endIndex = rawDiff.indexOf("\n", startIndex);
     if (endIndex === -1) {
       endIndex = length;
     }
@@ -118,7 +153,7 @@ export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['rev
 
     startIndex = endIndex + 1;
 
-    if (line.startsWith('diff --git ')) {
+    if (line.startsWith("diff --git ")) {
       pushCurrentFile();
       const path = parseDiffHeaderPath(line);
 
@@ -142,40 +177,47 @@ export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['rev
       continue;
     }
 
-    if (line.startsWith('rename from ')) {
+    if (line.startsWith("rename from ")) {
       currentFile.previousPath = line.slice(12);
       continue;
     }
 
-    if (line.startsWith('rename to ')) {
+    if (line.startsWith("rename to ")) {
       const nextPath = line.slice(10);
-      currentFile.path = nextPath.startsWith('b/') ? nextPath.slice(2) : nextPath;
+      currentFile.path = nextPath.startsWith("b/")
+        ? nextPath.slice(2)
+        : nextPath;
       if (reviewConfig) {
         isIgnored = !isReviewableFile(currentFile.path, customMatchers);
       }
       continue;
     }
 
-    if (line.startsWith('new file mode ')) {
+    if (line.startsWith("new file mode ")) {
       currentFile.isNew = true;
       continue;
     }
 
-    if (line.startsWith('deleted file mode ')) {
+    if (line.startsWith("deleted file mode ")) {
       currentFile.isDeleted = true;
       isIgnored = true;
       continue;
     }
 
-    if (line.startsWith('Binary files ') || line.startsWith('GIT binary patch')) {
+    if (
+      line.startsWith("Binary files ") ||
+      line.startsWith("GIT binary patch")
+    ) {
       currentFile.isBinary = true;
       isIgnored = true;
       continue;
     }
 
-    if (line.startsWith('+++ ')) {
+    if (line.startsWith("+++ ")) {
       const nextPath = line.slice(4);
-      currentFile.path = nextPath.startsWith('b/') ? nextPath.slice(2) : nextPath;
+      currentFile.path = nextPath.startsWith("b/")
+        ? nextPath.slice(2)
+        : nextPath;
       if (reviewConfig) {
         isIgnored = !isReviewableFile(currentFile.path, customMatchers);
       }
@@ -186,11 +228,11 @@ export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['rev
       continue;
     }
 
-    if (line.startsWith('--- ')) {
+    if (line.startsWith("--- ")) {
       continue;
     }
 
-    if (line.startsWith('@@ ')) {
+    if (line.startsWith("@@ ")) {
       const header = parseHunkHeader(line);
       if (!header) {
         continue;
@@ -208,17 +250,23 @@ export function parseUnifiedDiff(rawDiff: string, reviewConfig?: RepoConfig['rev
     }
 
     const prefix = line[0];
-    if (prefix !== ' ' && prefix !== '+' && prefix !== '-') {
+    if (prefix !== " " && prefix !== "+" && prefix !== "-") {
       continue;
     }
 
     position += 1;
-    const diffLine = classifyDiffLine(prefix, line.slice(1), oldLine, newLine, position);
+    const diffLine = classifyDiffLine(
+      prefix,
+      line.slice(1),
+      oldLine,
+      newLine,
+      position,
+    );
     currentHunk.lines.push(diffLine);
     currentFile.lineCount += 1;
 
-    if (diffLine.kind !== 'del') newLine += 1;
-    if (diffLine.kind !== 'add') oldLine += 1;
+    if (diffLine.kind !== "del") newLine += 1;
+    if (diffLine.kind !== "add") oldLine += 1;
   }
 
   pushCurrentFile();
@@ -240,12 +288,12 @@ export function buildUnifiedDiffFromFiles(files: DiffFileEntry[]): string {
   for (const file of files) {
     const newPath = file.filename;
     const oldPath = file.previous_filename || file.filename;
-    const isAdded = file.status === 'added';
-    const isRemoved = file.status === 'removed';
+    const isAdded = file.status === "added";
+    const isRemoved = file.status === "removed";
 
     out.push(`diff --git a/${oldPath} b/${newPath}`);
-    if (isAdded) out.push('new file mode 100644');
-    if (isRemoved) out.push('deleted file mode 100644');
+    if (isAdded) out.push("new file mode 100644");
+    if (isRemoved) out.push("deleted file mode 100644");
     if (file.previous_filename && file.previous_filename !== newPath) {
       out.push(`rename from ${file.previous_filename}`);
       out.push(`rename to ${newPath}`);
@@ -256,22 +304,24 @@ export function buildUnifiedDiffFromFiles(files: DiffFileEntry[]): string {
       continue;
     }
 
-    out.push(isAdded ? '--- /dev/null' : `--- a/${oldPath}`);
-    out.push(isRemoved ? '+++ /dev/null' : `+++ b/${newPath}`);
+    out.push(isAdded ? "--- /dev/null" : `--- a/${oldPath}`);
+    out.push(isRemoved ? "+++ /dev/null" : `+++ b/${newPath}`);
     out.push(file.patch);
   }
 
-  return out.length > 0 ? `${out.join('\n')}\n` : '';
+  return out.length > 0 ? `${out.join("\n")}\n` : "";
 }
 
 export function filterReviewableFiles(
   files: FileDiff[],
-  config: RepoConfig['review'],
+  config: RepoConfig["review"],
   maxFiles: number,
   // Overridable for tests; production always uses the constant.
   maxTotalDiffChars: number = MAX_TOTAL_DIFF_CHARS,
 ): { files: FileDiff[]; skipped: number } {
-  const customMatchers = config.skip_files.map((pattern) => picomatch(pattern, { dot: true }));
+  const customMatchers = config.skip_files.map((pattern) =>
+    picomatch(pattern, { dot: true }),
+  );
 
   const reviewable: FileDiff[] = [];
   for (const file of files) {
@@ -280,7 +330,11 @@ export function filterReviewableFiles(
     if (customMatchers.some((matcher) => matcher(file.path))) continue;
     reviewable.push(file);
   }
-  reviewable.sort((left, right) => Number(left.isNew) - Number(right.isNew) || left.path.localeCompare(right.path));
+  reviewable.sort(
+    (left, right) =>
+      Number(left.isNew) - Number(right.isNew) ||
+      left.path.localeCompare(right.path),
+  );
 
   const withinFileLimit = reviewable.slice(0, maxFiles);
 
@@ -289,7 +343,12 @@ export function filterReviewableFiles(
   let totalChars = 0;
   for (const file of withinFileLimit) {
     const fileChars = file.hunks.reduce(
-      (sum, hunk) => sum + hunk.lines.reduce((lineSum, line) => lineSum + line.content.length + 1, 0),
+      (sum, hunk) =>
+        sum +
+        hunk.lines.reduce(
+          (lineSum, line) => lineSum + line.content.length + 1,
+          0,
+        ),
       0,
     );
     if (kept.length > 0 && totalChars + fileChars > maxTotalDiffChars) break;
