@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.3",
-    "tsup": "^8.0.2"
+    "tsup": "^9.0.0"
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
