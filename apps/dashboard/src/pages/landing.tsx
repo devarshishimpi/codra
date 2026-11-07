@@ -51,10 +51,9 @@ export function LandingPage() {
     if (pathname !== "/" || authError) return;
 
     let cancelled = false;
-    api
-      .getSession()
+    Promise.resolve(api.getSession())
       .then((session) => {
-        if (!cancelled && session.user) {
+        if (!cancelled && session?.user) {
           navigate("/dashboard", { replace: true });
         }
       })
