@@ -5,7 +5,7 @@
  */
 export function isJsonWithinBudget(value: unknown, maxChars: number) {
   let upperBound = 0;
-  const seen = new WeakSet<object>();
+  const ancestors = new WeakSet<object>();
 
   const add = (chars: number) => {
     upperBound += chars;
@@ -22,28 +22,37 @@ export function isJsonWithinBudget(value: unknown, maxChars: number) {
     if (typeof item === "boolean") return add(item ? 5 : 6);
     if (typeof item === "undefined") return add(6);
     if (typeof item !== "object") return false;
-    if (seen.has(item)) return false;
-    seen.add(item);
+    if (ancestors.has(item)) return false;
+    ancestors.add(item);
 
-    if (Array.isArray(item)) {
+    try {
+      if (Array.isArray(item)) {
+        if (!add(2)) return false;
+        for (let i = 0; i < item.length; i++) {
+          if (i > 0 && !add(1)) return false;
+          if (!visit(item[i], depth + 1)) return false;
+        }
+        return true;
+      }
+
       if (!add(2)) return false;
-      for (let i = 0; i < item.length; i++) {
-        if (i > 0 && !add(1)) return false;
-        if (!visit(item[i], depth + 1)) return false;
+      let first = true;
+      for (const key in item) {
+        if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
+        if (!first && !add(1)) return false;
+        first = false;
+        if (
+          !addString(key) ||
+          !add(1) ||
+          !visit((item as Record<string, unknown>)[key], depth + 1)
+        ) {
+          return false;
+        }
       }
       return true;
+    } finally {
+      ancestors.delete(item);
     }
-
-    if (!add(2)) return false;
-    let first = true;
-    for (const key in item) {
-      if (!Object.prototype.hasOwnProperty.call(item, key)) continue;
-      if (!first && !add(1)) return false;
-      first = false;
-      if (!addString(key) || !add(1) || !visit((item as Record<string, unknown>)[key], depth + 1))
-        return false;
-    }
-    return true;
   };
 
   return visit(value, 0);
