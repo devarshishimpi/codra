@@ -50,11 +50,22 @@ describe("Dashboard route and nav registries (JSDOM)", () => {
   });
 
   it("exposes the built-in routes as composable arrays", () => {
-    expect(publicRoutes.map((r) => r.path)).toEqual(["/"]);
+    expect(publicRoutes.map((r) => r.path)).toEqual(["/", "/login"]);
     expect(shellRoutes.map((r) => r.path)).toContain("dashboard");
     expect([...publicRoutes, ...shellRoutes].map((r) => r.path)).not.toContain(
       "*",
     );
+  });
+
+  it("renders the sign-in page and OAuth error on the login route", async () => {
+    renderAt("/login?error=not_allowed", () => buildRouter());
+
+    expect(
+      await screen.findByRole("heading", { name: "Sign in to Codra" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("alert").textContent,
+    ).toMatch(/not allowed to access this dashboard/i);
   });
 
   it("renders an injected shell route and its nav entry", async () => {

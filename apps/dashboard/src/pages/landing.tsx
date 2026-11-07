@@ -1,6 +1,7 @@
 import { Button, GithubMark, LinkButton } from "@codraoss/ui";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@codraoss/ui/theme";
+import { useSearchParams } from "react-router-dom";
 
 const TERMS_URL = "https://codra.run/terms";
 const PRIVACY_URL = "https://codra.run/privacy";
@@ -30,6 +31,17 @@ const legalLink =
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
+  const [searchParams] = useSearchParams();
+  const authError = searchParams.get("error");
+  const authErrorMessage = authError
+    ? {
+        not_allowed: "This GitHub account is not allowed to access this dashboard.",
+        invalid_callback: "GitHub sign-in could not be completed. Please try again.",
+        invalid_state: "The sign-in request expired. Please try again.",
+        oauth_failed: "GitHub sign-in failed. Please try again.",
+        access_denied: "GitHub sign-in was cancelled.",
+      }[authError] ?? "GitHub sign-in failed. Please try again."
+    : null;
 
   return (
     <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-ui-canvas px-4 py-16 text-ui-default sm:px-6">
@@ -99,6 +111,15 @@ export function LandingPage() {
               Use your GitHub account to open the dashboard.
             </p>
           </div>
+
+          {authErrorMessage && (
+            <p
+              role="alert"
+              className="mt-6 rounded-md border border-danger/30 bg-danger/5 px-3 py-2.5 text-left text-sm text-danger"
+            >
+              {authErrorMessage}
+            </p>
+          )}
 
           <LinkButton
             variant="primary"

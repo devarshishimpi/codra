@@ -1,5 +1,5 @@
 import { Badge } from "@codraoss/ui";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
 import { StatusBadge } from "./status-badge";
 import {
@@ -67,6 +67,80 @@ const DiffLine = memo(function DiffLine({
     </div>
   );
 });
+
+const DIFF_ROW_OVERSCAN_PX = 240;
+
+function rowHeight(row: DiffRow) {
+  return row.kind === "hunk" ? 28 : 20;
+}
+
+function firstRowAtOffset(offsets: number[], offset: number) {
+  let low = 0;
+  let high = offsets.length - 1;
+  while (low < high) {
+    const middle = Math.floor((low + high) / 2);
+    if (offsets[middle + 1] <= offset) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+
+/** Keep large expanded diffs to the viewport plus a small buffer in the DOM. */
+function VirtualDiffRows({
+  rows,
+  lang,
+}: {
+  rows: DiffRow[];
+  lang: ReturnType<typeof langForPath>;
+}) {
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  const offsets = useMemo(() => {
+    const result = [0];
+    for (const row of rows) result.push(result[result.length - 1] + rowHeight(row));
+    return result;
+  }, [rows]);
+  const maxLineLength = useMemo(
+    () => rows.reduce((max, row) => Math.max(max, row.text.length), 0),
+    [rows],
+  );
+  const viewportHeight =
+    viewportRef.current?.clientHeight ||
+    Math.min(600, Math.max(240, window.innerHeight * 0.7));
+  const start = firstRowAtOffset(
+    offsets,
+    Math.max(0, scrollTop - DIFF_ROW_OVERSCAN_PX),
+  );
+  const end = Math.min(
+    rows.length,
+    firstRowAtOffset(
+      offsets,
+      scrollTop + viewportHeight + DIFF_ROW_OVERSCAN_PX,
+    ) + 1,
+  );
+
+  return (
+    <div
+      ref={viewportRef}
+      role="region"
+      aria-label="Diff lines"
+      tabIndex={0}
+      onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+      className="thin-scroll max-h-[min(70svh,42rem)] overflow-auto"
+    >
+      <div
+        className="ui-font-mono min-w-max"
+        style={{ minWidth: `${maxLineLength + 14}ch` }}
+      >
+        <div aria-hidden style={{ height: offsets[start] }} />
+        {rows.slice(start, end).map((row) => (
+          <DiffLine key={rowKey(row)} row={row} lang={lang} />
+        ))}
+        <div aria-hidden style={{ height: offsets[rows.length] - offsets[end] }} />
+      </div>
+    </div>
+  );
+}
 
 export interface FileDiffProps {
   file: FileReviewRecord;
@@ -246,16 +320,26 @@ export const FileDiff = memo(function FileDiff({
         ) : (
           // Each segment scrolls independently, so comment cards stay at panel width instead of
           // stretching to the widest code line in a shared scroller.
-          segments.map((segment) =>
-            segment.type === "rows" ? (
-              <div key={segment.key} className="thin-scroll overflow-x-auto">
-                <div className="min-w-fit py-1">
-                  {segment.rows.map((row) => (
-                    <DiffLine key={rowKey(row)} row={row} lang={lang} />
-                  ))}
+          segments.map((segment) => {
+            if (segment.type === "rows") {
+              return segment.rows.length > LARGE_DIFF_ROWS ? (
+                <VirtualDiffRows
+                  key={segment.key}
+                  rows={segment.rows}
+                  lang={lang}
+                />
+              ) : (
+                <div key={segment.key} className="thin-scroll overflow-x-auto">
+                  <div className="min-w-fit py-1">
+                    {segment.rows.map((row) => (
+                      <DiffLine key={rowKey(row)} row={row} lang={lang} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : (
+              );
+            }
+
+            return (
               <div
                 key={segment.key}
                 className="space-y-3 border-y border-ui-line/60 px-3 py-3 sm:px-4"
@@ -270,8 +354,8 @@ export const FileDiff = memo(function FileDiff({
                   ))}
                 </div>
               </div>
-            ),
-          )
+            );
+          })
         )}
 
         {hiddenLines > 0 && (

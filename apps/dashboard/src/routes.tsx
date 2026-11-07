@@ -70,6 +70,13 @@ export const publicRoutes: RouteObject[] = [
     element: <LandingPage />,
     errorElement: <RouteErrorBoundary />,
   },
+  {
+    // OAuth failures return to /login?error=...; keep the app route aligned with
+    // the server's public /login entry instead of falling through to NotFoundPage.
+    path: "/login",
+    element: <LandingPage />,
+    errorElement: <RouteErrorBoundary />,
+  },
 ];
 
 // A boundary per child too, not just on the layout: React Router replaces the whole matched branch, so a branch-only boundary would take the sidebar and header down with a single page.
