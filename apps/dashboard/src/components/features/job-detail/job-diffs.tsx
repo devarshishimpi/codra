@@ -11,7 +11,11 @@ import {
 import { api } from "@client/lib/api";
 import { buildTree } from "@codraoss/ui/file-tree";
 import { diffStats } from "@codraoss/ui/prompt-diff";
-import { readDiffsCache, writeDiffsCache } from "@client/lib/diffs-cache";
+import {
+  isDiffsCacheFresh,
+  readDiffsCache,
+  writeDiffsCache,
+} from "@client/lib/diffs-cache";
 import type { FileReviewRecord, JobDetail } from "@codraoss/schema";
 
 import { FileDiff } from "./diff-file-panel";
@@ -51,26 +55,51 @@ interface JobDiffsProps {
 }
 
 export function JobDiffs({ job }: JobDiffsProps) {
-  const [diffsByPath, setDiffsByPath] = useState<Record<string, string> | null>(
-    () => readDiffsCache(job.id),
-  );
-  const [diffsLoading, setDiffsLoading] = useState(diffsByPath === null);
+  const [diffState, setDiffState] = useState(() => {
+    const entry = readDiffsCache(job.id);
+    return {
+      jobId: job.id,
+      entry,
+      loading: !isDiffsCacheFresh(entry),
+    };
+  });
+  const cacheEntry = diffState.jobId === job.id ? diffState.entry : null;
+  const diffsByPath = cacheEntry?.diffs ?? null;
+  const diffsLoading =
+    diffState.jobId === job.id ? diffState.loading : true;
 
   useEffect(() => {
+    const cached = readDiffsCache(job.id);
+    setDiffState({ jobId: job.id, entry: cached, loading: !isDiffsCacheFresh(cached) });
+    if (isDiffsCacheFresh(cached)) return;
+
     let cancelled = false;
-    setDiffsLoading(true);
     api
       .getJobDiffs(job.id)
       .then((res) => {
         if (cancelled) return;
-        setDiffsByPath(res.diffs);
+        setDiffState({
+          jobId: job.id,
+          entry: { diffs: res.diffs, savedAt: Date.now() },
+          loading: false,
+        });
         writeDiffsCache(job.id, res.diffs);
       })
       .catch(() => {
-        if (!cancelled) setDiffsByPath((current) => current ?? {});
+        if (!cancelled) {
+          setDiffState((current) =>
+            current.jobId === job.id
+              ? { ...current, entry: current.entry ?? { diffs: {}, savedAt: 0 }, loading: false }
+              : current,
+          );
+        }
       })
       .finally(() => {
-        if (!cancelled) setDiffsLoading(false);
+        if (!cancelled) {
+          setDiffState((current) =>
+            current.jobId === job.id ? { ...current, loading: false } : current,
+          );
+        }
       });
     return () => {
       cancelled = true;

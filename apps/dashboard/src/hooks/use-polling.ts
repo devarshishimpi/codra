@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 
 export function usePolling(
   callback: () => Promise<void> | void,
-  delay = 10_000,
+  delay: number | null = 10_000,
   deps: any[] = [],
 ) {
   const savedCallback = useRef(callback);
@@ -12,42 +12,62 @@ export function usePolling(
   }, [callback]);
 
   useEffect(() => {
-    savedCallback.current();
+    let active = document.visibilityState === "visible";
+    let running = false;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let disposed = false;
 
-    if (delay === null) return;
+    const clearTimeoutIfScheduled = () => {
+      if (timeout !== null) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+    };
 
-    let id: ReturnType<typeof setInterval> | null = null;
+    const schedule = () => {
+      clearTimeoutIfScheduled();
+      if (!disposed && active && delay !== null) {
+        timeout = setTimeout(() => void run(), delay);
+      }
+    };
+
+    const run = async () => {
+      if (disposed || !active || running) return;
+      running = true;
+      try {
+        await savedCallback.current();
+      } catch {
+        // Polling callbacks own user-facing error state. A rejected callback must
+        // not create an unhandled rejection or stop future polls.
+      } finally {
+        running = false;
+        schedule();
+      }
+    };
 
     const start = () => {
-      if (id !== null) return;
-      id = setInterval(() => {
-        savedCallback.current();
-      }, delay);
+      if (active) return;
+      active = true;
+      clearTimeoutIfScheduled();
+      void run();
     };
 
     const stop = () => {
-      if (id !== null) {
-        clearInterval(id);
-        id = null;
-      }
+      active = false;
+      clearTimeoutIfScheduled();
     };
 
-    if (document.visibilityState === "visible") {
-      start();
-    }
+    if (active) void run();
 
     const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        savedCallback.current();
-        start();
-      } else {
-        stop();
-      }
+      if (document.visibilityState === "visible") start();
+      else stop();
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      disposed = true;
       stop();
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };

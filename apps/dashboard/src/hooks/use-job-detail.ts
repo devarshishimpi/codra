@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { api } from "@client/lib/api";
+import { isJsonWithinBudget } from "@client/lib/json-size";
 import type { JobDetail } from "@codraoss/schema";
 
 /* Job detail carries every file's full diff, so cache writes are best-effort (quota is swallowed). */
@@ -23,6 +24,7 @@ const MAX_CACHED_CHARS = 1_000_000;
 
 function writeJobCache(id: string, job: JobDetail) {
   try {
+    if (!isJsonWithinBudget(job, MAX_CACHED_CHARS)) return;
     const payload = JSON.stringify(job);
     if (payload.length > MAX_CACHED_CHARS) return;
     sessionStorage.setItem(jobCacheKey(id), payload);

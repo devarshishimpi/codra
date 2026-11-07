@@ -1,6 +1,9 @@
 import { Button, GithubMark, LinkButton } from "@codraoss/ui";
+import { useEffect } from "react";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@codraoss/ui/theme";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { api } from "@client/lib/api";
 
 const TERMS_URL = "https://codra.run/terms";
 const PRIVACY_URL = "https://codra.run/privacy";
@@ -30,9 +33,41 @@ const legalLink =
 
 export function LandingPage() {
   const { theme, toggleTheme } = useTheme();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const authError = searchParams.get("error");
+  const authErrorMessage = authError
+    ? {
+        not_allowed: "This GitHub account is not allowed to access this dashboard.",
+        invalid_callback: "GitHub sign-in could not be completed. Please try again.",
+        invalid_state: "The sign-in request expired. Please try again.",
+        oauth_failed: "GitHub sign-in failed. Please try again.",
+        access_denied: "GitHub sign-in was cancelled.",
+      }[authError] ?? "GitHub sign-in failed. Please try again."
+    : null;
+
+  useEffect(() => {
+    if (pathname !== "/" || authError) return;
+
+    let cancelled = false;
+    Promise.resolve(api.getSession())
+      .then((session) => {
+        if (!cancelled && session?.user) {
+          navigate("/dashboard", { replace: true });
+        }
+      })
+      .catch(() => {
+        // A missing or expired session should leave the sign-in page available.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authError, navigate, pathname]);
 
   return (
-    <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-ui-canvas px-4 py-16 text-ui-default sm:px-6">
+    <div className="relative flex min-h-svh flex-col items-center overflow-hidden bg-ui-canvas px-4 py-6 text-ui-default sm:px-6">
       <DotGrid />
 
       <Button
@@ -46,7 +81,7 @@ export function LandingPage() {
         {theme === "dark" ? <Sun size={14} /> : <Moon size={14} />}
       </Button>
 
-      <main className="relative z-10 w-full max-w-[26rem]">
+      <main className="relative z-10 my-auto w-full max-w-[26rem]">
         <div className="rounded-2xl border border-ui-line bg-ui-base px-6 py-10 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.55)] sm:px-10 sm:py-10">
           <div className="flex flex-col items-center text-center">
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-ui-line bg-ui-canvas">
@@ -100,6 +135,15 @@ export function LandingPage() {
             </p>
           </div>
 
+          {authErrorMessage && (
+            <p
+              role="alert"
+              className="mt-6 rounded-md border border-danger/30 bg-danger/5 px-3 py-2.5 text-left text-sm text-danger"
+            >
+              {authErrorMessage}
+            </p>
+          )}
+
           <LinkButton
             variant="primary"
             size="base"
@@ -123,6 +167,22 @@ export function LandingPage() {
           </p>
         </div>
       </main>
+
+      {pathname === "/" && (
+        <footer className="relative z-10 mt-8 flex items-center gap-4 text-xs text-ui-subtle">
+          <a href="https://codra.run" className={legalLink}>
+            codra.run
+          </a>
+          <a
+            href="https://github.com/devarshishimpi/codra"
+            className={legalLink}
+            target="_blank"
+            rel="noopener"
+          >
+            GitHub repo
+          </a>
+        </footer>
+      )}
     </div>
   );
 }
