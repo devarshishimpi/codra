@@ -2,7 +2,11 @@ import { LoadError } from "@codraoss/ui";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 
-import { readDiffsCache, writeDiffsCache } from "@client/lib/diffs-cache";
+import {
+  isDiffsCacheFresh,
+  readDiffsCache,
+  writeDiffsCache,
+} from "@client/lib/diffs-cache";
 import { groupBatches } from "@client/lib/batch-groups";
 import {
   ChevronLeft,
@@ -14,32 +18,53 @@ import { useJobDetail } from "@client/hooks/use-job-detail";
 import { JobDetailSkeleton } from "@client/components/features/job-detail/job-skeleton";
 
 import { api } from "@client/lib/api";
-import { FileRow, withheldTotal } from "@client/components/features/job-logs/file-row";
+import { withheldTotal } from "@client/components/features/job-logs/file-row";
+import { FileReviewList } from "@client/components/features/job-logs/file-review-list";
 
 export function JobLogsPage() {
   const { id = "" } = useParams();
   const { job, error } = useJobDetail(id);
 
-  const [diffsByPath, setDiffsByPath] = useState<Record<string, string> | null>(
-    () => readDiffsCache(id),
-  );
-  const [diffsLoading, setDiffsLoading] = useState(diffsByPath === null);
+  const [diffState, setDiffState] = useState(() => {
+    const entry = readDiffsCache(id);
+    return { jobId: id, entry, loading: !isDiffsCacheFresh(entry) };
+  });
+  const cacheEntry = diffState.jobId === id ? diffState.entry : null;
+  const diffsByPath = cacheEntry?.diffs ?? null;
+  const diffsLoading = diffState.jobId === id ? diffState.loading : true;
 
   useEffect(() => {
+    const cached = readDiffsCache(id);
+    setDiffState({ jobId: id, entry: cached, loading: !isDiffsCacheFresh(cached) });
+    if (isDiffsCacheFresh(cached)) return;
+
     let cancelled = false;
-    setDiffsLoading(true);
     api
       .getJobDiffs(id)
       .then((res) => {
         if (cancelled) return;
-        setDiffsByPath(res.diffs);
+        setDiffState({
+          jobId: id,
+          entry: { diffs: res.diffs, savedAt: Date.now() },
+          loading: false,
+        });
         writeDiffsCache(id, res.diffs);
       })
       .catch(() => {
-        if (!cancelled) setDiffsByPath((current) => current ?? {});
+        if (!cancelled) {
+          setDiffState((current) =>
+            current.jobId === id
+              ? { ...current, entry: current.entry ?? { diffs: {}, savedAt: 0 }, loading: false }
+              : current,
+          );
+        }
       })
       .finally(() => {
-        if (!cancelled) setDiffsLoading(false);
+        if (!cancelled) {
+          setDiffState((current) =>
+            current.jobId === id ? { ...current, loading: false } : current,
+          );
+        }
       });
     return () => {
       cancelled = true;
@@ -213,16 +238,12 @@ export function JobLogsPage() {
               {counts.total} {counts.total === 1 ? "file" : "files"}
             </span>
           </div>
-          <div className="divide-y divide-ui-line/60">
-            {files.map((file) => (
-              <FileRow
-                key={file.id}
-                file={file}
-                diffsLoading={diffsLoading}
-                batch={batches.get(file.filePath)}
-              />
-            ))}
-          </div>
+          <FileReviewList
+            jobId={id}
+            files={files}
+            diffsLoading={diffsLoading}
+            batches={batches}
+          />
         </div>
       )}
     </section>
