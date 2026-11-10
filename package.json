@@ -64,7 +64,7 @@
     "ora": "^9.4.1",
     "prompts": "^2.4.2",
     "publint": "^0.3.24",
-    "tailwindcss": "^4.2.4",
+    "tailwindcss": "^4.3.4",
     "tsup": "^9.0.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.66.0",
