@@ -69,7 +69,7 @@
   "dependencies": {
     "@codraoss/schema": "^0.10.0",
     "@codraoss/core": "^0.10.0",
-    "postgres": "^3.4.9"
+    "postgres": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.3",
