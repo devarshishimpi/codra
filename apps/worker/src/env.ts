@@ -50,6 +50,8 @@ export interface AppBindings {
   ENVIRONMENT: string;
   CF_API_TOKEN: string;
   CF_ACCOUNT_ID: string;
+  CF_PAID_WORKER?: string | boolean;
+  CF_SUBREQUEST_LIMIT?: string | number;
 }
 
 export interface AppVariables {

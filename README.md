@@ -92,7 +92,7 @@ The full setup and operations guides live at [codra.run/docs](https://codra.run/
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request against `dev`. Codra uses a Contributor License Agreement for contributions.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request against `main`. Codra uses a Contributor License Agreement for contributions.
 
 ## License
 

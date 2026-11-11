@@ -10,7 +10,8 @@ dotenv.config({ path: path.resolve(process.cwd(), "../../.env.local") });
 
 import { serve } from "@hono/node-server";
 import { createApiRouter } from "@codraoss/api";
-import { runWithDb } from "@codraoss/db/client";
+import { runWithDb, getDb, type DbClient } from "@codraoss/db/client";
+import type { DbEnv } from "@codraoss/db/env";
 
 import {
   NodeOrchestrator,
@@ -60,6 +61,13 @@ env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(
   stubs.REVIEW_QUEUE,
 );
 
+const dbEnv: DbEnv = {
+  ...env,
+  HYPERDRIVE: env.DATABASE_CONFIG,
+  workerMode: false,
+};
+const dbClient: DbClient = getDb(dbEnv);
+
 const distClientPath = path.resolve(__dirname, "../../../dist/client");
 const app = createApiRouter({
   serveIndex: async () =>
@@ -78,8 +86,6 @@ app.use("/icons/*", serveStatic({ root: distClientPath }));
 app.use("/*.svg", serveStatic({ root: distClientPath }));
 app.use("/*.ico", serveStatic({ root: distClientPath }));
 app.get("*", serveStatic({ root: distClientPath, path: "index.html" }));
-
-app.get("/health", (c) => c.text("OK"));
 
 const port = parseInt(process.env.PORT || "3000", 10);
 
@@ -105,8 +111,9 @@ if (process.env.START_API !== "false") {
 
         try {
           return await runWithDb(
-            { ...env, HYPERDRIVE: env.DATABASE_CONFIG },
+            dbEnv,
             () => app.fetch(request, apiEnv as any),
+            dbClient,
           );
         } catch (e) {
           console.error("SERVE ERROR:", e);
@@ -136,7 +143,8 @@ if (process.env.START_API !== "false") {
 import("@codraoss/models").then(({ ModelRegistryService }) => {
   const service = ModelRegistryService.getInstance();
   service.refreshFromRemote().catch(() => {});
-  setInterval(() => service.refreshFromRemote().catch(() => {}), 60 * 60 * 1000).unref();
+  const timer = setInterval(() => service.refreshFromRemote().catch(() => {}), 60 * 60 * 1000);
+  (timer as unknown as { unref?: () => void }).unref?.();
 }).catch(() => {});
 
 const shutdown = async () => {
@@ -156,7 +164,12 @@ const shutdown = async () => {
     logger.info("Redis client closed.");
   }
 
-  // Postgres client manages its own pool.
+  // Close Postgres client pool
+  if (dbClient?.close) {
+    logger.info("Closing Postgres client...");
+    await dbClient.close();
+    logger.info("Postgres client closed.");
+  }
 
   logger.info("All services stopped. Exiting.");
 };

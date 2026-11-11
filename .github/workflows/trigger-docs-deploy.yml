@@ -3,7 +3,7 @@ name: Trigger Docs Deploy
 on:
   push:
     branches:
-      - dev
+      - main
     paths:
       - "docs/**"
 

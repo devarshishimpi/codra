@@ -28,10 +28,10 @@ Contributions are welcome. The recommended workflow keeps changes focused and ea
 3. **Install dependencies** — `npm install` and copy `.dev.vars.example` to `.dev.vars` with your secrets filled in.
 4. **Make your change** — Keep the scope tight. Prefer existing patterns over new abstractions.
 5. **Run typecheck and tests** — `npm run typecheck` and `npm test` must both pass before opening a PR.
-6. **Open a pull request** — Open your PR against the `dev` branch. Write a clear description of what changed and why, and reference any related issues.
+6. **Open a pull request** — Open your PR against `main`. Write a clear description of what changed and why, and reference any related issues.
 
 <Note type="info">
-Before opening a PR against <code>dev</code>, run <code>npm run typecheck</code> and <code>npm test</code>. Both must pass. PRs that break type coverage or existing tests will not be merged.
+Pull requests are reviewed and merged directly into <code>main</code>; there is no separate <code>dev</code> integration branch. Run <code>npm run typecheck</code> and <code>npm test</code> before opening a PR, and ensure the required CI checks pass.
 </Note>
 
 <h2 id="conventions">Engineering Conventions</h2>
@@ -51,7 +51,7 @@ Before opening a PR against <code>dev</code>, run <code>npm run typecheck</code>
 
 All documentation content for [codra.run/docs](https://codra.run/docs) is stored in the public `docs/` folder in the Codra repository.
 
-Even though the frontend hosting is managed separately in a private repo, documentation content is 100% open source. When changes are merged into the `dev` branch, an automated GitHub Actions workflow copies the updated MDX files and deploys them to the website.
+Even though the frontend hosting is managed separately in a private repo, documentation content is 100% open source. When changes are merged into `main`, an automated GitHub Actions workflow copies the updated MDX files and deploys them to the website.
 
 ### Guidelines for Docs
 * **Files & Routing**: Stored in `docs/<page>.mdx` mapping directly to `https://codra.run/docs/<page>`.
