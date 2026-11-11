@@ -26,5 +26,17 @@ export {
   type VerifyOutcome,
 } from "./review";
 
+export {
+  TokenTracker,
+  type TokenTrackerOptions,
+} from "./token-tracker";
+
+export {
+  DEFAULT_MAX_SUBREQUESTS,
+  DEFAULT_SUBREQUEST_SAFE_MARGIN,
+  PAID_WORKER_MAX_SUBREQUESTS,
+} from "./constants";
+
 export * from "./ports";
 export * from "./review/model-gates";
+

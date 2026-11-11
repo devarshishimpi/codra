@@ -30,7 +30,7 @@ export class NodeOrchestrator implements JobOrchestrator {
           nextParams.jobId = result.jobId;
         }
         await this.queue.send(nextParams, {
-          delaySeconds: result.delaySeconds,
+          delaySeconds: 0,
         });
       } else if (result.action === "retry") {
         await this.queue.send(currentParams, {

@@ -72,17 +72,66 @@ function run(command, args) {
 
 loadEnvFiles();
 
-if (!usableEnvValue(process.env.TEST_DATABASE_URL)) {
-  console.error(
-    [
-      "TEST_DATABASE_URL is required to run the full test suite.",
-      "Copy .env.test.example to .env.test and point TEST_DATABASE_URL at a disposable Postgres database.",
-    ].join("\n"),
-  );
-  process.exit(1);
+const rawArgs = process.argv.slice(2);
+const isUnit = rawArgs.includes("unit") || rawArgs.includes("--unit");
+const isIntegration =
+  rawArgs.includes("integration") || rawArgs.includes("--integration");
+const passthroughArgs = rawArgs.filter(
+  (arg) =>
+    arg !== "unit" &&
+    arg !== "--unit" &&
+    arg !== "integration" &&
+    arg !== "--integration",
+);
+
+if (isUnit) {
+  process.env.CODRA_TEST_SUITE = "unit";
+  delete process.env.TEST_DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  run(process.execPath, [
+    "node_modules/vitest/vitest.mjs",
+    "run",
+    ...passthroughArgs,
+  ]);
+} else if (isIntegration) {
+  process.env.CODRA_TEST_SUITE = "integration";
+  if (!usableEnvValue(process.env.TEST_DATABASE_URL)) {
+    console.error(
+      [
+        "TEST_DATABASE_URL is required to run the integration test suite.",
+        "Copy .env.test.example to .env.test and point TEST_DATABASE_URL at a disposable Postgres database.",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+
+  run(process.execPath, ["packages/db/scripts/migrate.mjs"]);
+  run(process.execPath, [
+    "node_modules/vitest/vitest.mjs",
+    "run",
+    ...passthroughArgs,
+  ]);
+} else {
+  // Default: full test suite (backwards compatible)
+  if (!usableEnvValue(process.env.TEST_DATABASE_URL)) {
+    console.error(
+      [
+        "TEST_DATABASE_URL is required to run the full test suite.",
+        "Copy .env.test.example to .env.test and point TEST_DATABASE_URL at a disposable Postgres database.",
+        "To run tests without a database, use: npm run test:unit",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+
+  run(process.execPath, ["packages/db/scripts/migrate.mjs"]);
+  run(process.execPath, [
+    "node_modules/vitest/vitest.mjs",
+    "run",
+    ...passthroughArgs,
+  ]);
 }
-
-process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
-
-run(process.execPath, ["packages/db/scripts/migrate.mjs"]);
-run(process.execPath, ["node_modules/vitest/vitest.mjs", "run"]);

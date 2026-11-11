@@ -16,5 +16,6 @@ export type {
 export { requirePermission, requireQuota } from "./middleware/authorize";
 export { requireSession } from "./middleware/auth";
 export { requireCsrfHeader } from "./middleware/csrf";
+export { createDefaultQuotaChecker } from "./platform/quota";
 
 export * from "./create-deps";

@@ -28,6 +28,8 @@ export interface NodeAppBindings {
   LLM_CONFIG_ENCRYPTION_KEY: string;
   BOT_USERNAME: string;
   ENVIRONMENT: string;
+  SUBREQUEST_LIMIT?: string | number;
+  CF_SUBREQUEST_LIMIT?: string | number;
 }
 
 export function createNodeEnv(stubs: {
@@ -59,5 +61,7 @@ export function createNodeEnv(stubs: {
     LLM_CONFIG_ENCRYPTION_KEY: requireEnv("LLM_CONFIG_ENCRYPTION_KEY"),
     BOT_USERNAME: process.env.BOT_USERNAME || "codra-app",
     ENVIRONMENT: process.env.ENVIRONMENT || "development",
+    SUBREQUEST_LIMIT: process.env.SUBREQUEST_LIMIT,
+    CF_SUBREQUEST_LIMIT: process.env.CF_SUBREQUEST_LIMIT,
   };
 }

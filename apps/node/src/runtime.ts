@@ -1,7 +1,27 @@
 import type { ReviewRuntime } from "@codraoss/core/ports";
 import type { DbEnv } from "@codraoss/db/env";
-import { TokenTracker } from "@codraoss/core/token-tracker";
+import {
+  TokenTracker,
+  type TokenTrackerOptions,
+} from "@codraoss/core";
 import type { NodeAppBindings } from "./env";
+
+export function resolveNodeSubrequestLimits(
+  env?: Partial<NodeAppBindings>,
+): TokenTrackerOptions {
+  const envLimit =
+    env?.SUBREQUEST_LIMIT ??
+    env?.CF_SUBREQUEST_LIMIT ??
+    process.env.SUBREQUEST_LIMIT ??
+    process.env.CF_SUBREQUEST_LIMIT;
+  if (envLimit !== undefined) {
+    const limit = Number(envLimit);
+    if (!Number.isNaN(limit) && limit > 0) {
+      return { maxSubrequests: limit };
+    }
+  }
+  return { maxSubrequests: Number.POSITIVE_INFINITY };
+}
 
 import {
   makeJobStore,
@@ -52,7 +72,7 @@ export function createReviewRuntime(
     },
     telemetry: makeTelemetrySink(env),
 
-    createTokenTracker: () => new TokenTracker(),
+    createTokenTracker: () => new TokenTracker(resolveNodeSubrequestLimits(env)),
     createGitHub: makeGitHubFactory(env),
     createModel: makeModelFactory(env),
     createFormatter: makeFormatterFactory(env),

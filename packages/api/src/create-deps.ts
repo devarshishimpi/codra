@@ -36,9 +36,17 @@ export interface PlatformDeps {
   llmConfigEncryptionKey: string;
   cfApiToken?: string;
   cfAccountId?: string;
+  checkQuota?: ((input: QuotaCheckInput) => Promise<QuotaResult>) | null;
+  authz?: AuthzPort;
 }
 
-import type { ApiRouterDeps, PlatformPort } from "./ports";
+import type {
+  ApiRouterDeps,
+  PlatformPort,
+  QuotaCheckInput,
+  QuotaResult,
+  AuthzPort,
+} from "./ports";
 import type {
   SessionStore,
   ReviewRuntime,
@@ -81,6 +89,7 @@ import { createOAuthState, consumeOAuthState } from "./platform/oauth";
 import { verifyGitHubWebhookSignature } from "@codraoss/core/verify";
 
 import { createModelRunnerDeps } from "./model-runner-deps";
+import { createDefaultQuotaChecker } from "./platform/quota";
 
 function toAppBindingsConfig(p: PlatformDeps) {
   return {
@@ -184,5 +193,12 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
         normalizeGitHubWebhook(eventName, payload),
       extractReviewRequest: (input: any) => extractReviewRequest(input),
     },
+    checkQuota:
+      p.checkQuota !== undefined
+        ? (p.checkQuota ?? undefined)
+        : p.kv
+          ? createDefaultQuotaChecker(p.kv)
+          : undefined,
+    authz: p.authz,
   };
 }

@@ -2,14 +2,15 @@ import type { DbEnv } from "./env";
 import { AsyncLocalStorage } from "node:async_hooks";
 import postgres from "postgres";
 
-type DbClient = {
+export type DbClient = {
   query<T>(sqlText: string, params?: unknown[]): Promise<T[]>;
   transaction<T>(fn: (tx: DbClient) => Promise<T>): Promise<T>;
+  close?: () => Promise<void>;
 };
 
 const dbStorage = new AsyncLocalStorage<DbClient>();
 
-function createDbClient(env: DbEnv): DbClient {
+export function createDbClient(env: DbEnv): DbClient {
   const sql = postgres(env.HYPERDRIVE.connectionString, {
     max: process.env.DB_POOL_SIZE ? parseInt(process.env.DB_POOL_SIZE, 10) : 5,
     fetch_types: false,
@@ -49,6 +50,14 @@ function createDbClient(env: DbEnv): DbClient {
         return await fn(txClient);
       })) as T;
     },
+    async close() {
+      fallbackClients.delete(env.HYPERDRIVE.connectionString);
+      try {
+        await sql.end({ timeout: 5 });
+      } catch {
+        // ignore errors on close
+      }
+    },
   };
 }
 
@@ -71,8 +80,10 @@ function toPostgresArrayElement(value: unknown) {
   return `"${text}"`;
 }
 
-export function runWithDb<T>(env: DbEnv, fn: () => T): T {
-  return dbStorage.run(createDbClient(env), fn);
+export function runWithDb<T>(env: DbEnv, fn: () => T, client?: DbClient): T {
+  const resolvedClient =
+    client ?? (env.workerMode === false ? getDb(env) : createDbClient(env));
+  return dbStorage.run(resolvedClient, fn);
 }
 
 // Module-scoped Map pools connections outside runWithDb, but must self-heal when request context changes.
@@ -100,6 +111,21 @@ export function getDb(env: DbEnv) {
   return client;
 }
 
+export async function closeDb(env?: DbEnv): Promise<void> {
+  if (env) {
+    const connectionString = env.HYPERDRIVE.connectionString;
+    const client = fallbackClients.get(connectionString);
+    if (client) {
+      fallbackClients.delete(connectionString);
+      await client.close?.();
+    }
+  } else {
+    const clients = Array.from(fallbackClients.values());
+    fallbackClients.clear();
+    await Promise.all(clients.map((c) => c.close?.()));
+  }
+}
+
 // Retries op once on a fresh client if the module-cached socket has gone stale.
 async function withStaleConnectionRecovery<T>(
   env: DbEnv,
@@ -113,7 +139,9 @@ async function withStaleConnectionRecovery<T>(
       throw error;
 
     const connectionString = env.HYPERDRIVE.connectionString;
+    const stale = fallbackClients.get(connectionString);
     fallbackClients.delete(connectionString);
+    stale?.close?.().catch?.(() => {});
     const fresh = createDbClient(env);
     fallbackClients.set(connectionString, fresh);
 

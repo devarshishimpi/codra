@@ -104,7 +104,7 @@ npm run typecheck
 
 ## 📝 Contributing to Documentation
 
-All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `dev`.
+All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `main`.
 
 ### MDX Guidelines
 - **Files & Routes**: Each file in `docs/*.mdx` maps directly to a route (e.g. `docs/docker.mdx` -> `codra.run/docs/docker`).
@@ -118,16 +118,15 @@ All documentation content for [codra.run/docs](https://codra.run/docs) lives in 
 
 ## 🚀 Pull Request Process
 
-Contributions are merged into `dev` first and reach `main` when a release is cut, so `main` always
-reflects what is deployed and published. Pull requests opened against `main` will be asked to
-retarget to `dev`.
+Pull requests are reviewed and merged directly into `main`. There is no separate `dev` integration
+branch or release-branch promotion step.
 
-1.  **Fork & Branch**: Create a feature branch from `dev`.
+1.  **Fork & Branch**: Create a feature branch from `main`.
 2.  **Atomic Commits**: Keep your commits focused and descriptive.
-3.  **Sync**: Ensure your branch is up to date with `dev`.
-4.  **Target Branch**: Open pull requests against `dev`.
+3.  **Sync**: Ensure your branch is up to date with `main`.
+4.  **Target Branch**: Open pull requests against `main`.
 5.  **PR Description**: Use the provided template (if available) or clearly explain the _what_ and _why_ of your changes.
-6.  **CLA Check**: Once you open the PR, an automated check will verify your CLA status. If you haven't signed yet, follow the link in the check output.
+6.  **Checks & CLA**: Ensure the required CI checks pass. An automated check verifies your CLA status; if you haven't signed yet, follow the link in the check output.
 
 ---
 
