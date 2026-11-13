@@ -10,7 +10,7 @@
     "@codraoss/models": "^0.10.0",
     "@codraoss/provider-github": "^0.10.0",
     "@codraoss/schema": "^0.10.0",
-    "hono": "^4.12.34"
+    "hono": "^4.13.18"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250109.0",
