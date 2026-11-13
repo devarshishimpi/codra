@@ -17,7 +17,7 @@
     "@codraoss/node-adapters": "^0.10.0",
     "@codraoss/provider-github": "^0.10.0",
     "@codraoss/schema": "^0.10.0",
-    "@hono/node-server": "^2.1.5",
+    "@hono/node-server": "^2.1.6",
     "bullmq": "^6.3.8",
     "dotenv": "^16.4.7",
     "hono": "^4.6.20",
