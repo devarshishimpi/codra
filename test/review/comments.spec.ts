@@ -137,10 +137,73 @@ describe("createReview inline comment payload", () => {
     expect(review.id).toBe(777);
     expect(sent[0].comments).toHaveLength(1);
     expect(sent[1].comments).toHaveLength(0);
-    expect(sent[1].body).toBe("summary");
+    expect(sent[1].body).toContain("summary");
+    expect(sent[1].body).toContain("### ⚠️ Comments on Out-of-Diff Lines");
+    expect(sent[1].body).toContain("| `src/app.ts` | 12 | Something is wrong here. |");
     // Nothing was actually shown, so nothing may be recorded as posted -- otherwise the finding
     // would be suppressed on every later commit without a human ever having seen it.
     expect(review.postedIndices).toEqual([]);
+  });
+
+  it("salvages valid inline comments when GitHub 422 identifies the rejected comment", async () => {
+    const client = new GitHubClient({} as never, "123");
+    const sent: any[] = [];
+    let call = 0;
+    vi.spyOn(client as any, "request").mockImplementation(
+      async (...args: unknown[]) => {
+        const [, init] = args as [string, RequestInit];
+        sent.push(JSON.parse(String(init.body)));
+        call += 1;
+        // First attempt (with 2 comments) rejects the second comment as out-of-diff
+        if (call === 1) {
+          return new Response(
+            JSON.stringify({
+              message: "Validation Failed",
+              errors: [
+                {
+                  resource: "PullRequestReviewComment",
+                  field: "comments[1].line",
+                  code: "custom",
+                  message: "line must be part of the diff",
+                },
+              ],
+            }),
+            { status: 422 },
+          );
+        }
+        return new Response(JSON.stringify({ id: 888 }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    );
+
+    const review = await client.createReview("o", "r", 7, {
+      commitSha: "abc123",
+      event: "COMMENT",
+      body: "summary",
+      comments: [
+        comment({ path: "src/good.ts", line: 10, body: "Valid comment" }),
+        comment({ path: "src/bad.ts", line: 99, body: "Out of diff comment" }),
+      ],
+    });
+
+    expect(review.id).toBe(888);
+    expect(sent).toHaveLength(2);
+    // First attempt sent both comments
+    expect(sent[0].comments).toHaveLength(2);
+    // Salvage retry sent only the valid comment inline
+    expect(sent[1].comments).toHaveLength(1);
+    expect(sent[1].comments[0]).toMatchObject({
+      path: "src/good.ts",
+      line: 10,
+    });
+    // Dropped comment finding was preserved in the summary body
+    expect(sent[1].body).toContain("summary");
+    expect(sent[1].body).toContain("### ⚠️ Comments on Out-of-Diff Lines");
+    expect(sent[1].body).toContain("| `src/bad.ts` | 99 | Out of diff comment |");
+    // Only the salvaged comment was posted inline
+    expect(review.postedIndices).toEqual([0]);
   });
 
   it("reports which comments GitHub accepted, by caller index", async () => {

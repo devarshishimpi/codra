@@ -1,6 +1,34 @@
 import type { ReviewRuntime } from "@codraoss/core/ports";
-import { TokenTracker } from "@codraoss/core/token-tracker";
+import {
+  TokenTracker,
+  type TokenTrackerOptions,
+  DEFAULT_MAX_SUBREQUESTS,
+  DEFAULT_SUBREQUEST_SAFE_MARGIN,
+  PAID_WORKER_MAX_SUBREQUESTS,
+} from "@codraoss/core";
 import type { AppBindings } from "../env";
+
+export function resolveWorkerSubrequestLimits(
+  env: Partial<AppBindings>,
+): TokenTrackerOptions {
+  if (env.CF_SUBREQUEST_LIMIT !== undefined) {
+    const limit = Number(env.CF_SUBREQUEST_LIMIT);
+    if (!Number.isNaN(limit) && limit > 0) {
+      return { maxSubrequests: limit };
+    }
+  }
+  const isPaid =
+    env.CF_PAID_WORKER === true ||
+    env.CF_PAID_WORKER === "true" ||
+    env.CF_PAID_WORKER === "1";
+  if (isPaid) {
+    return { maxSubrequests: PAID_WORKER_MAX_SUBREQUESTS };
+  }
+  return {
+    maxSubrequests: DEFAULT_MAX_SUBREQUESTS,
+    safeMargin: DEFAULT_SUBREQUEST_SAFE_MARGIN,
+  };
+}
 // Imported for its side effect as well as never: this installs the AsyncLocalStorage-backed logger as
 // the sink @codraoss/core's logger facade delegates to. Explicit here so engine log lines carry request
 // context by construction, rather than because some other module happened to be loaded first.
@@ -50,7 +78,7 @@ export function createReviewRuntime(env: AppBindings): ReviewRuntime {
     repoConfig: makeRepoConfigLoader(env),
     telemetry: makeTelemetrySink(env),
 
-    createTokenTracker: () => new TokenTracker(),
+    createTokenTracker: () => new TokenTracker(resolveWorkerSubrequestLimits(env)),
     createGitHub: makeGitHubFactory(env),
     createModel: makeModelFactory(env),
     createFormatter: makeFormatterFactory(env),

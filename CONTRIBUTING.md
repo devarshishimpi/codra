@@ -4,7 +4,7 @@ Thank you for your interest in contributing to Codra! We are building a high-per
 
 ---
 
-## ⚖️ Contributor License Agreement (CLA)
+## Contributor License Agreement (CLA)
 
 Before we can merge your pull request, you must sign our Contributor License Agreement. This is a quick process that takes about 10 seconds and ensures that your contributions can be included under our dual-licensing model (AGPL-3.0 for the core).
 
@@ -12,7 +12,7 @@ Before we can merge your pull request, you must sign our Contributor License Agr
 
 ---
 
-## 📦 Repository Layout
+## Repository Layout
 
 Codra is an npm workspace monorepo. The repository is structured into `apps/` (deployable entrypoints) and `packages/` (reusable modules):
 
@@ -35,7 +35,7 @@ apps/
 
 ---
 
-## 🛠️ Local Development Setup
+## Local Development Setup
 
 Codra is a monorepo-style project built with **Hono** (Worker), **React** (Vite), and **Cloudflare Workers**.
 
@@ -83,7 +83,7 @@ npm run dev
 
 ---
 
-## 🧪 Testing
+## Testing
 
 We use **Vitest** for unit and integration testing. `npm test` requires a disposable Postgres database, runs migrations against it, and then runs the full test suite.
 
@@ -102,9 +102,9 @@ npm run typecheck
 
 ---
 
-## 📝 Contributing to Documentation
+## Contributing to Documentation
 
-All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `dev`.
+All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `main`.
 
 ### MDX Guidelines
 - **Files & Routes**: Each file in `docs/*.mdx` maps directly to a route (e.g. `docs/docker.mdx` -> `codra.run/docs/docker`).
@@ -116,21 +116,31 @@ All documentation content for [codra.run/docs](https://codra.run/docs) lives in 
 
 ---
 
-## 🚀 Pull Request Process
+## Pull Request Process
 
-Contributions are merged into `dev` first and reach `main` when a release is cut, so `main` always
-reflects what is deployed and published. Pull requests opened against `main` will be asked to
-retarget to `dev`.
+Pull requests are reviewed and merged directly into `main`. There is no separate `dev` integration
+branch or release-branch promotion step.
 
-1.  **Fork & Branch**: Create a feature branch from `dev`.
+1.  **Fork & Branch**: Create a feature branch from `main`.
 2.  **Atomic Commits**: Keep your commits focused and descriptive.
-3.  **Sync**: Ensure your branch is up to date with `dev`.
-4.  **Target Branch**: Open pull requests against `dev`.
+3.  **Sync**: Ensure your branch is up to date with `main`.
+4.  **Target Branch**: Open pull requests against `main`.
 5.  **PR Description**: Use the provided template (if available) or clearly explain the _what_ and _why_ of your changes.
-6.  **CLA Check**: Once you open the PR, an automated check will verify your CLA status. If you haven't signed yet, follow the link in the check output.
+6.  **Checks & CLA**: Ensure the required CI checks pass. An automated check verifies your CLA status; if you haven't signed yet, follow the link in the check output.
 
 ---
 
-## 📜 Licensing
+### Good First Issues
+
+New to Codra? We label issues that are well-scoped, clearly described, and approachable for first-time contributors. Every good-first-issue comes with context: which file or area to look at, what "done" looks like, and why the fix or feature matters.
+
+- Browse issues labelled [**good first issue**](https://github.com/devarshishimpi/codra/labels/good%20first%20issue) for standalone, beginner-friendly tasks.
+- Browse [**help wanted**](https://github.com/devarshishimpi/codra/labels/help%20wanted) for issues where maintainer bandwidth is limited and community help is especially appreciated.
+
+If you pick one up, leave a comment so others know it is being worked on. Feel free to ask questions directly in the issue thread — we're happy to help you get started.
+
+---
+
+## Licensing
 
 Codra is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. By contributing, you agree that your work will be licensed under the same terms, plus the additional grants specified in the CLA.

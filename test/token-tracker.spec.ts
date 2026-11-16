@@ -37,6 +37,32 @@ describe("TokenTracker.remainingSafeBudget", () => {
     expect(tracker.isNearLimit()).toBe(true);
     expect(tracker.remainingSafeBudget()).toBe(0);
   });
+
+  it("handles unconstrained subrequests without artificial limits", () => {
+    const tracker = new TokenTracker({ maxSubrequests: Number.POSITIVE_INFINITY });
+    expect(tracker.remainingSafeBudget()).toBe(Number.POSITIVE_INFINITY);
+    expect(tracker.isNearLimit()).toBe(false);
+    expect(tracker.hasRemainingSubrequests(100_000)).toBe(true);
+
+    tracker.incrementSubrequests(500);
+    expect(tracker.remainingSafeBudget()).toBe(Number.POSITIVE_INFINITY);
+    expect(tracker.isNearLimit()).toBe(false);
+    expect(tracker.hasRemainingSubrequests(100_000)).toBe(true);
+  });
+
+  it("supports configurable paid worker limits", () => {
+    const tracker = new TokenTracker({ maxSubrequests: 1000, safeMargin: 25 });
+    expect(tracker.remainingSafeBudget()).toBe(975); // 1000 - 25
+    expect(tracker.isNearLimit()).toBe(false);
+
+    tracker.incrementSubrequests(974);
+    expect(tracker.isNearLimit()).toBe(false);
+    expect(tracker.remainingSafeBudget()).toBe(1);
+
+    tracker.incrementSubrequests(1);
+    expect(tracker.isNearLimit()).toBe(true);
+    expect(tracker.remainingSafeBudget()).toBe(0);
+  });
 });
 
 // record() only ran on success, so retried/429'd sends were invisible to accounting.

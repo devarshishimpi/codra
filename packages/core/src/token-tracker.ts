@@ -1,4 +1,8 @@
 import { logger } from "./logger";
+import {
+  DEFAULT_MAX_SUBREQUESTS,
+  DEFAULT_SUBREQUEST_SAFE_MARGIN,
+} from "./constants";
 
 export interface TokenUsage {
   input: number;
@@ -19,13 +23,23 @@ export interface WastedUsage {
   byReason: Record<string, number>;
 }
 
+export interface TokenTrackerOptions {
+  maxSubrequests?: number;
+  safeMargin?: number;
+}
+
 export class TokenTracker {
   private usage: Map<string, ModelUsage> = new Map();
   private wasted = { attempts: 0, estimatedInput: 0, skips: 0 };
   private wastedByReason: Map<string, number> = new Map();
   private subrequests = 0;
-  private readonly MAX_SUBREQUESTS = 50;
-  private readonly SAFE_MARGIN = 25;
+  private readonly MAX_SUBREQUESTS: number;
+  private readonly SAFE_MARGIN: number;
+
+  constructor(options?: TokenTrackerOptions) {
+    this.MAX_SUBREQUESTS = options?.maxSubrequests ?? DEFAULT_MAX_SUBREQUESTS;
+    this.SAFE_MARGIN = options?.safeMargin ?? DEFAULT_SUBREQUEST_SAFE_MARGIN;
+  }
 
   incrementSubrequests(count = 1) {
     this.subrequests += count;
@@ -40,10 +54,16 @@ export class TokenTracker {
   }
 
   isNearLimit() {
+    if (!Number.isFinite(this.MAX_SUBREQUESTS)) {
+      return false;
+    }
     return this.subrequests >= this.MAX_SUBREQUESTS - this.SAFE_MARGIN;
   }
 
   remainingSafeBudget() {
+    if (!Number.isFinite(this.MAX_SUBREQUESTS)) {
+      return Number.POSITIVE_INFINITY;
+    }
     return Math.max(
       0,
       this.MAX_SUBREQUESTS - this.SAFE_MARGIN - this.subrequests,

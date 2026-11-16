@@ -131,5 +131,16 @@
   "devDependencies": {
     "@types/picomatch": "^4.0.3",
     "tsup": "^9.0.0"
-  }
+  },
+  "keywords": [
+    "ai",
+    "code-review",
+    "github",
+    "pull-request",
+    "self-hosted",
+    "typescript",
+    "review-engine",
+    "llm",
+    "diff"
+  ]
 }

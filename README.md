@@ -41,6 +41,32 @@ Codra listens to GitHub pull request events, runs AI-powered review jobs, posts 
 
 > **Beta** - Codra is under active development. Cloudflare Worker is stable for self-hosted use; Node/Docker standalone is newer and still being hardened. Expect rough edges. Bugs and feedback welcome via [GitHub Issues](https://github.com/devarshishimpi/codra/issues).
 
+## Quickstart
+
+**Docker** — the fastest way to run Codra locally or on your own server:
+
+```bash
+docker run -p 3000:3000 devarshishimpi/codra
+```
+
+For a full setup with PostgreSQL and Redis included, use the Docker Compose file from the [Docker guide](https://codra.run/docs/docker):
+
+```bash
+curl -O https://codra.run/docker-compose.yml
+docker compose up
+```
+
+**Cloudflare Workers** — deploy to the edge in minutes:
+
+```bash
+npm install -g wrangler
+git clone https://github.com/devarshishimpi/codra.git && cd codra
+npm install
+npm run setup:cloudflare
+```
+
+[Full installation guide →](https://codra.run/docs/installation)
+
 ## Why Codra
 
 - **Own the whole review loop**: Run the GitHub App, web server, queue, database, model credentials, and dashboard under your own control (deploy on Cloudflare Workers, Node.js 24, or your own server via Docker).
@@ -90,9 +116,22 @@ The full setup and operations guides live at [codra.run/docs](https://codra.run/
 - [Contributing](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
 
+## Good First Issues
+
+New contributors are very welcome! We label well-scoped, beginner-friendly tasks — each issue includes which file to look at, what "done" looks like, and why it matters.
+
+Browse [good first issue](https://github.com/devarshishimpi/codra/labels/good%20first%20issue) and [help wanted](https://github.com/devarshishimpi/codra/labels/help%20wanted) labels to find your first contribution.
+
+## Community
+
+- **Discord**: https://discord.gg/qkJmc8hHrC
+- **Issues**: https://github.com/devarshishimpi/codra/issues
+- **Discussions**: https://github.com/devarshishimpi/codra/discussions
+- **X/Twitter**: https://x.com/devarshishimpi
+
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request against `dev`. Codra uses a Contributor License Agreement for contributions.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request against `main`. Codra uses a Contributor License Agreement for contributions.
 
 ## License
 

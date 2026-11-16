@@ -86,7 +86,12 @@ function loadTestEnvFromFiles() {
 }
 
 function assertRequiredTestEnv() {
-  const missing = REQUIRED_TEST_ENV_KEYS.filter(
+  const isUnit = process.env.CODRA_TEST_SUITE === "unit";
+  const requiredKeys = isUnit
+    ? REQUIRED_TEST_ENV_KEYS.filter((key) => key !== "TEST_DATABASE_URL")
+    : REQUIRED_TEST_ENV_KEYS;
+
+  const missing = requiredKeys.filter(
     (key) => !usableEnvValue(process.env[key]),
   );
   if (missing.length === 0) return;
@@ -95,7 +100,11 @@ function assertRequiredTestEnv() {
     [
       `Missing required test environment variables: ${missing.join(", ")}.`,
       "Set these values in .env.test, .env.local, .env, .dev.vars, .env.test.example, or CI.",
-      "TEST_DATABASE_URL must point to a disposable Postgres database so the full test suite can run.",
+      ...(isUnit
+        ? []
+        : [
+            "TEST_DATABASE_URL must point to a disposable Postgres database so the full test suite can run.",
+          ]),
     ].join("\n"),
   );
 }

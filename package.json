@@ -36,6 +36,8 @@
     "setup:cloudflare": "node scripts/setup-cloudflare.js",
     "migrate": "node packages/db/scripts/migrate.mjs",
     "test": "node scripts/test.mjs",
+    "test:unit": "node scripts/test.mjs unit",
+    "test:integration": "node scripts/test.mjs integration",
     "test:all": "npm run test --workspaces --if-present",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",

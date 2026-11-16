@@ -114,5 +114,16 @@
   },
   "devDependencies": {
     "tsup": "^9.0.0"
-  }
+  },
+  "keywords": [
+    "ai",
+    "code-review",
+    "github",
+    "pull-request",
+    "self-hosted",
+    "typescript",
+    "react",
+    "design-system",
+    "tailwind"
+  ]
 }

@@ -1,4 +1,4 @@
-﻿import { describe } from "vitest";
+import { describe } from "vitest";
 import type { AppBindings } from "@server/env";
 import { InMemorySessionStore } from "@codraoss/core";
 import { encryptLlmApiKey, ModelRunner } from "@codraoss/models";
@@ -144,7 +144,9 @@ export function createTestEnv(
     REVIEW_WORKFLOW: new MockWorkflow() as any,
     ASSETS: new MockAssets() as any,
     HYPERDRIVE: {
-      connectionString: getTestDatabaseUrl(),
+      connectionString: hasConfiguredTestDatabaseUrl()
+        ? getTestDatabaseUrl()
+        : "postgresql://mock:mock@127.0.0.1:5432/codra_mock",
     },
     APP_PRIVATE_KEY: "private_key",
     GITHUB_APP_ID: "app_id",

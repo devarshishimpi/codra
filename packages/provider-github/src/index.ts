@@ -15,3 +15,4 @@ export {
   type GitHubOAuthProfile,
 } from "./oauth";
 export { normalizeGitHubWebhook } from "./webhook";
+export { findBotReviewForCommit, postReview } from "./review-post";
