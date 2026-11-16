@@ -21,6 +21,7 @@ export function appendDroppedCommentsToSummary(
           ? `pos ${comment.position}`
           : "-";
     const body = comment.body
+      .replace(/\\/g, "\\\\")
       .replace(/\|/g, "\\|")
       .replace(/\r?\n/g, "<br/>");
     return `| ${file} | ${line} | ${body} |`;
