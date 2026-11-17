@@ -100,6 +100,35 @@ npm run test:watch
 npm run typecheck
 ```
 
+
+### Browser E2E tests
+
+Browser tests live in `playwright/`, separate from the existing Vitest/JSDOM tests under `test/`. The Playwright setup runs one Chromium smoke test against the real local Node server and uses a synthetic signed-out session response; it does not sign in to GitHub or call a real LLM provider.
+
+Requirements: Node.js 24+, Docker, and disposable local PostgreSQL and Redis services.
+
+```bash
+# Start isolated local services (keep these separate from any real Codra data).
+docker run -d --name codra-e2e-postgres -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=codra_e2e -p 5432:5432 postgres:16
+docker run -d --name codra-e2e-redis -p 6379:6379 redis:7-alpine
+
+# Use only the synthetic values in this file.
+cp .env.e2e.example .env.e2e
+
+# Install the pinned browser binary once, then run the browser suite.
+npm ci
+npx playwright install chromium
+npm run test:e2e
+
+# Stop the disposable services when finished.
+docker stop codra-e2e-postgres codra-e2e-redis
+```
+
+`npm run test:e2e` builds the Node server and dashboard, then Playwright starts the Node server on `http://localhost:3000` automatically. The launcher reads `.env.e2e`, generates a throwaway GitHub App private key for server initialization, disables the background review worker and telemetry, and never needs real GitHub, OAuth, or LLM credentials. The smoke test stubs only `GET /api/auth/session` as signed out. No database migration or seeded application data is needed for this first smoke test; keep `DATABASE_URL` pointed at the disposable database above.
+
+The browser output is written to `test-results/` and `playwright-report/`; both are gitignored. To inspect the HTML report after a run, use `npx playwright show-report`.
+
+
 ---
 
 ## Contributing to Documentation
