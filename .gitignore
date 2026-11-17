@@ -148,3 +148,7 @@ vite.config.ts.timestamp-*
 tsup.config.bundled_*.mjs
 *.tgz
 .npmrc
+
+# Playwright browser test artifacts
+/test-results/
+/playwright-report/
