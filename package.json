@@ -30,7 +30,7 @@
     "dev:client": "vite build --watch --mode development",
     "dev:node": "npm run dev -w @codraoss/node-server",
     "dev:worker": "cd apps/worker && wrangler dev --local --env-file ../../.dev.vars",
-    "lint": "eslint test scripts packages apps",
+    "lint": "eslint test scripts packages apps playwright playwright.config.ts",
     "lint:all": "npm run lint --workspaces --if-present",
     "start": "npm run dev",
     "setup:cloudflare": "node scripts/setup-cloudflare.js",
@@ -44,7 +44,8 @@
     "typecheck:all": "npm run typecheck --workspaces --if-present",
     "release": "npm run build:packages",
     "check:exports": "node scripts/check-package-exports.mjs",
-    "check:builds": "node scripts/check-package-builds.mjs"
+    "check:builds": "node scripts/check-package-builds.mjs",
+    "test:e2e": "npm run build:node && playwright test"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
@@ -72,7 +73,8 @@
     "typescript-eslint": "^8.66.0",
     "vite": "^8.0.16",
     "vitest": "^4.1.11",
-    "wrangler": "^4.114.0"
+    "wrangler": "^4.114.0",
+    "@playwright/test": "1.65.1"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

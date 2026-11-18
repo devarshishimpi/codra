@@ -30,6 +30,7 @@
     "apps/node/src/**/*.ts",
     "vite.config.ts",
     "vitest.config.ts",
+    "playwright.config.ts",
     "apps/dashboard/src/**/*.ts",
     "apps/dashboard/src/**/*.tsx",
     "test/**/*.ts",
@@ -41,6 +42,7 @@
     // this one has worker-configuration.d.ts in scope and would happily accept a KVNamespace.
     "packages/*/src/**/*.ts",
     "packages/*/src/**/*.tsx",
-    "packages/*/test/**/*.ts"
+    "packages/*/test/**/*.ts",
+    "playwright/**/*.ts"
   ]
 }
