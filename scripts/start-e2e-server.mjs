@@ -1,6 +1,6 @@
 import { generateKeyPairSync } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import path from "node:path";
 import process from "node:process";
 
@@ -66,26 +66,43 @@ const child = spawn(npm, ["run", "dev:node"], {
   env: process.env,
   stdio: "inherit",
   shell: process.platform === "win32",
+  detached: process.platform !== "win32",
 });
 
 let stopping = false;
-function stopChild(signal) {
-  if (stopping || child.exitCode !== null) return;
-  stopping = true;
+function killChildTree(signal = "SIGTERM") {
+  if (!child.pid || child.exitCode !== null || child.signalCode !== null) return;
 
-  if (process.platform === "win32" && child.pid) {
-    const taskkill = spawn("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
+  if (process.platform === "win32") {
+    const result = spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
       stdio: "ignore",
       windowsHide: true,
     });
-    taskkill.on("error", () => child.kill());
-  } else {
-    child.kill(signal);
+    if (result.error || result.status !== 0) child.kill();
+    return;
   }
+
+  try {
+    // The detached child has its own process group, so terminate npm and the
+    // dev server it launched rather than leaving descendants behind.
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error?.code !== "ESRCH") child.kill(signal);
+  }
+}
+
+function stopChild(signal) {
+  if (stopping) return;
+  stopping = true;
+  killChildTree(signal);
 }
 
 process.on("SIGINT", () => stopChild("SIGINT"));
 process.on("SIGTERM", () => stopChild("SIGTERM"));
+
+// The exit event is synchronous. Use synchronous process-tree termination so
+// an unexpected parent exit cannot orphan the dev server.
+process.on("exit", () => killChildTree());
 
 child.on("error", (error) => {
   console.error("Failed to start the Codra Node server:", error);
