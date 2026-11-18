@@ -15,6 +15,7 @@ function loadE2eEnvironment() {
     if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
       throw new Error(
         "Missing .env.e2e. Copy .env.e2e.example to .env.e2e and start the disposable Postgres and Redis services first.",
+        { cause: error },
       );
     }
     throw error;
