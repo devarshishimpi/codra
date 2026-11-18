@@ -6,6 +6,7 @@ export class GitHubError extends Error {
     public readonly body: string,
     public readonly path: string,
     message: string,
+    public readonly headers?: Headers,
   ) {
     super(message);
     this.name = "GitHubError";
@@ -29,6 +30,7 @@ export async function assertResponseOk(
       errText,
       path,
       `${action} failed with ${response.status}: ${errText}`,
+      response.headers,
     );
   }
 }
@@ -53,13 +55,20 @@ export async function withRetry<T>(
       return await fn();
     } catch (error: any) {
       attempt++;
+      const body = error instanceof GitHubError ? error.body?.toLowerCase() : "";
       const isSecondaryRateLimit =
         error instanceof GitHubError &&
         error.status === 403 &&
-        error.body?.toLowerCase().includes("secondary rate limit");
+        body?.includes("secondary rate limit");
+      const isPrimaryRateLimit =
+        error instanceof GitHubError &&
+        error.status === 403 &&
+        (body?.includes("rate limit exceeded") ||
+          body?.includes("api rate limit"));
+      const isRateLimit = isSecondaryRateLimit || isPrimaryRateLimit;
 
       const isRetryable =
-        isSecondaryRateLimit ||
+        isRateLimit ||
         (error instanceof GitHubError &&
           (error.status === 429 || error.status >= 500)) ||
         error.name === "TimeoutError" ||
@@ -69,9 +78,15 @@ export async function withRetry<T>(
         throw error;
       }
 
-      const delay = isSecondaryRateLimit
-        ? Math.pow(2, attempt) * 30000
-        : Math.pow(2, attempt) * 1000;
+      const rateLimitReset =
+        error instanceof GitHubError
+          ? error.headers?.get("x-ratelimit-reset")
+          : undefined;
+      const delay = rateLimitReset
+        ? Math.max(0, parseInt(rateLimitReset, 10) * 1000 - Date.now()) + 1000
+        : isRateLimit
+          ? Math.pow(2, attempt) * 30000
+          : Math.pow(2, attempt) * 1000;
       logger.warn(
         `Retrying GitHub operation ${operation} (attempt ${attempt}/${maxRetries}) in ${delay}ms`,
         {
