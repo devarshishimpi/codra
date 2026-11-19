@@ -100,8 +100,9 @@ if (process.env.START_WORKER !== "false") {
   logger.info("BullMQ Background Worker started.");
 }
 
+let server: ReturnType<typeof serve> | undefined;
 if (process.env.START_API !== "false") {
-  const server = serve(
+  server = serve(
     {
       fetch: async (request) => {
         const apiEnv = {
@@ -147,32 +148,140 @@ import("@codraoss/models").then(({ ModelRegistryService }) => {
   (timer as unknown as { unref?: () => void }).unref?.();
 }).catch(() => {});
 
-const shutdown = async () => {
-  logger.info("Shutting down Codra Node server...");
-
-  // Close BullMQ worker
-  if (worker) {
-    logger.info("Waiting for active BullMQ jobs to finish...");
-    await worker.close();
-    logger.info("BullMQ Worker closed gracefully.");
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+  let timer: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    timer.unref?.();
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
   }
-
-  // Close Redis connection
-  if (redisClient) {
-    logger.info("Closing Redis client...");
-    await redisClient.quit();
-    logger.info("Redis client closed.");
-  }
-
-  // Close Postgres client pool
-  if (dbClient?.close) {
-    logger.info("Closing Postgres client...");
-    await dbClient.close();
-    logger.info("Postgres client closed.");
-  }
-
-  logger.info("All services stopped. Exiting.");
 };
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+let isShuttingDown = false;
+let shutdownStartTime = 0;
+const shutdown = async (signal?: string) => {
+  const now = Date.now();
+  if (isShuttingDown) {
+    if (now - shutdownStartTime > 100) {
+      logger.warn("Repeated shutdown signal received, forcing immediate exit.");
+      process.exit(signal === "SIGINT" ? 130 : 143);
+    }
+    return;
+  }
+  isShuttingDown = true;
+  shutdownStartTime = now;
+
+  const globalShutdownTimeout = setTimeout(() => {
+    logger.error("Global shutdown timed out after 10000ms. Forcing immediate exit.");
+    process.exit(1);
+  }, 10000);
+  globalShutdownTimeout.unref?.();
+
+  logger.info("Shutting down Codra Node server...");
+
+  let exitCode = 0;
+
+  // 1. Close HTTP server listener
+  if (server) {
+    try {
+      logger.info("Closing HTTP server listener...");
+      await new Promise<void>((resolve, reject) => {
+        let isDone = false;
+        const finish = (err?: unknown) => {
+          if (isDone) return;
+          isDone = true;
+          clearTimeout(drainTimer);
+          clearTimeout(hardTimer);
+          if (err) reject(err);
+          else resolve();
+        };
+
+        const drainTimer = setTimeout(() => {
+          (server as unknown as { closeAllConnections?: () => void })?.closeAllConnections?.();
+        }, 3000);
+        drainTimer.unref?.();
+
+        const hardTimer = setTimeout(() => {
+          finish(new Error("HTTP server listener close timed out after 5000ms"));
+        }, 5000);
+        hardTimer.unref?.();
+
+        server?.close((err) => {
+          if (err) finish(err);
+          else finish();
+        });
+      });
+      logger.info("HTTP server listener closed.");
+    } catch (err) {
+      logger.error("Error closing HTTP server listener:", err);
+      exitCode = 1;
+    }
+  }
+
+  // 2. Close BullMQ worker
+  if (worker) {
+    try {
+      logger.info("Waiting for active BullMQ jobs to finish...");
+      await withTimeout(worker.close(), 4000, "BullMQ worker close");
+      logger.info("BullMQ Worker closed gracefully.");
+    } catch (err) {
+      logger.error("Error closing BullMQ worker:", err);
+      exitCode = 1;
+    }
+  }
+
+  // 3. Close BullMQ queue
+  if (reviewQueue) {
+    try {
+      await withTimeout(reviewQueue.close(), 2000, "BullMQ reviewQueue close");
+    } catch (err) {
+      logger.error("Error closing reviewQueue:", err);
+      exitCode = 1;
+    }
+  }
+
+  // 4. Close Redis connection
+  if (redisClient) {
+    try {
+      logger.info("Closing Redis client...");
+      await withTimeout(redisClient.quit(), 2000, "Redis client quit");
+      logger.info("Redis client closed.");
+    } catch (err) {
+      logger.error("Error closing Redis client:", err);
+      try {
+        redisClient.disconnect();
+      } catch {
+        // Disconnect fallback
+      }
+      exitCode = 1;
+    }
+  }
+
+  // 5. Close Postgres client pool
+  if (dbClient?.close) {
+    try {
+      logger.info("Closing Postgres client...");
+      await withTimeout(dbClient.close(), 2000, "Postgres client close");
+      logger.info("Postgres client closed.");
+    } catch (err) {
+      logger.error("Error closing Postgres client:", err);
+      exitCode = 1;
+    }
+  }
+
+  clearTimeout(globalShutdownTimeout);
+
+  if (exitCode === 0) {
+    logger.info("All services stopped. Exiting.");
+  } else {
+    logger.error("Services stopped with errors. Exiting.");
+  }
+  process.exit(exitCode);
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

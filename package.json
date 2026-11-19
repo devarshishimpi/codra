@@ -50,6 +50,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.65.1",
     "@tailwindcss/vite": "^4.2.4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
@@ -73,8 +74,7 @@
     "typescript-eslint": "^8.66.0",
     "vite": "^8.0.16",
     "vitest": "^4.1.11",
-    "wrangler": "^4.114.0",
-    "@playwright/test": "1.65.1"
+    "wrangler": "^4.114.0"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
