@@ -5,7 +5,10 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 
-const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const rootDir = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
 const envPath = path.join(rootDir, ".env.e2e");
 
 const REQUIRED_KEYS = [
@@ -39,7 +42,12 @@ function loadE2eEnvironment() {
   try {
     source = readFileSync(envPath, "utf8");
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === "ENOENT") {
+    if (
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
       throw new Error(
         "Missing .env.e2e. Copy .env.e2e.example to .env.e2e and start the disposable Postgres and Redis services first.",
         { cause: error },
@@ -58,7 +66,8 @@ function loadE2eEnvironment() {
     if (separator < 1) continue;
 
     const key = trimmed.slice(0, separator).trim();
-    if (SENSITIVE_KEYS.has(key.toUpperCase()) || !ALLOWED_E2E_KEYS.has(key)) continue;
+    if (SENSITIVE_KEYS.has(key.toUpperCase()) || !ALLOWED_E2E_KEYS.has(key))
+      continue;
 
     let value = trimmed.slice(separator + 1).trim();
     if (
@@ -128,6 +137,7 @@ childEnv.START_API = "true";
 childEnv.START_WORKER = "false";
 childEnv.TELEMETRY_DISABLED = "true";
 childEnv.NODE_ENV = "test";
+childEnv.CODRA_E2E_AUTH_ENABLED = "true";
 
 // Spawn the built Node server entrypoint directly rather than through tsup --watch
 const serverEntry = path.join(rootDir, "apps", "node", "dist", "index.js");
@@ -147,13 +157,23 @@ const child = spawn(process.execPath, [serverEntry], {
 let stopping = false;
 let killed = false;
 function killChildTree(signal = "SIGTERM") {
-  if (killed || !child.pid || child.exitCode !== null || child.signalCode !== null) return;
+  if (
+    killed ||
+    !child.pid ||
+    child.exitCode !== null ||
+    child.signalCode !== null
+  )
+    return;
 
   if (process.platform === "win32") {
-    const result = spawnSync("taskkill", ["/pid", String(child.pid), "/t", "/f"], {
-      stdio: "ignore",
-      windowsHide: true,
-    });
+    const result = spawnSync(
+      "taskkill",
+      ["/pid", String(child.pid), "/t", "/f"],
+      {
+        stdio: "ignore",
+        windowsHide: true,
+      },
+    );
     if (result.error || result.status !== 0) child.kill();
     killed = true;
     return;

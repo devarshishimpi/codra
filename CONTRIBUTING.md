@@ -102,7 +102,7 @@ npm run typecheck
 
 ### Browser E2E tests
 
-Browser tests live in `playwright/`, separate from the existing Vitest/JSDOM tests under `test/`. The Playwright setup runs one Chromium smoke test against the real local Node server and uses a synthetic signed-out session response; it does not sign in to GitHub or call a real LLM provider.
+Browser tests live in `playwright/`, separate from the existing Vitest/JSDOM tests under `test/`. The Playwright suite runs Chromium against the real local Node server. It covers the signed-out landing page, a synthetic GitHub OAuth callback and session, dashboard KPIs/time range/recent jobs, job search/status/pagination, job progress/findings/diffs, repository toggles/model settings, stats charts, and theme persistence. Dashboard API data is mocked in the browser so these flows do not depend on real GitHub or LLM provider credentials.
 
 Requirements: Node.js 24+, Docker, and disposable local PostgreSQL and Redis services.
 
@@ -126,7 +126,7 @@ npm run test:e2e
 docker rm -f codra-e2e-postgres codra-e2e-redis 2>/dev/null || true
 ```
 
-`npm run test:e2e` builds the Node server and dashboard, then Playwright starts the Node server on `http://localhost:3000` automatically. The launcher reads `.env.e2e`, generates a throwaway GitHub App private key for server initialization, disables the background review worker and telemetry, and never needs real GitHub, OAuth, or LLM credentials. The smoke test stubs only `GET /api/auth/session` as signed out. No database migration or seeded application data is needed for this first smoke test; keep `DATABASE_URL` pointed at the disposable database above.
+`npm run test:e2e` builds the Node server and dashboard, then Playwright starts the Node server on `http://localhost:3000` automatically. The launcher reads `.env.e2e`, generates a throwaway GitHub App private key for server initialization, disables the background review worker and telemetry, and enables a synthetic identity provider only when the launcher sets `CODRA_E2E_AUTH_ENABLED=true` and the Node server is running with `NODE_ENV=test` and `ENVIRONMENT=test`. The OAuth state validation, callback handler, session store, and protected page routes remain real; no GitHub credentials are used. Browser API fixtures provide deterministic jobs, repositories, model configuration, stats, and diff responses. Keep `DATABASE_URL` and `REDIS_URL` pointed at the disposable services above; Redis is used for the OAuth state and session store, while the callback's account-settings write is best-effort.
 
 The browser output is written to `test-results/` and `playwright-report/`; both are gitignored. To inspect the HTML report after a run, use `npx playwright show-report`.
 
@@ -137,6 +137,7 @@ The browser output is written to `test-results/` and `playwright-report/`; both 
 All documentation content for [codra.run/docs](https://codra.run/docs) lives in `docs/*.mdx` in this repository. Even though the website repo is private, **all documentation is 100% open source** and deploys automatically when PRs are merged into `main`.
 
 ### MDX Guidelines
+
 - **Files & Routes**: Each file in `docs/*.mdx` maps directly to a route (e.g. `docs/docker.mdx` -> `codra.run/docs/docker`).
 - **Headings with IDs**: Use explicit HTML `<h2 id="section-id">Heading</h2>` for major sections to ensure working anchor links and sidebar navigation. Use standard markdown `###` for subheadings.
 - **Callouts**: Use `<Note type="info">`, `<Note type="tip">`, or `<Note type="warn">` (standard blockquotes `> ` also render as info callouts).

@@ -56,6 +56,16 @@ const stubs = {
 };
 
 const env: NodeAppBindings = createNodeEnv(stubs);
+// This switch is set only by scripts/start-e2e-server.mjs for the disposable
+// E2E environment. Never enable the synthetic identity provider in production.
+if (
+  process.env.CODRA_E2E_AUTH_ENABLED === "true" &&
+  process.env.NODE_ENV === "test" &&
+  env.ENVIRONMENT === "test"
+) {
+  const { E2EIdentityProvider } = await import("./e2e-identity-provider");
+  env.IDENTITY_PROVIDER = new E2EIdentityProvider();
+}
 env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(
   createReviewRuntime(env),
   stubs.REVIEW_QUEUE,
@@ -141,17 +151,29 @@ if (process.env.START_API !== "false") {
 }
 
 // Model registry refresh in background (zero DB impact, unreferenced interval)
-import("@codraoss/models").then(({ ModelRegistryService }) => {
-  const service = ModelRegistryService.getInstance();
-  service.refreshFromRemote().catch(() => {});
-  const timer = setInterval(() => service.refreshFromRemote().catch(() => {}), 60 * 60 * 1000);
-  (timer as unknown as { unref?: () => void }).unref?.();
-}).catch(() => {});
+import("@codraoss/models")
+  .then(({ ModelRegistryService }) => {
+    const service = ModelRegistryService.getInstance();
+    service.refreshFromRemote().catch(() => {});
+    const timer = setInterval(
+      () => service.refreshFromRemote().catch(() => {}),
+      60 * 60 * 1000,
+    );
+    (timer as unknown as { unref?: () => void }).unref?.();
+  })
+  .catch(() => {});
 
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  label: string,
+): Promise<T> => {
   let timer: NodeJS.Timeout | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    timer = setTimeout(
+      () => reject(new Error(`${label} timed out after ${timeoutMs}ms`)),
+      timeoutMs,
+    );
     timer.unref?.();
   });
   try {
@@ -176,7 +198,9 @@ const shutdown = async (signal?: string) => {
   shutdownStartTime = now;
 
   const globalShutdownTimeout = setTimeout(() => {
-    logger.error("Global shutdown timed out after 10000ms. Forcing immediate exit.");
+    logger.error(
+      "Global shutdown timed out after 10000ms. Forcing immediate exit.",
+    );
     process.exit(1);
   }, 10000);
   globalShutdownTimeout.unref?.();
@@ -201,12 +225,16 @@ const shutdown = async (signal?: string) => {
         };
 
         const drainTimer = setTimeout(() => {
-          (server as unknown as { closeAllConnections?: () => void })?.closeAllConnections?.();
+          (
+            server as unknown as { closeAllConnections?: () => void }
+          )?.closeAllConnections?.();
         }, 3000);
         drainTimer.unref?.();
 
         const hardTimer = setTimeout(() => {
-          finish(new Error("HTTP server listener close timed out after 5000ms"));
+          finish(
+            new Error("HTTP server listener close timed out after 5000ms"),
+          );
         }, 5000);
         hardTimer.unref?.();
 
