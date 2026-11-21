@@ -58,6 +58,21 @@ export default tseslint.config(
 
       // Deliberate at provider/DB boundaries with unknown shape until parsed; ~100 suppressions otherwise.
       "@typescript-eslint/no-explicit-any": "off",
+
+      // Disallow constraint comments (e.g. "do not remove", "do not change", "talk to");
+      // encode constraints into types, runtime invariants, tests, or linters instead.
+      "no-warning-comments": [
+        "error",
+        {
+          terms: [
+            "do not remove",
+            "do not change",
+            "talk to",
+            "must kill",
+          ],
+          location: "anywhere",
+        },
+      ],
     },
   },
 
