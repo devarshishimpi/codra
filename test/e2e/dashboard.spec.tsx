@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @vitest-environment jsdom
  */
 import { OverviewStats } from "@client/components/features/stats/overview-stats";
