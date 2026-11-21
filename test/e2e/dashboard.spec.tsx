@@ -1,8 +1,9 @@
-/**
+﻿/**
  * @vitest-environment jsdom
  */
+import { OverviewStats } from "@client/components/features/stats/overview-stats";
 import { expect, it, describe, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { LandingPage } from "@client/pages/landing";
 import { DashboardPage } from "@client/pages/dashboard";
 import { MemoryRouter } from "react-router-dom";
@@ -23,13 +24,21 @@ vi.mock("@client/lib/api", () => ({
 
 describe("Frontend UI Flows (JSDOM)", () => {
   beforeEach(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+
     vi.clearAllMocks();
+
     vi.mocked(api.getUpdatesEmailStatus).mockResolvedValue({
       status: "subscribed",
       email: "user@example.com",
       updatedAt: new Date().toISOString(),
     });
+
     vi.mocked(api.getRepos).mockResolvedValue({ repos: [] });
+
     vi.mocked(api.getModelConfigs).mockResolvedValue({
       providers: [],
       configs: [],
@@ -50,7 +59,39 @@ describe("Frontend UI Flows (JSDOM)", () => {
     });
     expect(signInLink.getAttribute("href")).toBe("/auth/github");
   });
+  it("renders overview stats when data is provided", () => {
+    const stats = {
+      totals: {
+        jobs: 10,
+        inputTokens: 500,
+        outputTokens: 250,
+        comments: 5,
+      },
+      trend: [],
+      trendBucketDays: 1,
+      verdicts: [],
+      models: [],
+      topRepos: [],
+      statuses: [],
+      triggers: [],
+      severities: [],
+      categories: [],
+      performance: {
+        avgDurationMs: null,
+        p95DurationMs: null,
+        avgConfidence: null,
+      },
+    };
 
+    render(
+      <ThemeProvider>
+        <OverviewStats stats={stats} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText(/^(10|\u0661\u0660)$/)).toBeDefined();
+    expect(screen.getByText(/^(500|\u0665\u0660\u0660)$/)).toBeDefined();
+  });
   it("displays the dashboard with stats and activity", async () => {
     vi.mocked(api.getStats).mockResolvedValue({
       stats: {
@@ -98,9 +139,13 @@ describe("Frontend UI Flows (JSDOM)", () => {
 
     expect(await screen.findByText("Dashboard")).toBeDefined();
 
-    expect(screen.getByText("10")).toBeDefined();
-    expect(screen.getByText("500")).toBeDefined();
+    expect(api.getStats).toHaveBeenCalled();
+    expect(api.getJobs).toHaveBeenCalled();
 
+    await waitFor(() => {
+      expect(screen.getByText("\u0661\u0660")).toBeDefined();
+      expect(screen.getByText("\u0665\u0660\u0660")).toBeDefined();
+    });
     // Rendered in both mobile and desktop layouts, hence getAllByText.
     expect(screen.getAllByText("test-owner/test-repo").length).toBeGreaterThan(
       0,
