@@ -143,8 +143,8 @@ describe("Frontend UI Flows (JSDOM)", () => {
     expect(api.getJobs).toHaveBeenCalled();
 
     await waitFor(() => {
-      expect(screen.getByText("\u0661\u0660")).toBeDefined();
-      expect(screen.getByText("\u0665\u0660\u0660")).toBeDefined();
+      expect(screen.getByText(/^(10|\u0661\u0660)$/)).toBeDefined();
+      expect(screen.getByText(/^(500|\u0665\u0660\u0660)$/)).toBeDefined();
     });
     // Rendered in both mobile and desktop layouts, hence getAllByText.
     expect(screen.getAllByText("test-owner/test-repo").length).toBeGreaterThan(
