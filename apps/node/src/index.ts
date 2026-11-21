@@ -30,7 +30,6 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { createReviewRuntime } from "./runtime";
-import { E2EIdentityProvider } from "./e2e-identity-provider";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +63,7 @@ if (
   process.env.NODE_ENV === "test" &&
   env.ENVIRONMENT === "test"
 ) {
+  const { E2EIdentityProvider } = await import("./e2e-identity-provider");
   env.IDENTITY_PROVIDER = new E2EIdentityProvider();
 }
 env.REVIEW_ORCHESTRATOR = new NodeOrchestrator(
