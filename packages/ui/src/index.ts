@@ -14,6 +14,12 @@ export { Skeleton } from "./components/skeleton";
 export { EmptyState } from "./components/empty-state";
 export { SectionCard } from "./components/section-card";
 export { CopyButton } from "./components/copy-button";
+export {
+  FileDiff,
+  type FileDiffProps,
+  type FileDiffRow,
+  type DiffRowInput,
+} from "./components/file-diff";
 export { BarSparkline } from "./components/bar-sparkline";
 export { GithubMark } from "./components/github-mark";
 export { LoadError } from "./components/load-error";

@@ -8,6 +8,7 @@
     "src/lib/selection.ts",
     "src/lib/file-tree.ts",
     "src/lib/prompt-diff.ts",
+    "src/components/file-diff.tsx",
     "src/lib/markdown-plugins.ts",
     "src/components/motion/index.ts",
     "src/hooks/index.ts"

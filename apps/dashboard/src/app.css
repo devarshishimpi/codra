@@ -537,10 +537,48 @@
 }
 
 .diff-add {
+  position: relative;
   background-color: var(--diff-add-bg);
 }
+.diff-add::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background-color: #15a06a;
+}
+.dark .diff-add::before {
+  background-color: #34d399;
+}
 .diff-del {
+  position: relative;
   background-color: var(--diff-del-bg);
+}
+.diff-del::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: repeating-linear-gradient(
+    45deg,
+    #dc2626 0,
+    #dc2626 1.5px,
+    transparent 1.5px,
+    transparent 3px
+  );
+}
+.dark .diff-del::before {
+  background: repeating-linear-gradient(
+    45deg,
+    #f87171 0,
+    #f87171 1.5px,
+    transparent 1.5px,
+    transparent 3px
+  );
 }
 .diff-add-fg {
   color: var(--diff-add-fg);

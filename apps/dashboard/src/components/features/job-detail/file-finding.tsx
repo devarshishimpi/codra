@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ChevronRight } from "lucide-react";
 import type { FileReviewRecord, ParsedReviewComment } from "@codraoss/schema";
-import { CommentCard } from "./comment-card";
+import { CommentCard, markdownComponents } from "./comment-card";
 import { preventToggleOnTextSelection } from "@codraoss/ui/selection";
 import { MonoPath, StatusDot, VerdictPill } from "./job-chips";
 import { statusLabel } from "./job-chip-utils";
@@ -84,6 +84,7 @@ export function FileFinding({ file }: FileFindingProps) {
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={safeRehypePlugins}
+                  components={markdownComponents}
                 >
                   {file.fileSummary}
                 </ReactMarkdown>

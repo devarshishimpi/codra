@@ -1,4 +1,4 @@
-import { CopyButton } from "@codraoss/ui";
+import { CopyButton, FileDiff } from "@codraoss/ui";
 import { memo, useState, type ComponentPropsWithoutRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -25,14 +25,16 @@ const DISPOSITION_LABEL: Record<string, string> = {
     "Could not be verified - no diff context was available",
 };
 
-// No syntax highlighting: findings read better as quiet monospace blocks on the tinted severity card.
-const markdownComponents = {
+export const markdownComponents = {
   code({
     className,
     children,
     ...props
   }: ComponentPropsWithoutRef<"code"> & { className?: string }) {
     const text = String(children ?? "");
+    const match = /language-([\w+-]+)(?::([^\s]+))?/.exec(className ?? "");
+    const lang = match ? match[1] : undefined;
+    const file = match ? match[2] : undefined;
     const isBlock =
       /language-[\w+-]+/.test(className ?? "") || text.includes("\n");
     if (!isBlock) {
@@ -43,6 +45,16 @@ const markdownComponents = {
         >
           {children}
         </code>
+      );
+    }
+    if (lang === "diff" || lang === "patch") {
+      return (
+        <FileDiff
+          file={file}
+          diff={text}
+          copyable
+          className="my-2.5"
+        />
       );
     }
     return (
@@ -225,15 +237,10 @@ export const CommentCard = memo(function CommentCard({
             Diff context
           </summary>
           {showDiff && (
-            <>
-              <div className="mt-2 flex justify-end">
-                <CopyButton value={comment.contextSnippet} label="Copy diff" />
-              </div>
-              <ContextSnippet
-                snippet={comment.contextSnippet}
-                filePath={filePath}
-              />
-            </>
+            <ContextSnippet
+              snippet={comment.contextSnippet}
+              filePath={filePath}
+            />
           )}
         </details>
       )}

@@ -5,6 +5,7 @@ import { CheckCircle2, ClipboardList, TriangleAlert } from "lucide-react";
 import type { JobDetail } from "@codraoss/schema";
 import { reviewSeverities } from "@codraoss/schema/review-limits";
 import { OutlinePill } from "./job-chips";
+import { markdownComponents } from "./comment-card";
 
 import { safeRehypePlugins } from "@codraoss/ui/markdown-plugins";
 interface JobReviewOverviewProps {
@@ -114,6 +115,7 @@ export const JobReviewOverview = memo(function JobReviewOverview({
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             rehypePlugins={safeRehypePlugins}
+            components={markdownComponents}
           >
             {summaryMarkdown}
           </ReactMarkdown>
