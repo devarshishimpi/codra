@@ -30,6 +30,15 @@ export interface OpenAIResponse {
   };
 }
 
+export function isOpenAIReasoningModel(model: string): boolean {
+  const lower = model.toLowerCase();
+  return (
+    /^o\d/.test(lower) ||
+    lower.includes("-reasoning") ||
+    lower.startsWith("gpt-6")
+  );
+}
+
 function isEndpointDomain(baseUrl: string, domains: string[]): boolean {
   try {
     const host = new URL(baseUrl).hostname.toLowerCase();
@@ -135,15 +144,18 @@ export async function reviewWithOpenAI(
       ? Math.max(outputCeiling, 2048)
       : outputCeiling;
 
+  const isReasoning = isOpenAIReasoningModel(model);
+
   const bodyPayload: Record<string, unknown> = {
     model,
     messages: [
-      { role: "system", content: prompts.system },
+      { role: isReasoning ? "developer" : "system", content: prompts.system },
       { role: "user", content: prompts.user },
     ],
-    temperature,
-    ...(sampling?.topP !== undefined ? { top_p: sampling.topP } : {}),
-    max_tokens: effectiveCeiling,
+    ...(isReasoning
+      ? { max_completion_tokens: effectiveCeiling }
+      : { temperature, max_tokens: effectiveCeiling }),
+    ...(sampling?.topP !== undefined && !isReasoning ? { top_p: sampling.topP } : {}),
     response_format: { type: "json_object" },
   };
 
@@ -230,3 +242,6 @@ export async function reviewWithOpenAI(
 
   throw lastError ?? new Error("OpenAI request failed after retries.");
 }
+
+export const callOpenAi = reviewWithOpenAI;
+

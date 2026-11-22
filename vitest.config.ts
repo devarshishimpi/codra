@@ -29,7 +29,13 @@ const testSuite = process.env.CODRA_TEST_SUITE;
 const testInclude =
   testSuite === "integration"
     ? INTEGRATION_TEST_PATTERNS
-    : ["test/**/*.spec.ts", "test/**/*.spec.tsx"];
+    : [
+        "test/**/*.spec.ts",
+        "test/**/*.spec.tsx",
+        "test/**/*.test.ts",
+        "test/**/*.test.tsx",
+        "packages/models/test/providers/openai.test.ts",
+      ];
 
 const testExclude =
   testSuite === "unit"
