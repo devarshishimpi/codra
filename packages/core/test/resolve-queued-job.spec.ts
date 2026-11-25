@@ -57,7 +57,9 @@ describe("resolveQueuedJob webhook normalization", () => {
       repository,
       issue: {
         number: 27,
-        pull_request: { url: "https://api.github.com/repos/octocat/hello-world/pulls/27" },
+        pull_request: {
+          url: "https://api.github.com/repos/octocat/hello-world/pulls/27",
+        },
       },
       comment: { body: "@codra-app review" },
     };
@@ -152,7 +154,7 @@ describe("resolveQueuedJob webhook normalization", () => {
       repository,
       pull_request: {
         number: 42,
-        title: "Add automatic review",
+        prTitle: "Add automatic review",
         body: null,
         user: { login: "octocat" },
         head: { sha: "a".repeat(40), ref: "feature" },
