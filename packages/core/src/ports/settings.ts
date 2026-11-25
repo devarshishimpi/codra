@@ -1,4 +1,5 @@
 import type { ClaimType, RepoConfig, ReviewSettings } from "@codraoss/schema";
+import type { WebhookEventName, WebhookPayload } from "@codraoss/schema/webhook";
 
 export interface ReviewSettingsReader {
   getReviewSettings(): Promise<ReviewSettings>;
@@ -19,6 +20,11 @@ export interface ModelConfigReader {
 }
 
 export interface WebhookDeliveryReader {
+  normalizePayload(
+    eventName: string,
+    payload: unknown,
+  ): { eventName: WebhookEventName; payload: WebhookPayload } | null;
+
   getWebhookDelivery(
     deliveryId: string,
   ): Promise<{
