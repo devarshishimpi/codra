@@ -1,5 +1,5 @@
 import { defaultRepoConfig, type ReviewJobMessage } from "@codraoss/schema";
-import { normalizeGitHubWebhook } from "@codraoss/provider-github";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github/webhook";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setLoggerSink } from "../src/logger";
 import type { ReviewRuntime } from "../src/ports";
