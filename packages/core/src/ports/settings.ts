@@ -20,11 +20,6 @@ export interface ModelConfigReader {
 }
 
 export interface WebhookDeliveryReader {
-  normalizePayload(
-    eventName: string,
-    payload: unknown,
-  ): { eventName: WebhookEventName; payload: WebhookPayload } | null;
-
   getWebhookDelivery(
     deliveryId: string,
   ): Promise<{
@@ -32,6 +27,13 @@ export interface WebhookDeliveryReader {
     event_name: string;
     payload: unknown;
   } | null>;
+}
+
+export interface WebhookRuntime extends WebhookDeliveryReader {
+  normalizePayload(
+    eventName: string,
+    payload: unknown,
+  ): { eventName: WebhookEventName; payload: WebhookPayload } | null;
 }
 
 export interface LearningStore {
