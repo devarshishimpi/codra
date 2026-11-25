@@ -39,8 +39,19 @@ export async function resolveQueuedJob(
       return null;
     }
 
-    eventName = delivery.event_name;
-    payload = delivery.payload as WebhookPayload;
+    const normalized = env.webhooks.normalizePayload(
+      delivery.event_name,
+      delivery.payload,
+    );
+    if (!normalized) {
+      logger.info(
+        `Queue message ignored: unsupported webhook event ${delivery.event_name}`,
+      );
+      return null;
+    }
+
+    eventName = normalized.eventName;
+    payload = normalized.payload;
   }
 
   if (eventName !== "change_request" && eventName !== "comment") {
