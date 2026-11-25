@@ -1,5 +1,5 @@
 import { defaultRepoConfig, type ReviewJobMessage } from "@codraoss/schema";
-import { normalizeGitHubWebhook } from "@codraoss/provider-github/webhook";
+import type { WebhookEventName, WebhookPayload } from "@codraoss/schema/webhook";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { setLoggerSink } from "../src/logger";
 import type { ReviewRuntime } from "../src/ports";
@@ -11,13 +11,19 @@ const repository = {
   name: "hello-world",
 };
 
+type NormalizedWebhook = {
+  eventName: WebhookEventName;
+  payload: WebhookPayload;
+};
+
 function createRuntimeForDelivery(
   eventName: string,
   payload: unknown,
+  normalized: NormalizedWebhook,
   config = defaultRepoConfig,
 ) {
   const { runtime } = createInMemoryRuntime({ config });
-  const normalizePayload = vi.fn(normalizeGitHubWebhook);
+  const normalizePayload = vi.fn(() => normalized);
 
   runtime.webhooks = {
     getWebhookDelivery: async (deliveryId) => ({
@@ -64,7 +70,16 @@ describe("resolveQueuedJob webhook normalization", () => {
       comment: { body: "@codra-app review" },
     };
     const { runtime, insertedJobs, normalizePayload } =
-      createRuntimeForDelivery("issue_comment", rawPayload);
+      createRuntimeForDelivery("issue_comment", rawPayload, {
+        eventName: "comment",
+        payload: {
+          action: "created",
+          installationId: "123",
+          repository: { owner: "octocat", name: "hello-world" },
+          issue: { number: 27, isChangeRequest: true },
+          comment: { body: "@codra-app review" },
+        },
+      });
 
     const pullRequest = {
       number: 27,
@@ -125,7 +140,28 @@ describe("resolveQueuedJob webhook normalization", () => {
       },
     };
     const { runtime, insertedJobs, normalizePayload } =
-      createRuntimeForDelivery("pull_request", rawPayload, config);
+      createRuntimeForDelivery(
+        "pull_request",
+        rawPayload,
+        {
+          eventName: "change_request",
+          payload: {
+            action: "closed",
+            installationId: "123",
+            repository: { owner: "octocat", name: "hello-world" },
+            changeRequest: {
+              number: 31,
+              title: "Closed pull request",
+              author: "octocat",
+              head: { sha: "h".repeat(40), ref: "feature" },
+              base: { sha: "b".repeat(40), ref: "main" },
+              draft: false,
+              body: null,
+            },
+          },
+        },
+        config,
+      );
     const removeIssueLabelsIfPresent = vi.fn(async () => undefined);
     runtime.githubClients = {
       forInstallation: vi.fn(() => ({ removeIssueLabelsIfPresent }) as never),
@@ -163,7 +199,23 @@ describe("resolveQueuedJob webhook normalization", () => {
       },
     };
     const { runtime, insertedJobs, normalizePayload } =
-      createRuntimeForDelivery("pull_request", rawPayload);
+      createRuntimeForDelivery("pull_request", rawPayload, {
+        eventName: "change_request",
+        payload: {
+          action: "opened",
+          installationId: "123",
+          repository: { owner: "octocat", name: "hello-world" },
+          changeRequest: {
+            number: 42,
+            title: "Add automatic review",
+            author: "octocat",
+            head: { sha: "a".repeat(40), ref: "feature" },
+            base: { sha: "b".repeat(40), ref: "main" },
+            draft: false,
+            body: null,
+          },
+        },
+      });
     runtime.githubClients = {
       forInstallation: vi.fn(() => ({} as never)),
     };
