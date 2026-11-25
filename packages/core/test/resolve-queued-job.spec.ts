@@ -154,7 +154,7 @@ describe("resolveQueuedJob webhook normalization", () => {
       repository,
       pull_request: {
         number: 42,
-        prTitle: "Add automatic review",
+        title: "Add automatic review",
         body: null,
         user: { login: "octocat" },
         head: { sha: "a".repeat(40), ref: "feature" },
@@ -180,7 +180,7 @@ describe("resolveQueuedJob webhook normalization", () => {
       owner: "octocat",
       repo: "hello-world",
       prNumber: 42,
-      title: "Add automatic review",
+      prTitle: "Add automatic review",
       commitSha: "a".repeat(40),
       baseSha: "b".repeat(40),
       trigger: "auto",
