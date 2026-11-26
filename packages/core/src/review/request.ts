@@ -69,7 +69,14 @@ export function extractReviewRequest(input: {
       return null;
     }
 
-    if (!payload.comment.body.includes(mentionTrigger)) {
+    const matchesTrigger =
+      payload.comment.body.includes(mentionTrigger) ||
+      payload.comment.body.includes("@codra review") ||
+      (Boolean(input.botUsername) &&
+        (payload.comment.body.includes(`@${input.botUsername} review`) ||
+          payload.comment.body.includes(`@${input.botUsername}`)));
+
+    if (!matchesTrigger) {
       return null;
     }
 

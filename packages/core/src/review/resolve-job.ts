@@ -1,12 +1,102 @@
 import type { ReviewJobMessage } from "@codraoss/schema";
 import type {
   ChangeRequestWebhookPayload,
+  WebhookEventName,
   WebhookPayload,
 } from "@codraoss/schema/webhook";
 import { logger } from "../logger";
 import type { ReviewRuntime } from "../ports";
 import type { PersistedReviewJob } from "./phase-control";
 import { extractReviewRequest } from "./request";
+
+function normalizeRawGitHubEvent(
+  eventName: string,
+  payload: any,
+): { eventName: WebhookEventName; payload: WebhookPayload } | null {
+  if (eventName === "pull_request" || eventName === "change_request") {
+    if (payload && "changeRequest" in payload) {
+      return { eventName: "change_request", payload: payload as WebhookPayload };
+    }
+    if (payload && payload.pull_request) {
+      return {
+        eventName: "change_request",
+        payload: {
+          action: payload.action,
+          installationId: String(
+            payload.installation?.id ?? payload.installationId ?? "",
+          ),
+          repository: {
+            owner:
+              typeof payload.repository?.owner === "string"
+                ? payload.repository.owner
+                : (payload.repository?.owner?.login ?? ""),
+            name: payload.repository?.name ?? "",
+          },
+          changeRequest: {
+            number: payload.pull_request.number,
+            title: payload.pull_request.title,
+            author: payload.pull_request.user?.login ?? "",
+            head: {
+              sha: payload.pull_request.head?.sha ?? "",
+              ref: payload.pull_request.head?.ref ?? "",
+            },
+            base: {
+              sha: payload.pull_request.base?.sha ?? "",
+              ref: payload.pull_request.base?.ref ?? "",
+            },
+            draft: Boolean(payload.pull_request.draft),
+            body: payload.pull_request.body ?? null,
+          },
+        },
+      };
+    }
+    if (payload && payload.repository) {
+      return {
+        eventName: "change_request",
+        payload: payload as WebhookPayload,
+      };
+    }
+  }
+
+  if (eventName === "issue_comment" || eventName === "comment") {
+    if (payload && "issue" in payload && "isChangeRequest" in payload.issue) {
+      return { eventName: "comment", payload: payload as WebhookPayload };
+    }
+    if (payload && payload.comment && payload.issue) {
+      return {
+        eventName: "comment",
+        payload: {
+          action: payload.action,
+          installationId: String(
+            payload.installation?.id ?? payload.installationId ?? "",
+          ),
+          repository: {
+            owner:
+              typeof payload.repository?.owner === "string"
+                ? payload.repository.owner
+                : (payload.repository?.owner?.login ?? ""),
+            name: payload.repository?.name ?? "",
+          },
+          issue: {
+            number: payload.issue.number,
+            isChangeRequest: !!payload.issue.pull_request,
+          },
+          comment: {
+            body: payload.comment.body ?? "",
+          },
+        },
+      };
+    }
+    if (payload && payload.repository) {
+      return {
+        eventName: "comment",
+        payload: payload as WebhookPayload,
+      };
+    }
+  }
+
+  return null;
+}
 
 export async function resolveQueuedJob(
   env: ReviewRuntime,
@@ -39,8 +129,47 @@ export async function resolveQueuedJob(
       return null;
     }
 
-    eventName = delivery.event_name;
-    payload = delivery.payload as WebhookPayload;
+    const rawEventName = delivery.event_name || eventName;
+    const rawPayload = delivery.payload;
+
+    const normalized = env.webhooks.normalizePayload
+      ? env.webhooks.normalizePayload(rawEventName, rawPayload)
+      : null;
+
+    if (normalized) {
+      eventName = normalized.eventName;
+      payload = normalized.payload;
+    } else {
+      const fallback = normalizeRawGitHubEvent(rawEventName, rawPayload);
+      if (fallback) {
+        eventName = fallback.eventName;
+        payload = fallback.payload;
+      } else {
+        eventName = rawEventName;
+        payload = rawPayload as WebhookPayload;
+      }
+    }
+  } else {
+    const normalized = env.webhooks.normalizePayload
+      ? env.webhooks.normalizePayload(eventName, payload)
+      : null;
+
+    if (normalized) {
+      eventName = normalized.eventName;
+      payload = normalized.payload;
+    } else {
+      const fallback = normalizeRawGitHubEvent(eventName, payload);
+      if (fallback) {
+        eventName = fallback.eventName;
+        payload = fallback.payload;
+      }
+    }
+  }
+
+  if (eventName === "issue_comment") {
+    eventName = "comment";
+  } else if (eventName === "pull_request") {
+    eventName = "change_request";
   }
 
   if (eventName !== "change_request" && eventName !== "comment") {
@@ -50,8 +179,8 @@ export async function resolveQueuedJob(
     return null;
   }
 
-  const installationId = String(payload.installationId ?? "");
-  if (!installationId || !("repository" in payload) || !payload.repository) {
+  const installationId = String(payload?.installationId ?? "");
+  if (!installationId || !payload || !("repository" in payload) || !payload.repository) {
     logger.info(
       "Queue message ignored: missing installation or repository info",
     );

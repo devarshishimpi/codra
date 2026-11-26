@@ -55,6 +55,7 @@ import {
   makeModelErrorClassifier,
   makeModelFactory,
 } from "./services";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 // The composition root: the one place Cloudflare bindings, Postgres and the GitHub/model services are
 // wired to the engine's ports. @codraoss/core sees this object and nothing else.
@@ -72,7 +73,10 @@ export function createReviewRuntime(env: AppBindings): ReviewRuntime {
     jobs: makeJobStore(env),
     fileReviews: makeFileReviewStore(env),
     settings: makeReviewSettingsReader(env),
-    webhooks: makeWebhookDeliveryReader(env),
+    webhooks: {
+      ...makeWebhookDeliveryReader(env),
+      normalizePayload: normalizeGitHubWebhook,
+    },
     learning: makeLearningStore(env),
     modelConfigs: makeModelConfigReader(env),
     repoConfig: makeRepoConfigLoader(env),

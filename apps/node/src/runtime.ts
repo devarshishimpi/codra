@@ -33,6 +33,7 @@ import {
 } from "@codraoss/db/repositories";
 
 import { loadRepoConfig } from "@codraoss/api/platform";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 import { cryptoIds, systemClock } from "@codraoss/node-adapters";
 import { makeTelemetrySink } from "./adapters/telemetry";
@@ -64,7 +65,10 @@ export function createReviewRuntime(
     jobs: makeJobStore(dbEnv),
     fileReviews: makeFileReviewStore(dbEnv),
     settings: makeReviewSettingsReader(dbEnv),
-    webhooks: makeWebhookDeliveryReader(dbEnv),
+    webhooks: {
+      ...makeWebhookDeliveryReader(dbEnv),
+      normalizePayload: normalizeGitHubWebhook,
+    },
     learning: makeLearningStore(dbEnv),
     modelConfigs: makeModelConfigReader(dbEnv),
     repoConfig: {
