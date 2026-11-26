@@ -9,88 +9,97 @@ import type { ReviewRuntime } from "../ports";
 import type { PersistedReviewJob } from "./phase-control";
 import { extractReviewRequest } from "./request";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 function normalizeRawGitHubEvent(
   eventName: string,
-  payload: any,
+  payload: unknown,
 ): { eventName: WebhookEventName; payload: WebhookPayload } | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+  const raw = payload as any;
+
   if (eventName === "pull_request" || eventName === "change_request") {
-    if (payload && "changeRequest" in payload) {
-      return { eventName: "change_request", payload: payload as WebhookPayload };
+    if ("changeRequest" in payload) {
+      return { eventName: "change_request", payload: raw as WebhookPayload };
     }
-    if (payload && payload.pull_request) {
+    if (raw.pull_request) {
       return {
         eventName: "change_request",
         payload: {
-          action: payload.action,
+          action: raw.action,
           installationId: String(
-            payload.installation?.id ?? payload.installationId ?? "",
+            raw.installation?.id ?? raw.installationId ?? "",
           ),
           repository: {
             owner:
-              typeof payload.repository?.owner === "string"
-                ? payload.repository.owner
-                : (payload.repository?.owner?.login ?? ""),
-            name: payload.repository?.name ?? "",
+              typeof raw.repository?.owner === "string"
+                ? raw.repository.owner
+                : (raw.repository?.owner?.login ?? ""),
+            name: raw.repository?.name ?? "",
           },
           changeRequest: {
-            number: payload.pull_request.number,
-            title: payload.pull_request.title,
-            author: payload.pull_request.user?.login ?? "",
+            number: raw.pull_request.number,
+            title: raw.pull_request.title,
+            author: raw.pull_request.user?.login ?? "",
             head: {
-              sha: payload.pull_request.head?.sha ?? "",
-              ref: payload.pull_request.head?.ref ?? "",
+              sha: raw.pull_request.head?.sha ?? "",
+              ref: raw.pull_request.head?.ref ?? "",
             },
             base: {
-              sha: payload.pull_request.base?.sha ?? "",
-              ref: payload.pull_request.base?.ref ?? "",
+              sha: raw.pull_request.base?.sha ?? "",
+              ref: raw.pull_request.base?.ref ?? "",
             },
-            draft: Boolean(payload.pull_request.draft),
-            body: payload.pull_request.body ?? null,
+            draft: Boolean(raw.pull_request.draft),
+            body: raw.pull_request.body ?? null,
           },
         },
       };
     }
-    if (payload && payload.repository) {
+    if (raw.repository) {
       return {
         eventName: "change_request",
-        payload: payload as WebhookPayload,
+        payload: raw as WebhookPayload,
       };
     }
   }
 
   if (eventName === "issue_comment" || eventName === "comment") {
-    if (payload && "issue" in payload && "isChangeRequest" in payload.issue) {
-      return { eventName: "comment", payload: payload as WebhookPayload };
+    if (isRecord(payload.issue) && "isChangeRequest" in payload.issue) {
+      return { eventName: "comment", payload: raw as WebhookPayload };
     }
-    if (payload && payload.comment && payload.issue) {
+    if (raw.comment && isRecord(payload.issue)) {
       return {
         eventName: "comment",
         payload: {
-          action: payload.action,
+          action: raw.action,
           installationId: String(
-            payload.installation?.id ?? payload.installationId ?? "",
+            raw.installation?.id ?? raw.installationId ?? "",
           ),
           repository: {
             owner:
-              typeof payload.repository?.owner === "string"
-                ? payload.repository.owner
-                : (payload.repository?.owner?.login ?? ""),
-            name: payload.repository?.name ?? "",
+              typeof raw.repository?.owner === "string"
+                ? raw.repository.owner
+                : (raw.repository?.owner?.login ?? ""),
+            name: raw.repository?.name ?? "",
           },
           issue: {
-            number: payload.issue.number,
-            isChangeRequest: !!payload.issue.pull_request,
+            number: raw.issue.number,
+            isChangeRequest: !!raw.issue.pull_request,
           },
           comment: {
-            body: payload.comment.body ?? "",
+            body: raw.comment.body ?? "",
           },
         },
       };
     }
-    if (payload && payload.repository) {
+    if (raw.repository) {
       return {
         eventName: "comment",
-        payload: payload as WebhookPayload,
+        payload: raw as WebhookPayload,
       };
     }
   }
@@ -180,7 +189,7 @@ export async function resolveQueuedJob(
   }
 
   const installationId = String(payload?.installationId ?? "");
-  if (!installationId || !payload || !("repository" in payload) || !payload.repository) {
+  if (!installationId || !isRecord(payload) || !("repository" in payload) || !payload.repository) {
     logger.info(
       "Queue message ignored: missing installation or repository info",
     );

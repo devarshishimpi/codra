@@ -119,4 +119,16 @@ describe("normalizeGitHubWebhook", () => {
     expect(normalizeGitHubWebhook("check_suite", {})).toBeNull();
     expect(normalizeGitHubWebhook("push", {})).toBeNull();
   });
+
+  it("returns null without throwing when payload or nested issue is null or primitive", () => {
+    expect(normalizeGitHubWebhook("issue_comment", null)).toBeNull();
+    expect(normalizeGitHubWebhook("issue_comment", "primitive")).toBeNull();
+    expect(normalizeGitHubWebhook("issue_comment", 42)).toBeNull();
+    expect(normalizeGitHubWebhook("issue_comment", { issue: null })).toBeNull();
+    expect(normalizeGitHubWebhook("issue_comment", { issue: "not-an-object" })).toBeNull();
+    expect(normalizeGitHubWebhook("comment", { issue: null })).toBeNull();
+    expect(normalizeGitHubWebhook("pull_request", null)).toBeNull();
+    expect(normalizeGitHubWebhook("pull_request", "primitive")).toBeNull();
+    expect(normalizeGitHubWebhook("change_request", 123)).toBeNull();
+  });
 });

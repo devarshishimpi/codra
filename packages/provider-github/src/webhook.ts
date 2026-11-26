@@ -7,17 +7,24 @@ import type {
   IssueCommentWebhookPayload,
 } from "@codraoss/schema/github";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
 export function normalizeGitHubWebhook(
   eventName: string,
   payload: unknown,
 ): { eventName: WebhookEventName; payload: WebhookPayload } | null {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
   if (eventName === "pull_request" || eventName === "change_request") {
-    const raw = payload as any;
-    if (raw && "changeRequest" in raw) {
-      return { eventName: "change_request", payload: raw as WebhookPayload };
+    if ("changeRequest" in payload) {
+      return { eventName: "change_request", payload: payload as unknown as WebhookPayload };
     }
-    const prPayload = payload as PullRequestWebhookPayload;
-    if (prPayload && prPayload.pull_request) {
+    const prPayload = payload as unknown as PullRequestWebhookPayload;
+    if (prPayload.pull_request) {
       return {
         eventName: "change_request",
         payload: {
@@ -53,12 +60,11 @@ export function normalizeGitHubWebhook(
   }
 
   if (eventName === "issue_comment" || eventName === "comment") {
-    const raw = payload as any;
-    if (raw && "issue" in raw && "isChangeRequest" in raw.issue) {
-      return { eventName: "comment", payload: raw as WebhookPayload };
+    if (isRecord(payload.issue) && "isChangeRequest" in payload.issue) {
+      return { eventName: "comment", payload: payload as unknown as WebhookPayload };
     }
-    const icPayload = payload as IssueCommentWebhookPayload;
-    if (icPayload && icPayload.comment && icPayload.issue) {
+    const icPayload = payload as unknown as IssueCommentWebhookPayload;
+    if (icPayload.comment && icPayload.issue) {
       return {
         eventName: "comment",
         payload: {

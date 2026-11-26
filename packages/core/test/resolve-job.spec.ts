@@ -386,4 +386,21 @@ describe("resolveQueuedJob", () => {
     expect(result).toBeNull();
     expect(labelsRemoved).toBe(true);
   });
+
+  it("ignores malformed comment payloads with null or primitive issue without throwing", async () => {
+    const deliveries = new Map<string, any>([
+      ["d-null-issue", { delivery_id: "d-null-issue", event_name: "issue_comment", payload: { issue: null } }],
+      ["d-prim", { delivery_id: "d-prim", event_name: "issue_comment", payload: "bad-payload" }],
+    ]);
+
+    const { runtime } = createInMemoryRuntime({ noDefaultJob: true, deliveries });
+    runtime.webhooks.normalizePayload = undefined;
+
+    await expect(
+      resolveQueuedJob(runtime, { deliveryId: "d-null-issue", eventName: "issue_comment" }),
+    ).resolves.toBeNull();
+    await expect(
+      resolveQueuedJob(runtime, { deliveryId: "d-prim", eventName: "issue_comment" }),
+    ).resolves.toBeNull();
+  });
 });
