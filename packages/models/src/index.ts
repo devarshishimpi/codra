@@ -20,5 +20,9 @@ export type { CloudflareAiBinding } from "./providers/cloudflare";
 export { reviewWithCloudflare } from "./providers/cloudflare";
 export { reviewWithGoogle } from "./providers/google";
 export { reviewWithAnthropic } from "./providers/anthropic";
-export { reviewWithOpenAI } from "./providers/openai";
+export {
+  reviewWithOpenAI,
+  callOpenAi,
+  isOpenAIReasoningModel,
+} from "./providers/openai";
 export { reviewWithVertex } from "./providers/vertex";
