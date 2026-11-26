@@ -40,28 +40,12 @@ export function makeJob(
 ): PersistedReviewJob {
   return {
     id: "11111111-2222-4333-8444-555555555555",
-    owner: "acme",
-    repo: "widgets",
-    installationId: "42",
-    prNumber: 7,
-    prTitle: "Add a retry",
-    prAuthor: "octocat",
-    commitSha: "a".repeat(40),
-    trigger: "auto",
-    status: "queued",
-    verdict: null,
-    fileCount: 0,
-    commentCount: 0,
-    totalInputTokens: 0,
-    totalOutputTokens: 0,
-    createdAt: ISO,
-    updatedAt: ISO,
-    startedAt: null,
-    finishedAt: null,
-    errorMessage: null,
-    steps: [],
-    checkRunId: null,
-    configSnapshot: null,
+    owner: "acme", repo: "widgets", installationId: "42",
+    prNumber: 7, prTitle: "Add a retry", prAuthor: "octocat",
+    commitSha: "a".repeat(40), trigger: "auto", status: "queued", verdict: null,
+    fileCount: 0, commentCount: 0, totalInputTokens: 0, totalOutputTokens: 0,
+    createdAt: ISO, updatedAt: ISO, startedAt: null, finishedAt: null,
+    errorMessage: null, steps: [], checkRunId: null, configSnapshot: null,
     ...overrides,
   };
 }
@@ -99,9 +83,13 @@ export type ModelBehaviour = {
 export function createInMemoryRuntime(
   seed: {
     job?: Partial<PersistedReviewJob>;
+    noDefaultJob?: boolean;
     settings?: Partial<ReviewSettings>;
     config?: RepoConfig;
     model?: ModelBehaviour;
+    deliveries?: Map<string, { delivery_id: string; event_name: string; payload: unknown }>;
+    githubClients?: any;
+    normalizePayload?: (eventName: string, payload: unknown) => { eventName: any; payload: any } | null;
   } = {},
 ): { runtime: ReviewRuntime; recorded: Recorded; now: { value: number } } {
   const config = seed.config ?? defaultRepoConfig;
@@ -110,7 +98,7 @@ export function createInMemoryRuntime(
 
   const recorded: Recorded = {
     calls: [],
-    jobs: new Map([[job.id, job]]),
+    jobs: seed.noDefaultJob ? new Map() : new Map([[job.id, job]]),
     fileReviews: new Map(),
     kv: new Map(),
     postedReviews: [],
@@ -230,20 +218,17 @@ export function createInMemoryRuntime(
       getTerminalJobsNeedingCheckRunCompletion: async () => [],
       hasPendingMaintenanceWork: async () => false,
       clearSystemActive: async () => {},
-
       setJobWorkflowInstance: async () => {},
-      setJobPullRequestMeta: async (jobId, meta) => {
-        patch(jobId, meta);
+      setJobPullRequestMeta: async (jobId, meta) => { patch(jobId, meta); },
+      insertJob: async (input) => {
+        record("insertJob");
+        const newJob = makeJob({ id: `job-${recorded.jobs.size + 1}`, ...input });
+        recorded.jobs.set(newJob.id, newJob);
+        return newJob;
       },
-      insertJob: async () => job,
       findExistingJobForHead: async () => null,
-
-      updateJobCheckRun: async (jobId, checkRunId) => {
-        patch(jobId, { checkRunId });
-      },
-      markJobCheckRunCompleted: async () => {
-        record("markJobCheckRunCompleted");
-      },
+      updateJobCheckRun: async (jobId, checkRunId) => { patch(jobId, { checkRunId }); },
+      markJobCheckRunCompleted: async () => { record("markJobCheckRunCompleted"); },
       completePreparationStep: async (jobId, fileCount) => {
         record("completePreparationStep");
         patch(jobId, { fileCount });
@@ -358,7 +343,13 @@ export function createInMemoryRuntime(
     },
 
     settings: { getReviewSettings: async () => settings },
-    webhooks: { getWebhookDelivery: async () => null },
+    webhooks: {
+      getWebhookDelivery: async (deliveryId: string) =>
+        seed.deliveries?.get(deliveryId) ?? null,
+      ...(seed.normalizePayload
+        ? { normalizePayload: seed.normalizePayload }
+        : {}),
+    },
     learning: {
       getRepositoryIdForJob: async () => 1,
       getRejectedExemplars: async () => [],
@@ -380,10 +371,16 @@ export function createInMemoryRuntime(
     createModel: () => createMockModel({ model, record }),
     createFormatter: () => createMockFormatter(),
 
-    githubClients: {
-      forInstallation: () => {
-        throw new Error("webhook resolution is not exercised by these tests");
-      },
+    githubClients: seed.githubClients ?? {
+      forInstallation: () => ({
+        getPullRequest: async () => ({
+          number: 1, title: "PR Title", body: "PR Body", draft: false,
+          head: { sha: "a".repeat(40), ref: "feature" },
+          base: { sha: "b".repeat(40), ref: "main" },
+          user: { login: "pr-author" },
+        }),
+        removeIssueLabelsIfPresent: async () => {},
+      }),
     },
     modelErrors: {
       isRetryableModelError: (error) =>
