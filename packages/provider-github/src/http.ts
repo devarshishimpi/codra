@@ -6,6 +6,7 @@ export class GitHubError extends Error {
     public readonly body: string,
     public readonly path: string,
     message: string,
+    public readonly headers?: Headers,
   ) {
     super(message);
     this.name = "GitHubError";
@@ -29,6 +30,7 @@ export async function assertResponseOk(
       errText,
       path,
       `${action} failed with ${response.status}: ${errText}`,
+      response.headers,
     );
   }
 }
@@ -40,6 +42,23 @@ export function isDiffTooLargeError(error: unknown): boolean {
     error.status === 406 &&
     /too_large|maximum number of lines/i.test(error.body ?? "")
   );
+}
+
+function getHeader(
+  headers: Headers | Record<string, string | undefined> | undefined,
+  name: string,
+): string | null | undefined {
+  if (!headers) return undefined;
+  if (typeof (headers as Headers).get === "function") {
+    return (headers as Headers).get(name) ?? undefined;
+  }
+  const lower = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === lower && typeof value === "string") {
+      return value;
+    }
+  }
+  return undefined;
 }
 
 export async function withRetry<T>(
@@ -58,20 +77,47 @@ export async function withRetry<T>(
         error.status === 403 &&
         error.body?.toLowerCase().includes("secondary rate limit");
 
+      const isPrimaryRateLimit =
+        error instanceof GitHubError &&
+        error.status === 403 &&
+        (error.body?.toLowerCase().includes("rate limit exceeded") ||
+          error.body?.toLowerCase().includes("api rate limit"));
+
       const isRetryable =
         isSecondaryRateLimit ||
+        isPrimaryRateLimit ||
         (error instanceof GitHubError &&
           (error.status === 429 || error.status >= 500)) ||
         error.name === "TimeoutError" ||
-        error.message.includes("timeout");
+        (typeof error.message === "string" && error.message.includes("timeout"));
 
       if (!isRetryable || attempt > maxRetries) {
         throw error;
       }
 
-      const delay = isSecondaryRateLimit
-        ? Math.pow(2, attempt) * 30000
-        : Math.pow(2, attempt) * 1000;
+      const rateLimitReset =
+        error instanceof GitHubError
+          ? getHeader(error.headers, "x-ratelimit-reset")
+          : undefined;
+      const retryAfter =
+        error instanceof GitHubError
+          ? getHeader(error.headers, "retry-after")
+          : undefined;
+
+      const resetSeconds = rateLimitReset ? parseInt(rateLimitReset, 10) : NaN;
+      const retrySeconds = retryAfter ? parseInt(retryAfter, 10) : NaN;
+
+      let delay: number;
+      if (!Number.isNaN(resetSeconds)) {
+        delay = Math.max(0, resetSeconds * 1000 - Date.now()) + 1000;
+      } else if (!Number.isNaN(retrySeconds)) {
+        delay = Math.max(0, retrySeconds * 1000);
+      } else if (isSecondaryRateLimit) {
+        delay = Math.pow(2, attempt) * 30000;
+      } else {
+        delay = Math.pow(2, attempt) * 1000;
+      }
+
       logger.warn(
         `Retrying GitHub operation ${operation} (attempt ${attempt}/${maxRetries}) in ${delay}ms`,
         {

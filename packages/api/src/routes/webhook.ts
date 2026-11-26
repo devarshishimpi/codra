@@ -138,12 +138,15 @@ export async function handleGitHubWebhook(c: Context<ApiEnv>) {
   // Feedback deliveries carry the whole PR object plus diff hunks per comment; skip storing the payload (row is still written, so dedup still works).
   const isFeedbackEvent = isFeedbackGitHubWebhookEvent(eventName);
 
+  const normalized = c.env.deps.webhook.normalizePayload(eventName, payload);
+  const canonicalEventName = normalized?.eventName ?? eventName;
+
   const delivery =
     await c.env.deps.repositories.webhookDeliveries.recordWebhookDelivery(
       c.env as any,
       {
         deliveryId,
-        eventName,
+        eventName: canonicalEventName,
         owner:
           "repository" in payload
             ? (payload as any).repository.owner.login
@@ -177,7 +180,6 @@ export async function handleGitHubWebhook(c: Context<ApiEnv>) {
     return c.json({ ok: true, feedback: true, recorded }, 202);
   }
 
-  const normalized = c.env.deps.webhook.normalizePayload(eventName, payload);
   if (!normalized) {
     return c.json({ ok: true, ignored: true, eventName }, 202);
   }
@@ -273,7 +275,7 @@ export async function handleGitHubWebhook(c: Context<ApiEnv>) {
   // Events without a concrete job (e.g. PR close cleanup, mention lookups) still get handled by the worker.
   await c.env.deps.platform.enqueueReviewJob({
     deliveryId,
-    eventName,
+    eventName: canonicalEventName,
     requestId: c.get("requestId"),
   } as any);
 

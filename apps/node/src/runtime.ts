@@ -5,7 +5,6 @@ import {
   type TokenTrackerOptions,
 } from "@codraoss/core";
 import type { NodeAppBindings } from "./env";
-import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 export function resolveNodeSubrequestLimits(
   env?: Partial<NodeAppBindings>,
@@ -34,6 +33,7 @@ import {
 } from "@codraoss/db/repositories";
 
 import { loadRepoConfig } from "@codraoss/api/platform";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 import { cryptoIds, systemClock } from "@codraoss/node-adapters";
 import { makeTelemetrySink } from "./adapters/telemetry";

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Codra · AICSS File Diff Component Preview</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    /* CSS Variables & Theme Defaults */
+    :root {
+      --background: #fbfbfb;
+      --foreground: #1a1a1a;
+      --card: #ffffff;
+      --border: #e6e8ec;
+      --ui-subtle: #737373;
+      --ui-well: #f6f8fa;
+      --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="dark"], .dark {
+      --background: #0f0f10;
+      --foreground: #f5f5f5;
+      --card: #1a1a1a;
+      --border: #303030;
+      --ui-subtle: #a1a1a1;
+      --ui-well: #161618;
+    }
+
+    body {
+      margin: 0;
+      padding: 32px 20px;
+      background: var(--background);
+      color: var(--foreground);
+      font-family: var(--font-sans);
+      transition: background 0.2s ease, color 0.2s ease;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 16px;
+    }
+
+    .title-wrap h1 {
+      margin: 0 0 4px;
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .title-wrap p {
+      margin: 0;
+      font-size: 13px;
+      color: var(--ui-subtle);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(21, 160, 106, 0.12);
+      color: #15a06a;
+      font-weight: 500;
+    }
+
+    .theme-btn {
+      cursor: pointer;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--foreground);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+    .theme-btn:hover {
+      border-color: var(--ui-subtle);
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--ui-subtle);
+      margin-bottom: 12px;
+    }
+
+    /* AICSS File Diff Component CSS */
+    .aicss-diff {
+      border-radius: 12px;
+      background: var(--card);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.02), 0 0 0 0.5px rgba(0, 0, 0, 0.08);
+      border: 1px solid var(--border);
+      padding: 12px 16px 16px;
+      overflow: hidden;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 20px;
+    }
+
+    .aicss-diff-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: -12px -16px 0;
+      padding: 10px 12px 10px 12px;
+      background: transparent;
+      border-bottom: 0.5px solid var(--border);
+      font-size: 12.5px;
+    }
+
+    .aicss-diff-file-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .aicss-diff-icon {
+      display: block;
+      width: 15px;
+      height: 15px;
+      color: var(--ui-subtle);
+      flex: none;
+    }
+
+    .aicss-diff-file {
+      color: var(--foreground);
+      line-height: 1;
+      font-size: 12.5px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .aicss-diff-stat {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+
+    .aicss-diff-stat .aicss-diff-add {
+      color: #15a06a;
+    }
+
+    .aicss-diff-stat .aicss-diff-del {
+      color: #dc2626;
+    }
+
+    .aicss-diff-actions {
+      display: inline-flex;
+      align-items: center;
+      margin-left: 8px;
+      flex-shrink: 0;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ui-subtle);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .copy-btn:hover {
+      color: var(--foreground);
+      border-color: var(--ui-subtle);
+    }
+
+    .aicss-diff-body {
+      position: relative;
+      margin: 0 -16px -16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 4px 0;
+      font-size: 12.5px;
+      line-height: 20px;
+      scrollbar-width: thin;
+    }
+
+    .aicss-diff-lines {
+      position: relative;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .aicss-diff-lines::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 64px;
+      width: 0.5px;
+      background: var(--border);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .aicss-diff-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 32px 32px 18px 1fr;
+      align-items: stretch;
+    }
+
+    .aicss-diff-row .aicss-diff-ln,
+    .aicss-diff-row .aicss-diff-sign {
+      user-select: none;
+      color: var(--ui-subtle);
+      font-size: 11px;
+    }
+
+    .aicss-diff-row .aicss-diff-ln {
+      text-align: right;
+      padding: 0 7px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .aicss-diff-row .aicss-diff-sign {
+      text-align: center;
+    }
+
+    .aicss-diff-row code {
+      white-space: pre;
+      padding: 0 12px 0 8px;
+      color: var(--foreground);
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+    }
+
+    .aicss-diff-row.add::before,
+    .aicss-diff-row.del::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 3px;
+      z-index: 2;
+    }
+
+    .aicss-diff-row.add::before {
+      background: #15a06a;
+    }
+
+    .aicss-diff-row.del::before {
+      background: repeating-linear-gradient(45deg, #dc2626 0, #dc2626 1.5px, transparent 1.5px, transparent 3px);
+    }
+
+    .aicss-diff-row.add {
+      background: rgba(26, 127, 55, 0.09);
+    }
+
+    .aicss-diff-row.add .aicss-diff-sign,
+    .aicss-diff-row.add .aicss-diff-ln.new {
+      color: #15a06a;
+    }
+
+    .aicss-diff-row.del {
+      background: rgba(207, 34, 46, 0.09);
+    }
+
+    .aicss-diff-row.del .aicss-diff-sign,
+    .aicss-diff-row.del .aicss-diff-ln.old {
+      color: #dc2626;
+    }
+
+    .aicss-diff-row.hunk {
+      background: var(--ui-well);
+      color: var(--ui-subtle);
+    }
+    .aicss-diff-row.hunk code {
+      color: var(--ui-subtle);
+    }
+
+    /* Syntax Tokens */
+    .aicss-diff-row code .kw { color: #cf222e; }
+    .aicss-diff-row code .str { color: #0a3069; }
+    .aicss-diff-row code .fn { color: #8250df; }
+    .aicss-diff-row code .num { color: #0550ae; }
+    .aicss-diff-row code .cm { color: #6e7781; }
+
+    [data-theme="dark"] .aicss-diff {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+    }
+    [data-theme="dark"] .aicss-diff-stat .aicss-diff-add,
+    [data-theme="dark"] .aicss-diff-row.add::before,
+    [data-theme="dark"] .aicss-diff-row.add .aicss-diff-sign,
+    [data-theme="dark"] .aicss-diff-row.add .aicss-diff-ln.new {
+      color: #34d399;
+      background-color: #34d399;
+    }
+    [data-theme="dark"] .aicss-diff-row.add .aicss-diff-sign,
+    [data-theme="dark"] .aicss-diff-row.add .aicss-diff-ln.new {
+      background-color: transparent;
+    }
+    [data-theme="dark"] .aicss-diff-stat .aicss-diff-del,
+    [data-theme="dark"] .aicss-diff-row.del .aicss-diff-sign,
+    [data-theme="dark"] .aicss-diff-row.del .aicss-diff-ln.old {
+      color: #f87171;
+    }
+    [data-theme="dark"] .aicss-diff-row.del::before {
+      background: repeating-linear-gradient(45deg, #f87171 0, #f87171 1.5px, transparent 1.5px, transparent 3px);
+    }
+    [data-theme="dark"] .aicss-diff-row.add { background: rgba(63, 185, 80, 0.15); }
+    [data-theme="dark"] .aicss-diff-row.del { background: rgba(248, 81, 73, 0.15); }
+    [data-theme="dark"] .aicss-diff-row code .kw { color: #ff7b72; }
+    [data-theme="dark"] .aicss-diff-row code .str { color: #a5d6ff; }
+    [data-theme="dark"] .aicss-diff-row code .fn { color: #d2a8ff; }
+    [data-theme="dark"] .aicss-diff-row code .num { color: #79c0ff; }
+    [data-theme="dark"] .aicss-diff-row code .cm { color: #8b949e; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title-wrap">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <h1>Codra · AICSS File Diff Component</h1>
+          <span class="badge">Branch: feature/aicss-file-diff</span>
+        </div>
+        <p>Implementation of https://www.aicss.dev/components/file-diff for codeblocks & diff viewers</p>
+      </div>
+      <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-label">🌙 Dark Mode</span>
+      </button>
+    </div>
+
+    <!-- Section 1: Canonical AICSS File Diff Component -->
+    <div>
+      <div class="section-title">1. Canonical File Diff Card (AICSS Spec)</div>
+      <div class="aicss-diff">
+        <div class="aicss-diff-head">
+          <span class="aicss-diff-file-wrap">
+            <svg class="aicss-diff-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="aicss-diff-file">src/auth.ts</span>
+          </span>
+          <span class="aicss-diff-stat">
+            <span class="aicss-diff-add">+3</span>
+            <span class="aicss-diff-del">-1</span>
+          </span>
+          <span class="aicss-diff-actions">
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('export function getToken()...')">Copy diff</button>
+          </span>
+        </div>
+        <div class="aicss-diff-body">
+          <div class="aicss-diff-lines">
+            <div class="aicss-diff-row ctx">
+              <span class="aicss-diff-ln old">12</span>
+              <span class="aicss-diff-ln new">12</span>
+              <span class="aicss-diff-sign"></span>
+              <code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">getToken</span>() {</code>
+            </div>
+            <div class="aicss-diff-row del">
+              <span class="aicss-diff-ln old">13</span>
+              <span class="aicss-diff-ln new"></span>
+              <span class="aicss-diff-sign">-</span>
+              <code>  <span class="kw">return</span> localStorage.token;</code>
+            </div>
+            <div class="aicss-diff-row add">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new">13</span>
+              <span class="aicss-diff-sign">+</span>
+              <code>  <span class="kw">const</span> t = cookies.<span class="fn">get</span>(<span class="str">"session"</span>);</code>
+            </div>
+            <div class="aicss-diff-row add">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new">14</span>
+              <span class="aicss-diff-sign">+</span>
+              <code>  <span class="kw">if</span> (!t) <span class="kw">throw</span> <span class="kw">new</span> <span class="fn">Error</span>(<span class="str">"no session"</span>);</code>
+            </div>
+            <div class="aicss-diff-row add">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new">15</span>
+              <span class="aicss-diff-sign">+</span>
+              <code>  <span class="kw">return</span> t;</code>
+            </div>
+            <div class="aicss-diff-row ctx">
+              <span class="aicss-diff-ln old">14</span>
+              <span class="aicss-diff-ln new">16</span>
+              <span class="aicss-diff-sign"></span>
+              <code>}</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Review Finding Diff Context Snippet -->
+    <div>
+      <div class="section-title">2. Review Finding Diff Context (ContextSnippet Component)</div>
+      <div class="aicss-diff">
+        <div class="aicss-diff-head">
+          <span class="aicss-diff-file-wrap">
+            <svg class="aicss-diff-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+              <path d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <span class="aicss-diff-file">packages/core/src/model-output/evidence.ts</span>
+          </span>
+          <span class="aicss-diff-stat">
+            <span class="aicss-diff-add">+2</span>
+            <span class="aicss-diff-del">-2</span>
+          </span>
+          <span class="aicss-diff-actions">
+            <button class="copy-btn">Copy diff</button>
+          </span>
+        </div>
+        <div class="aicss-diff-body">
+          <div class="aicss-diff-lines">
+            <div class="aicss-diff-row hunk">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new"></span>
+              <span class="aicss-diff-sign"></span>
+              <code>@@ -42,4 +42,4 @@ export function verifyFinding(item: Finding) {</code>
+            </div>
+            <div class="aicss-diff-row del">
+              <span class="aicss-diff-ln old">42</span>
+              <span class="aicss-diff-ln new"></span>
+              <span class="aicss-diff-sign">-</span>
+              <code>  <span class="kw">if</span> (!item.verified) {</code>
+            </div>
+            <div class="aicss-diff-row del">
+              <span class="aicss-diff-ln old">43</span>
+              <span class="aicss-diff-ln new"></span>
+              <span class="aicss-diff-sign">-</span>
+              <code>    <span class="kw">return</span> <span class="kw">null</span>;</code>
+            </div>
+            <div class="aicss-diff-row add">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new">42</span>
+              <span class="aicss-diff-sign">+</span>
+              <code>  <span class="kw">if</span> (!item.verified && !item.grounded) {</code>
+            </div>
+            <div class="aicss-diff-row add">
+              <span class="aicss-diff-ln old"></span>
+              <span class="aicss-diff-ln new">43</span>
+              <span class="aicss-diff-sign">+</span>
+              <code>    <span class="kw">return</span> { status: <span class="str">"unverified"</span>, score: 0 };</code>
+            </div>
+            <div class="aicss-diff-row ctx">
+              <span class="aicss-diff-ln old">44</span>
+              <span class="aicss-diff-ln new">44</span>
+              <span class="aicss-diff-sign"></span>
+              <code>  }</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      if (next === 'dark') {
+        html.classList.add('dark');
+        document.getElementById('theme-label').textContent = '☀️ Light Mode';
+      } else {
+        html.classList.remove('dark');
+        document.getElementById('theme-label').textContent = '🌙 Dark Mode';
+      }
+    }
+  </script>
+</body>
+</html>

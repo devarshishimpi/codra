@@ -352,3 +352,5 @@
   --sh-entity: oklch(76% 0.1 260);
   --sh-property: oklch(78% 0.1 200);
 }
+
+@import "./file-diff.css";

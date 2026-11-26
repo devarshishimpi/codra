@@ -231,6 +231,52 @@ describe("Webhook Handling Suite", () => {
     const queue = env.REVIEW_QUEUE as any;
     expect(queue.sent).toHaveLength(1);
     expect(queue.sent[0].payload).toBeUndefined();
-    expect(queue.sent[0].eventName).toBe("pull_request");
+    expect(queue.sent[0].eventName).toBe("change_request");
+  });
+
+  it("enqueues mention trigger from issue_comment with canonical comment eventName", async () => {
+    const commentPayload = {
+      action: "created",
+      installation: { id: 12345 },
+      repository: {
+        name: uniqueName("repo-comment"),
+        owner: { login: "test-owner" },
+      },
+      issue: {
+        number: 1,
+        pull_request: { url: "https://api.github.com/repos/test-owner/test-repo/pulls/1" },
+      },
+      comment: {
+        id: 123,
+        body: "@codra review",
+      },
+    };
+    const body = JSON.stringify(commentPayload);
+    const signature = await signPayload(env.GITHUB_APP_WEBHOOK_SECRET, body);
+
+    const response = await app.request(
+      "http://codra.test/webhook",
+      {
+        method: "POST",
+        headers: {
+          "x-github-event": "issue_comment",
+          "x-github-delivery": uniqueName("comment-mention"),
+          "x-hub-signature-256": signature,
+          "content-type": "application/json",
+        },
+        body,
+      },
+      env,
+    );
+
+    const json = (await response.json()) as any;
+    expect(response.status).toBe(202);
+    expect(json.message).toBe("queued");
+
+    const queue = env.REVIEW_QUEUE as any;
+    expect(queue.sent).toHaveLength(1);
+    expect(queue.sent[0].payload).toBeUndefined();
+    expect(queue.sent[0].eventName).toBe("comment");
+    expect(queue.sent[0].deliveryId).toBeDefined();
   });
 });

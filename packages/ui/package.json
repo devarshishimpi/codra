@@ -26,6 +26,7 @@
     "./selection": "./src/lib/selection.ts",
     "./file-tree": "./src/lib/file-tree.ts",
     "./prompt-diff": "./src/lib/prompt-diff.ts",
+    "./file-diff": "./src/components/file-diff.tsx",
     "./markdown-plugins": "./src/lib/markdown-plugins.ts",
     "./motion": "./src/components/motion/index.ts",
     "./hooks": "./src/hooks/index.ts",
@@ -73,6 +74,10 @@
       "./prompt-diff": {
         "types": "./dist/lib/prompt-diff.d.ts",
         "import": "./dist/lib/prompt-diff.js"
+      },
+      "./file-diff": {
+        "types": "./dist/components/file-diff.d.ts",
+        "import": "./dist/components/file-diff.js"
       },
       "./markdown-plugins": {
         "types": "./dist/lib/markdown-plugins.d.ts",

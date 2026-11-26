@@ -9,3 +9,7 @@ await copyFile(
   path.join(root, "src/styles/tokens.css"),
   path.join(root, "dist/styles/tokens.css"),
 );
+await copyFile(
+  path.join(root, "src/styles/file-diff.css"),
+  path.join(root, "dist/styles/file-diff.css"),
+);

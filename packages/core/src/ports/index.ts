@@ -23,7 +23,6 @@ export type {
   RepoConfigLoader,
   ReviewSettingsReader,
   WebhookDeliveryReader,
-  WebhookRuntime,
 } from "./settings";
 export type {
   GitProviderFactory,

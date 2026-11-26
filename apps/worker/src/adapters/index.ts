@@ -7,7 +7,6 @@ import {
   PAID_WORKER_MAX_SUBREQUESTS,
 } from "@codraoss/core";
 import type { AppBindings } from "../env";
-import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 export function resolveWorkerSubrequestLimits(
   env: Partial<AppBindings>,
@@ -56,6 +55,7 @@ import {
   makeModelErrorClassifier,
   makeModelFactory,
 } from "./services";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 // The composition root: the one place Cloudflare bindings, Postgres and the GitHub/model services are
 // wired to the engine's ports. @codraoss/core sees this object and nothing else.
