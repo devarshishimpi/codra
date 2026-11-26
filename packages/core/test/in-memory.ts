@@ -358,7 +358,10 @@ export function createInMemoryRuntime(
     },
 
     settings: { getReviewSettings: async () => settings },
-    webhooks: { getWebhookDelivery: async () => null },
+    webhooks: {
+      getWebhookDelivery: async () => null,
+      normalizePayload: () => null,
+    },
     learning: {
       getRepositoryIdForJob: async () => 1,
       getRejectedExemplars: async () => [],

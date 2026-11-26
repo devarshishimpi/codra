@@ -10,7 +10,7 @@ import type {
   ModelConfigReader,
   RepoConfigLoader,
   ReviewSettingsReader,
-  WebhookDeliveryReader,
+  WebhookRuntime,
 } from "./settings";
 import type { TelemetrySink } from "./telemetry";
 
@@ -22,7 +22,7 @@ export interface ReviewRuntime {
   jobs: JobStore;
   fileReviews: FileReviewStore;
   settings: ReviewSettingsReader;
-  webhooks: WebhookDeliveryReader;
+  webhooks: WebhookRuntime;
   learning: LearningStore;
   modelConfigs: ModelConfigReader;
   repoConfig: RepoConfigLoader;

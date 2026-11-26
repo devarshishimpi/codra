@@ -7,6 +7,7 @@ import {
   PAID_WORKER_MAX_SUBREQUESTS,
 } from "@codraoss/core";
 import type { AppBindings } from "../env";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 export function resolveWorkerSubrequestLimits(
   env: Partial<AppBindings>,
@@ -72,7 +73,10 @@ export function createReviewRuntime(env: AppBindings): ReviewRuntime {
     jobs: makeJobStore(env),
     fileReviews: makeFileReviewStore(env),
     settings: makeReviewSettingsReader(env),
-    webhooks: makeWebhookDeliveryReader(env),
+    webhooks: {
+      ...makeWebhookDeliveryReader(env),
+      normalizePayload: normalizeGitHubWebhook,
+    },
     learning: makeLearningStore(env),
     modelConfigs: makeModelConfigReader(env),
     repoConfig: makeRepoConfigLoader(env),

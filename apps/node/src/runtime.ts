@@ -5,6 +5,7 @@ import {
   type TokenTrackerOptions,
 } from "@codraoss/core";
 import type { NodeAppBindings } from "./env";
+import { normalizeGitHubWebhook } from "@codraoss/provider-github";
 
 export function resolveNodeSubrequestLimits(
   env?: Partial<NodeAppBindings>,
@@ -64,7 +65,10 @@ export function createReviewRuntime(
     jobs: makeJobStore(dbEnv),
     fileReviews: makeFileReviewStore(dbEnv),
     settings: makeReviewSettingsReader(dbEnv),
-    webhooks: makeWebhookDeliveryReader(dbEnv),
+    webhooks: {
+      ...makeWebhookDeliveryReader(dbEnv),
+      normalizePayload: normalizeGitHubWebhook,
+    },
     learning: makeLearningStore(dbEnv),
     modelConfigs: makeModelConfigReader(dbEnv),
     repoConfig: {
