@@ -35,6 +35,7 @@ const testInclude =
         "test/**/*.test.ts",
         "test/**/*.test.tsx",
         "packages/models/test/providers/openai.test.ts",
+        "packages/provider-github/test/**/*.test.ts",
       ];
 
 const testExclude =
