@@ -79,11 +79,27 @@ describe("AICSS FileDiff Component", () => {
     expect(rows[2].cur).toBe(13);
   });
 
-  it("tokenizes language keywords, strings, and identifiers", () => {
-    const tokens = tokenize('const secret = "my-token"; // comment');
+  it("tokenizes language keywords, strings, numbers, function calls, and comments", () => {
+    const tokens = tokenize('const secret = fn(12.5, "my-token"); /* block */ // comment');
     const kinds = tokens.map((t) => t.t);
     expect(kinds).toContain("kw");
+    expect(kinds).toContain("fn");
+    expect(kinds).toContain("num");
     expect(kinds).toContain("str");
     expect(kinds).toContain("cm");
+  });
+
+  it("handles pathological inputs in linear time without regex backtracking", () => {
+    const commentSpam = "/*" + "a/*".repeat(10_000);
+    const doubleQuoteSpam = '"' + '\\"'.repeat(10_000);
+    const singleQuoteSpam = "'" + "\\'".repeat(10_000);
+    const whitespaceSpam = "  " + "   ".repeat(10_000);
+
+    const start = performance.now();
+    expect(tokenize(commentSpam).length).toBe(1);
+    expect(tokenize(doubleQuoteSpam).length).toBe(1);
+    expect(tokenize(singleQuoteSpam).length).toBe(1);
+    expect(parseDiffText(whitespaceSpam).rows.length).toBe(0);
+    expect(performance.now() - start).toBeLessThan(250);
   });
 });

@@ -45,22 +45,120 @@ const KEYWORDS = new Set([
   "try", "catch", "finally", "this", "super", "static", "type", "interface", "enum", "as", "of", "in",
 ]);
 
+function isWhitespaceChar(ch: string): boolean {
+  return ch === " " || ch === "\t" || ch === "\r" || ch === "\n" || /\s/.test(ch);
+}
+
+function isDigitChar(ch: string): boolean {
+  return ch >= "0" && ch <= "9";
+}
+
+function isWordChar(ch: string): boolean {
+  return (
+    (ch >= "a" && ch <= "z") ||
+    (ch >= "A" && ch <= "Z") ||
+    (ch >= "0" && ch <= "9") ||
+    ch === "_"
+  );
+}
+
+function isIdentStart(ch: string): boolean {
+  return (
+    (ch >= "a" && ch <= "z") ||
+    (ch >= "A" && ch <= "Z") ||
+    ch === "_" ||
+    ch === "$"
+  );
+}
+
 export function tokenize(line: string): Array<{ t: string; v: string }> {
   const raw: Array<{ kind: string; v: string }> = [];
-  const re =
-    /(\s+)|(\/\/.*)|(\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b\d+(?:\.\d+)?\b)|(\b[A-Za-z_$][\w$]*\b)|(\S)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(line))) {
-    if (m[1]) raw.push({ kind: "txt", v: m[1] });
-    else if (m[2] || m[3]) raw.push({ kind: "cm", v: m[0] });
-    else if (m[4]) raw.push({ kind: "str", v: m[0] });
-    else if (m[5]) raw.push({ kind: "num", v: m[0] });
-    else if (m[6]) raw.push({ kind: "id", v: m[0] });
-    else raw.push({ kind: "txt", v: m[0] });
+  let i = 0;
+  const len = line.length;
+
+  while (i < len) {
+    const ch = line[i];
+
+    if (isWhitespaceChar(ch)) {
+      const start = i;
+      i++;
+      while (i < len && isWhitespaceChar(line[i])) i++;
+      raw.push({ kind: "ws", v: line.slice(start, i) });
+      continue;
+    }
+
+    if (ch === "/" && i + 1 < len) {
+      if (line[i + 1] === "/") {
+        raw.push({ kind: "cm", v: line.slice(i) });
+        break;
+      }
+      if (line[i + 1] === "*") {
+        const closeIdx = line.indexOf("*/", i + 2);
+        if (closeIdx !== -1) {
+          raw.push({ kind: "cm", v: line.slice(i, closeIdx + 2) });
+          i = closeIdx + 2;
+        } else {
+          raw.push({ kind: "cm", v: line.slice(i) });
+          break;
+        }
+        continue;
+      }
+    }
+
+    if (ch === '"' || ch === "'") {
+      const start = i;
+      let j = i + 1;
+      let closed = false;
+      while (j < len) {
+        if (line[j] === "\\") {
+          j += 2;
+          continue;
+        }
+        if (line[j] === ch) {
+          j++;
+          closed = true;
+          break;
+        }
+        j++;
+      }
+      raw.push({ kind: "str", v: line.slice(start, closed ? j : len) });
+      i = closed ? j : len;
+      continue;
+    }
+
+    if (isDigitChar(ch) && (i === 0 || !isWordChar(line[i - 1]))) {
+      let j = i + 1;
+      while (j < len && isDigitChar(line[j])) j++;
+      if (j + 1 < len && line[j] === "." && isDigitChar(line[j + 1])) {
+        j += 2;
+        while (j < len && isDigitChar(line[j])) j++;
+      }
+      if (j === len || !isWordChar(line[j])) {
+        raw.push({ kind: "num", v: line.slice(i, j) });
+        i = j;
+        continue;
+      }
+    }
+
+    if (isIdentStart(ch) && (ch === "$" || i === 0 || !isWordChar(line[i - 1]))) {
+      let j = i + 1;
+      while (j < len && (isWordChar(line[j]) || line[j] === "$")) j++;
+      raw.push({ kind: "id", v: line.slice(i, j) });
+      i = j;
+      continue;
+    }
+
+    raw.push({ kind: "txt", v: ch });
+    i++;
   }
+
   const out: Array<{ t: string; v: string }> = [];
-  for (let i = 0; i < raw.length; i++) {
-    const cur = raw[i];
+  for (let k = 0; k < raw.length; k++) {
+    const cur = raw[k];
+    if (cur.kind === "ws") {
+      out.push({ t: "txt", v: cur.v });
+      continue;
+    }
     if (cur.kind !== "id") {
       out.push({ t: cur.kind, v: cur.v });
       continue;
@@ -69,8 +167,8 @@ export function tokenize(line: string): Array<{ t: string; v: string }> {
       out.push({ t: "kw", v: cur.v });
       continue;
     }
-    let j = i + 1;
-    while (j < raw.length && raw[j].kind === "txt" && /^\s+$/.test(raw[j].v)) j++;
+    let j = k + 1;
+    while (j < raw.length && raw[j].kind === "ws") j++;
     const next = raw[j];
     out.push({ t: next && next.v.startsWith("(") ? "fn" : "txt", v: cur.v });
   }
@@ -78,7 +176,46 @@ export function tokenize(line: string): Array<{ t: string; v: string }> {
 }
 
 const HUNK_RE = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
-const SNIPPET_LINE = /^(\s*\d*) ([+\- ])(.*)$/;
+
+function parseSnippetLine(
+  line: string,
+): { lineNum: number | null; prefix: string; text: string } | null {
+  let i = 0;
+  const len = line.length;
+  while (i < len && (line[i] === " " || line[i] === "\t")) {
+    i++;
+  }
+  const digitStart = i;
+  while (i < len && isDigitChar(line[i])) {
+    i++;
+  }
+  if (i > digitStart) {
+    if (i + 1 >= len || line[i] !== " ") return null;
+    const prefix = line[i + 1];
+    if (prefix !== "+" && prefix !== "-" && prefix !== " ") return null;
+    return {
+      lineNum: Number(line.slice(digitStart, i)),
+      prefix,
+      text: line.slice(i + 2),
+    };
+  }
+  if (i < len && (line[i] === "+" || line[i] === "-")) {
+    if (i < 1 || line[i - 1] !== " ") return null;
+    return {
+      lineNum: null,
+      prefix: line[i],
+      text: line.slice(i + 1),
+    };
+  }
+  if (i >= 2 && line[i - 2] === " " && line[i - 1] === " ") {
+    return {
+      lineNum: null,
+      prefix: " ",
+      text: line.slice(i),
+    };
+  }
+  return null;
+}
 
 function parsePaddedLine(line: string) {
   if (line.length < 11 || line[4] !== " " || line[9] !== " ") return null;
@@ -153,10 +290,9 @@ export function parseDiffText(rawDiff: string): { file?: string; rows: FileDiffR
       continue;
     }
 
-    const snippetMatch = SNIPPET_LINE.exec(line);
-    if (snippetMatch) {
-      const [, gutter, prefix, text] = snippetMatch;
-      const lineNum = gutter.trim() ? Number(gutter.trim()) : null;
+    const snippet = parseSnippetLine(line);
+    if (snippet) {
+      const { lineNum, prefix, text } = snippet;
       if (prefix === "+") {
         rows.push({ old: null, cur: lineNum, type: "add", text });
       } else if (prefix === "-") {
