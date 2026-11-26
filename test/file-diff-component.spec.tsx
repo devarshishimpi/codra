@@ -93,13 +93,15 @@ describe("AICSS FileDiff Component", () => {
     const commentSpam = "/*" + "a/*".repeat(10_000);
     const doubleQuoteSpam = '"' + '\\"'.repeat(10_000);
     const singleQuoteSpam = "'" + "\\'".repeat(10_000);
-    const whitespaceSpam = "  " + "   ".repeat(10_000);
+    const paddedWhitespaceSpam = "  " + "   ".repeat(10_000);
+    const snippetWhitespaceSpam = "    \t" + "   ".repeat(10_000);
 
     const start = performance.now();
     expect(tokenize(commentSpam).length).toBe(1);
     expect(tokenize(doubleQuoteSpam).length).toBe(1);
     expect(tokenize(singleQuoteSpam).length).toBe(1);
-    expect(parseDiffText(whitespaceSpam).rows.length).toBe(0);
+    expect(parseDiffText(paddedWhitespaceSpam).rows.length).toBe(1);
+    expect(parseDiffText(snippetWhitespaceSpam).rows.length).toBe(0);
     expect(performance.now() - start).toBeLessThan(250);
   });
 });
