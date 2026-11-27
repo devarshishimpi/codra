@@ -49,6 +49,8 @@ export const reviewConfigSchema = z.object({
   max_comments: z.number().int().min(1).max(150).default(5),
   review_breadth: z.number().int().min(1).max(150).default(25),
   full_file_context: z.boolean().default(false),
+  // Opt-in: on synchronize events, review only what changed since the last reviewed commit.
+  incremental: z.boolean().default(false),
   min_severity: z.enum(reviewSeverities).default("P2"),
   language_gates: z
     .record(

@@ -67,6 +67,7 @@ Repository behavior is stored in your PostgreSQL database and can be edited from
     "max_total_diff_chars": 150000,
     "focus": ["security", "bugs", "performance", "correctness", "quality"],
     "custom_rules": [],
+    "incremental": false,
     "labels": {
       "p1": "review: needs-attention",
       "p2": "review: approved",
@@ -95,6 +96,7 @@ Repository behavior is stored in your PostgreSQL database and can be edited from
 | `review.max_total_diff_chars` | Whole-PR diff character budget. |
 | `review.focus` | Review categories used in prompts: security, bugs, performance, correctness, quality. |
 | `review.custom_rules` | Extra project-specific review instructions passed to the model. |
+| `review.incremental` | Opt-in flag, default `false`, for incremental reviews on `synchronize` events (review only what changed since the last reviewed commit). Unset or `false` keeps the current full-diff behavior; the flag is validated and stored now, and the incremental review path itself is tracked in the sibling issues. |
 | `review.labels` | PR labels to apply per verdict, or false to disable label changes. |
 | `model.main` | Primary model ID to attempt first. |
 | `model.fallbacks` | Ordered fallback model IDs tried if the primary fails. |
