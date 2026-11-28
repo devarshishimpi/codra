@@ -4,7 +4,7 @@ export const ModelSamplingConfigSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
   topP: z.number().min(0).max(1).optional(),
   topK: z.number().int().min(1).optional(),
-  thinkingBudget: z.union([z.literal("off"), z.literal("auto"), z.number().int().min(0)]).default("auto"),
+  thinkingBudget: z.union([z.literal("off"), z.literal("auto"), z.literal("low"), z.literal("medium"), z.literal("high"), z.number().int().min(0)]).default("auto"),
   maxOutputTokens: z.number().int().positive().optional(),
 });
 
