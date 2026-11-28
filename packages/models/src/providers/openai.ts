@@ -6,6 +6,7 @@ import {
   jsonOnlyPrompts,
   type ModelResponse,
 } from "../types";
+import type { ModelSamplingConfig } from "@codraoss/schema";
 import { assertPublicBaseUrl } from "../url-guard";
 import { MODEL_TIMEOUT_MAX_MS, resolveOutputTokenCeiling } from "../limits";
 import { profileSampling } from "./profile-sampling";
@@ -37,6 +38,23 @@ export function isOpenAIReasoningModel(model: string): boolean {
     lower.includes("-reasoning") ||
     lower.startsWith("gpt-6")
   );
+}
+
+/**
+ * Maps a profile's thinking budget to OpenAI's `reasoning_effort`. Numbers above 10000 tokens are
+ * "high", above 3000 "medium", anything else "low"; "low", "medium" and "high" pass through. "off",
+ * "auto" and no budget return undefined, so the parameter is left out.
+ */
+export function reasoningEffortFor(
+  thinkingBudget: ModelSamplingConfig["thinkingBudget"] | undefined,
+): "low" | "medium" | "high" | undefined {
+  if (typeof thinkingBudget === "number") {
+    return thinkingBudget > 10000 ? "high" : thinkingBudget > 3000 ? "medium" : "low";
+  }
+  if (thinkingBudget === "low" || thinkingBudget === "medium" || thinkingBudget === "high") {
+    return thinkingBudget;
+  }
+  return undefined;
 }
 
 function isEndpointDomain(baseUrl: string, domains: string[]): boolean {
@@ -158,6 +176,11 @@ export async function reviewWithOpenAI(
     ...(sampling?.topP !== undefined && !isReasoning ? { top_p: sampling.topP } : {}),
     response_format: { type: "json_object" },
   };
+
+  if (isReasoning) {
+    const effort = reasoningEffortFor(sampling?.thinkingBudget);
+    if (effort) bodyPayload.reasoning_effort = effort;
+  }
 
   if (isZai) {
     bodyPayload.thinking = { type: "disabled" };
