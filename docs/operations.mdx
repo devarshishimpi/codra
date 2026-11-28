@@ -79,7 +79,7 @@ If GitHub rejects inline comments with a validation error, Codra retries review 
 
 ### Container health check failing (Docker)
 
-- Ensure the internal service has completed startup and `/health` returns `200 OK`.
+- Ensure the internal service has completed startup and `/health` returns `200 OK`. If `/health/ready` returns `503`, its `checks` body names the dependency (`database` or `kv`) that failed; the server log has the error name and code.
 - Check database connectivity — the server will wait for initial database connection setup.
 - If running under Docker Compose, ensure `dns: [1.1.1.1, 8.8.8.8]` is configured if your host network restricts DNS queries.
 

@@ -12,6 +12,7 @@ import { createReposRouter } from "./routes/api/repos";
 import { createStatsRouter } from "./routes/api/stats";
 import { createModelsRouter } from "./routes/api/models";
 import { createSettingsRouter } from "./routes/api/settings";
+import { createHealthRouter } from "./routes/health";
 
 async function serveIndex(c: Context<ApiEnv>) {
   // If the host platform passes an ASSETS binding via `c.env`, use it (e.g., Cloudflare Workers).
@@ -55,10 +56,12 @@ export function createApiRouter(options: ApiRouterOptions = {}) {
     app.use("*", middleware);
   }
 
-  // Machine health check — no session required
+  // Liveness: the process is up. Touches no dependency, no session required.
   app.get("/health", (c) =>
     c.json({ status: "ok", timestamp: new Date().toISOString() }),
   );
+  // Readiness: PostgreSQL and the KV/Redis store answer. 503 when one does not.
+  app.route("/health", createHealthRouter());
 
   app.use("/auth/logout", requireSession);
   app.use("/auth/logout", requireCsrfHeader);

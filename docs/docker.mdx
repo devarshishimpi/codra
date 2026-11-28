@@ -152,7 +152,32 @@ docker run -d \
 
 <h2 id="health-checks">Health Checks & Monitoring</h2>
 
-Codra exposes a `/health` endpoint that returns HTTP `200 OK`. The container includes an internal health check probe that monitors the server:
+Codra exposes two health endpoints:
+
+* `GET /health` is the liveness probe. It returns HTTP `200 OK` while the process is up and does not touch PostgreSQL or Redis.
+* `GET /health/ready` is the readiness probe. It runs `SELECT 1` against PostgreSQL and reads a key from Redis (Workers KV on Cloudflare), each with a 2 second timeout. It returns `200` when both answer, and `503` with a JSON body when one does not:
+
+```json
+{
+  "status": "unhealthy",
+  "timestamp": "2026-11-17T16:30:00.000Z",
+  "checks": {
+    "database": { "status": "failed", "error": "unreachable" },
+    "kv": { "status": "ok" }
+  }
+}
+```
+
+The `error` field is `timeout` or `unreachable`; the server log records only the error name and code, never the connection details. The `docker-compose.yml` health check calls `/health/ready`, so a container whose database or Redis is down is reported unhealthy. For Kubernetes, point the readiness probe at the same path:
+
+```yaml
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 3000
+  initialDelaySeconds: 10
+  periodSeconds: 15
+```
 
 ```bash
 # Inspect container health status

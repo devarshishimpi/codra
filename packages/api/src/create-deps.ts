@@ -55,6 +55,7 @@ import type {
 import type { KvCompat } from "./platform/config";
 import type { DbEnv } from "@codraoss/db/env";
 
+import { queryRows } from "@codraoss/db/client";
 import * as dbAccounts from "@codraoss/db/accounts";
 import * as dbJobs from "@codraoss/db/jobs";
 import * as dbFileReviews from "@codraoss/db/file-reviews";
@@ -200,5 +201,15 @@ export function createSharedApiDeps(p: PlatformDeps): ApiRouterDeps {
           ? createDefaultQuotaChecker(p.kv)
           : undefined,
     authz: p.authz,
+    health: {
+      database: async () => {
+        await queryRows(p.db, "SELECT 1");
+      },
+      // A missing key resolves to null; only an unreachable store throws. Redis (Node) answers a GET
+      // like a PING, and a Workers KV read of an absent key is cheap.
+      kv: async () => {
+        await p.kv.get("__health_check__");
+      },
+    },
   };
 }

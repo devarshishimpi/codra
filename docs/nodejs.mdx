@@ -144,7 +144,8 @@ curl -I http://localhost:3000/health
 # HTTP/1.1 200 OK
 ```
 
-* **Healthcheck**: Returns HTTP `200 OK` when the process is responsive.
+* **Healthcheck**: Returns HTTP `200 OK` when the process is responsive. It does not touch PostgreSQL or Redis.
+* **Readiness**: `GET /health/ready` runs `SELECT 1` on PostgreSQL and reads a key from Redis, and returns HTTP `503` with a JSON `checks` body when either does not answer within 2 seconds.
 * **BullMQ Logging**: Worker lifecycle events (`completed`, `failed`) are automatically logged through the centralized `@codraoss/api` logger.
 * **Automatic Model Registry**: An unreferenced background timer refreshes available model catalogs every hour with zero impact on database connection pools.
 
