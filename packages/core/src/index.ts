@@ -8,6 +8,7 @@ export {
   extractReviewRequest,
   type ReviewRequest,
   getDiffFiles,
+  getIncrementalDiffFiles,
   getOrFetchRawDiffForCompletedJob,
   budgetAwareFileLimit,
   estimatedSubrequestsPerFile,

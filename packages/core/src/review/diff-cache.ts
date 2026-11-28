@@ -13,6 +13,14 @@ export function diffCacheKey(jobId: string) {
   return `diff:${jobId}`;
 }
 
+export function incrementalDiffCacheKey(
+  jobId: string,
+  previousCommitSha: string,
+  newHeadSha: string,
+) {
+  return `diff:${jobId}:${previousCommitSha}..${newHeadSha}`;
+}
+
 export async function getDiffFiles(
   env: Pick<ReviewRuntime, "kv">,
   job: { id: string; owner: string; repo: string; prNumber: number },
@@ -36,6 +44,54 @@ export async function getDiffFiles(
     } catch (error) {
       logger.warn(
         `Failed to cache PR diff for job ${job.id}; it will be re-fetched on the next phase`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+    }
+  }
+
+  return filterReviewableFiles(
+    parseUnifiedDiff(rawDiff, config.review),
+    config.review,
+    maxFiles,
+  );
+}
+
+/**
+ * Files changed between two commits of a PR, for incremental reviews on
+ * synchronize events. Uses the same reviewable-file filtering and cache
+ * handling as getDiffFiles, under a key that includes both SHAs so it never
+ * shares an entry with the full PR diff.
+ */
+export async function getIncrementalDiffFiles(
+  env: Pick<ReviewRuntime, "kv">,
+  job: { id: string; owner: string; repo: string },
+  github: Pick<ReviewGitProvider, "getCompareDiff">,
+  config: RepoConfig,
+  previousCommitSha: string,
+  newHeadSha: string,
+  maxFiles: number = reviewMaxFilesRange.default,
+): Promise<{ files: FileDiff[]; skipped: number }> {
+  const cacheKey = incrementalDiffCacheKey(
+    job.id,
+    previousCommitSha,
+    newHeadSha,
+  );
+  let rawDiff = await env.kv.get(cacheKey);
+
+  if (!rawDiff) {
+    rawDiff = await github.getCompareDiff(
+      job.owner,
+      job.repo,
+      previousCommitSha,
+      newHeadSha,
+    );
+    try {
+      await env.kv.put(cacheKey, rawDiff, {
+        expirationTtl: DIFF_CACHE_TTL_SECONDS,
+      });
+    } catch (error) {
+      logger.warn(
+        `Failed to cache incremental diff for job ${job.id}; it will be re-fetched on the next phase`,
         error instanceof Error ? error : new Error(String(error)),
       );
     }
