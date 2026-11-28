@@ -151,6 +151,12 @@ export type QuotaResult =
   | { allowed: true }
   | { allowed: false; retryAfterSeconds?: number; reason?: string };
 
+// Dependency probes for GET /health/ready. Each one rejects when its dependency is unreachable.
+export interface HealthProbesPort {
+  database: () => Promise<void>;
+  kv: () => Promise<void>;
+}
+
 export interface ApiRouterDeps {
   repositories: RepositoriesPort;
   gitProvider: {
@@ -167,6 +173,7 @@ export interface ApiRouterDeps {
   cloudflareAiEnabled?: boolean;
   authz?: AuthzPort;
   checkQuota?: (input: QuotaCheckInput) => Promise<QuotaResult>;
+  health?: HealthProbesPort;
 }
 
 export interface ApiEnv {
