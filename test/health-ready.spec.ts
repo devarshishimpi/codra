@@ -41,7 +41,7 @@ describe("GET /health/ready", () => {
     };
     const res = await request({ database: down, kv: down });
     expect(res.status).toBe(503);
-    const body = await res.json();
+    const body = (await res.json()) as any;
     expect(body.checks.database.status).toBe("failed");
     expect(body.checks.kv.status).toBe("failed");
   });
@@ -53,7 +53,7 @@ describe("GET /health/ready", () => {
       await vi.advanceTimersByTimeAsync(2100);
       const res = await pending;
       expect(res.status).toBe(503);
-      expect((await res.json()).checks.database).toEqual({ status: "failed", error: "timeout" });
+      expect(((await res.json()) as any).checks.database).toEqual({ status: "failed", error: "timeout" });
     } finally {
       vi.useRealTimers();
     }
