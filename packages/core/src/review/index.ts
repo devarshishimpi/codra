@@ -6,7 +6,11 @@ import {
 import type { ReviewGitProvider, ReviewRuntime } from "../ports";
 import { resolveQueuedJob } from "./resolve-job";
 
-export { getDiffFiles, getOrFetchRawDiffForCompletedJob } from "./diff-cache";
+export {
+  getDiffFiles,
+  getIncrementalDiffFiles,
+  getOrFetchRawDiffForCompletedJob,
+} from "./diff-cache";
 
 export { budgetAwareFileLimit, estimatedSubrequestsPerFile } from "./budget";
 

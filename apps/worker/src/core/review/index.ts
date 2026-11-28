@@ -30,6 +30,7 @@ export {
   failJobAndCheckRun,
   extractReviewRequest,
   getDiffFiles,
+  getIncrementalDiffFiles,
   getOrFetchRawDiffForCompletedJob,
   budgetAwareFileLimit,
   estimatedSubrequestsPerFile,
